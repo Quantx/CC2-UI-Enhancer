@@ -1,0 +1,107 @@
+{
+    "action_manifest_version" : 0,
+    "alias_info" : {},
+    "app_key" : "steam.app.1657900",
+    "bindings" : {
+       "/actions/cc" : {
+          "haptics" : [],
+          "poses" : [],
+          "sources" : [
+             {
+                "inputs" : {
+                   "click" : {
+                      "output" : "/actions/cc/in/interact"
+                   }
+                },
+                "mode" : "button",
+                "path" : "/user/gamepad/input/a"
+             },
+             {
+                "inputs" : {
+                   "click" : {
+                      "output" : "/actions/cc/in/back"
+                   }
+                },
+                "mode" : "button",
+                "path" : "/user/gamepad/input/b"
+             },
+             {
+                "inputs" : {
+                   "click" : {
+                      "output" : "/actions/cc/in/turn_left"
+                   }
+                },
+                "mode" : "button",
+                "path" : "/user/gamepad/input/dpad_left"
+             },
+             {
+                "inputs" : {
+                   "click" : {
+                      "output" : "/actions/cc/in/turn_right"
+                   }
+                },
+                "mode" : "button",
+                "path" : "/user/gamepad/input/dpad_right"
+             },
+             {
+                "inputs" : {
+                   "click" : {
+                      "output" : "/actions/cc/in/toggle_control"
+                   }
+                },
+                "mode" : "button",
+                "path" : "/user/gamepad/input/x"
+             },
+             {
+                "inputs" : {
+                   "click" : {
+                      "output" : "/actions/cc/in/cycle_mode"
+                   }
+                },
+                "mode" : "button",
+                "path" : "/user/gamepad/input/y"
+             },
+             {
+                "inputs" : {
+                   "click" : {
+                      "output" : "/actions/cc/in/recenter"
+                   },
+                   "position" : {
+                      "output" : "/actions/cc/in/primary_stick"
+                   }
+                },
+                "mode" : "joystick",
+                "path" : "/user/gamepad/input/joystick_left"
+             },
+             {
+                "inputs" : {
+                   "click" : {
+                      "output" : "/actions/cc/in/recenter"
+                   },
+                   "position" : {
+                      "output" : "/actions/cc/in/secondary_stick"
+                   }
+                },
+                "mode" : "joystick",
+                "path" : "/user/gamepad/input/joystick_right"
+             },
+             {
+                "inputs" : {
+                   "click" : {
+                      "output" : "/actions/cc/in/pause"
+                   }
+                },
+                "mode" : "button",
+                "path" : "/user/gamepad/input/start"
+             }
+          ]
+       }
+    },
+    "category" : "steamvr_input",
+    "controller_type" : "gamepad",
+    "description" : "Bindings for Carrier Command 2 VR for a gamepad",
+    "name" : "Carrier Command 2 VR configuration for Gamepad",
+    "options" : {},
+    "simulated_actions" : []
+ }
+ 
