@@ -54,6 +54,13 @@ g_pointer_pos_y_prev = 0
 g_is_pointer_pressed = false
 g_is_mouse_mode = false
 
+g_is_ruler = false
+g_is_ruler_set = false
+g_ruler_beg_x = 0
+g_ruler_beg_y = 0
+g_ruler_end_x = 0
+g_ruler_end_y = 0
+
 g_is_dismiss_pressed = false
 g_animation_time = 0
 g_dismiss_counter = 0
@@ -117,6 +124,7 @@ function update(screen_w, screen_h)
 
     update_add_ui_interaction_special(update_get_loc(e_loc.interaction_pan), e_ui_interaction_special.map_pan)
     update_add_ui_interaction_special(update_get_loc(e_loc.interaction_zoom), e_ui_interaction_special.map_zoom)
+	update_add_ui_interaction("map tool", e_game_input.interact_a)
 
     if g_is_map_pos_initialised == false then
         g_is_map_pos_initialised = true
@@ -225,39 +233,98 @@ function update(screen_w, screen_h)
             update_map_dismiss_notification()
         end
     else
+		--local world_x, world_y = get_world_from_holomap(g_pointer_pos_x, g_pointer_pos_y, screen_w, screen_h)
+		--local cal_x, cal_y = get_holomap_from_world(world_x, world_y, screen_w, screen_h)
+		--update_ui_image( cal_x - 3, cal_y - 3, atlas_icons.map_icon_waypoint, color_white, 0)
+		
 		if g_map_size < 15000 then
 			local island_count = update_get_tile_count()
 			for i = 0, island_count - 1, 1 do 
 				local island = update_get_tile_by_index(i)
 
 				if island ~= nil then
-						
-					--if island:get() then
-						local island_color = color_friendly
-						--local island_color = get_island_team_color(island:get_team_control())
-						local island_position = island:get_position_xz()
+					local island_color = update_get_team_color(island:get_team_control())
+					local island_pos = island:get_position_xz()
+					local island_size = island:get_size();
 
-						local screen_pos_x, screen_pos_y = get_screen_from_world(island_position:x(), island_position:y() + 3000.0, g_map_x, g_map_z, g_map_size, screen_w, screen_h)
+					local screen_pos_x, screen_pos_y = get_holomap_from_world(island_pos:x(), island_pos:y() + (island_size:y() / 2), screen_w, screen_h)
 
-						update_ui_text(screen_pos_x - 64, screen_pos_y - 10, island:get_name(), 128, 1, island_color, 0)
-						
-						local category_data = g_item_categories[island:get_facility_category()]
-						
-						update_ui_image(screen_pos_x - 4, screen_pos_y, category_data.icon, island_color, 0)
-						
-						if island:get_team_control() ~= update_get_screen_team_id() then
-							local difficulty_level = island:get_difficulty_level()
-							local icon_w = 6
-							local icon_spacing = 2
-							local total_w = icon_w * difficulty_level + icon_spacing * (difficulty_level - 1)
+					update_ui_text(screen_pos_x - 64, screen_pos_y - 10, island:get_name(), 128, 1, island_color, 0)
+					
+					local category_data = g_item_categories[island:get_facility_category()]
+					
+					update_ui_image(screen_pos_x - 4, screen_pos_y, category_data.icon, island_color, 0)
+					
+					if island:get_team_control() ~= update_get_screen_team_id() then
+						local difficulty_level = island:get_difficulty_level()
+						local icon_w = 6
+						local icon_spacing = 2
+						local total_w = icon_w * difficulty_level + icon_spacing * (difficulty_level - 1)
 
-							for i = 0, difficulty_level - 1 do
-								update_ui_image(screen_pos_x - total_w / 2 + (icon_w + icon_spacing) * i, screen_pos_y + 9, atlas_icons.column_difficulty, island_color, 0)
-							end
+						for i = 0, difficulty_level - 1 do
+							update_ui_image(screen_pos_x - total_w / 2 + (icon_w + icon_spacing) * i, screen_pos_y + 9, atlas_icons.column_difficulty, island_color, 0)
 						end
-				
-					--end
+					end
 				end
+			end
+		end
+		
+		if g_is_ruler then
+			local world_x, world_y = get_world_from_holomap(g_pointer_pos_x, g_pointer_pos_y, screen_w, screen_h)
+		
+			if ( g_pointer_pos_x > 0 ) then
+				g_ruler_end_x = world_x
+			end
+			if ( g_pointer_pos_y > 0 ) then
+				g_ruler_end_y = world_y
+			end
+			
+			if not g_is_ruler_set and g_pointer_pos_x > 0 and g_pointer_pos_y > 0 then
+				g_ruler_beg_x = g_ruler_end_x
+				g_ruler_beg_y = g_ruler_end_y
+				
+				g_is_ruler_set = true
+			end
+		
+			if g_is_ruler_set then
+				local cy = screen_h - 45
+				local cx = 15
+				
+				local icon_col = color_grey_mid
+				local text_col = color_grey_dark
+				
+				local screen_beg_x, screen_beg_y = get_holomap_from_world(g_ruler_beg_x, g_ruler_beg_y, screen_w, screen_h)
+				local screen_end_x, screen_end_y = get_holomap_from_world(g_ruler_end_x, g_ruler_end_y, screen_w, screen_h)
+				
+				update_ui_line(screen_beg_x, screen_beg_y, screen_end_x, screen_end_y, color_grey_dark)
+				
+				update_ui_text(cx, cy, "X", 100, 0, icon_col, 0)
+				update_ui_text(cx + 15, cy, string.format("%.0f", g_ruler_end_x), 100, 0, text_col, 0)
+				cy = cy + 10
+				
+				update_ui_text(cx, cy, "Y", 100, 0, icon_col, 0)
+				update_ui_text(cx + 15, cy, string.format("%.0f", g_ruler_end_y), 100, 0, text_col, 0)
+				cy = cy + 10
+				
+				local dist = vec2_dist(vec2(g_ruler_beg_x, g_ruler_beg_y), vec2(g_ruler_end_x, g_ruler_end_y))
+
+				if dist < 10000 then
+					update_ui_image(cx, cy, atlas_icons.column_distance, icon_col, 0)
+					update_ui_text(cx + 15, cy, string.format("%.0f ", dist) .. update_get_loc(e_loc.acronym_meters), 100, 0, text_col, 0)
+				else
+					update_ui_image(cx, cy, atlas_icons.column_distance, icon_col, 0)
+					update_ui_text(cx + 15, cy, string.format("%.2f ", dist / 1000) .. update_get_loc(e_loc.acronym_kilometers), 100, 0, text_col, 0)
+				end
+
+				cy = cy + 10
+
+				local bearing = 90 - math.atan(g_ruler_end_y - g_ruler_beg_y, g_ruler_end_x - g_ruler_beg_x) / math.pi * 180
+
+				if bearing < 0 then bearing = bearing + 360 end
+
+				update_ui_image(cx, cy, atlas_icons.column_angle, icon_col, 0)
+				update_ui_text(cx + 15, cy, string.format("%.0f deg", bearing), 100, 0, text_col, 0)
+				cy = cy + 10
 			end
 		end
 		
@@ -272,12 +339,17 @@ end
 function input_event(event, action)
     if event == e_input.action_a then
         g_is_dismiss_pressed = action == e_input_action.press
+		g_is_ruler = action == e_input_action.press
     elseif event == e_input.pointer_1 then
         g_is_pointer_pressed = action == e_input_action.press
     elseif event == e_input.back then
-        g_is_pointer_pressed = false
+        g_is_ruler = false
         update_set_screen_state_exit()
     end
+	
+	if not g_is_ruler then
+		g_is_ruler_set = false
+	end
 end
 
 function input_axis(x, y, z, w)
@@ -531,4 +603,37 @@ function transition_to_map_pos(x, z, size)
     g_next_pos_x = g_map_x
     g_next_pos_y = g_map_z
     g_next_size = g_map_size
+end
+
+function get_holomap_from_world(world_x, world_y, screen_w, screen_h)
+    local view_w = g_map_size * 1.64
+    local view_h = g_map_size
+    
+    local view_x = (world_x - g_map_x) / view_w
+    local view_y = (g_map_z - world_y) / view_h
+
+    local screen_x = math.floor(((view_x + 0.5) * screen_w) + 0.5)
+    local screen_y = math.floor(((view_y + 0.5) * screen_h) + 0.5)
+
+    return screen_x, screen_y
+end
+
+function get_world_from_holomap(screen_x, screen_y, screen_w, screen_h)
+	local view_w = g_map_size * 1.64
+    local view_h = g_map_size
+
+	-- Why the fuck is this needed?
+	local sdv_x = (screen_x * 2 - screen_w) / screen_w
+	local sdv_y = (screen_y * 2 - screen_h) / screen_h
+
+	screen_x = screen_x + sdv_x * 10
+	screen_y = screen_y + sdv_y * 8
+
+    local view_x = (screen_x / screen_w) - 0.5
+    local view_y = (screen_y / screen_h) - 0.5
+
+    local world_x = g_map_x + (view_x * view_w)
+    local world_y = g_map_z - (view_y * view_h)
+
+    return world_x, world_y
 end
