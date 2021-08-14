@@ -237,7 +237,7 @@ function update(screen_w, screen_h)
 		--local cal_x, cal_y = get_holomap_from_world(world_x, world_y, screen_w, screen_h)
 		--update_ui_image( cal_x - 3, cal_y - 3, atlas_icons.map_icon_waypoint, color_white, 0)
 		
-		if g_map_size < 15000 then
+		if g_map_size < 70000 then
 			local island_count = update_get_tile_count()
 			for i = 0, island_count - 1, 1 do 
 				local island = update_get_tile_by_index(i)
@@ -245,9 +245,17 @@ function update(screen_w, screen_h)
 				if island ~= nil then
 					local island_color = update_get_team_color(island:get_team_control())
 					local island_pos = island:get_position_xz()
-					local island_size = island:get_size();
+					local island_size = island:get_size()
 
-					local screen_pos_x, screen_pos_y = get_holomap_from_world(island_pos:x(), island_pos:y() + (island_size:y() / 2), screen_w, screen_h)
+					local screen_pos_x = 0
+					local screen_pos_y = 0
+					
+					if g_map_size < 15000 then
+						screen_pos_x, screen_pos_y = get_holomap_from_world(island_pos:x(), island_pos:y() + (island_size:y() / 2), screen_w, screen_h)
+					else
+						screen_pos_x, screen_pos_y = get_holomap_from_world(island_pos:x(), island_pos:y(), screen_w, screen_h)
+						screen_pos_y = screen_pos_y - 27
+					end
 
 					update_ui_text(screen_pos_x - 64, screen_pos_y - 10, island:get_name(), 128, 1, island_color, 0)
 					
