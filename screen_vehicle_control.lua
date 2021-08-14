@@ -18,6 +18,7 @@ g_is_drag_pan_map = false
 g_viewing_vehicle_id = 0
 g_is_vehicle_team_colors = false
 g_is_island_team_colors = true
+g_is_pip_enable = true
 
 g_blend_tick = 0
 g_prev_pos_x = 0
@@ -449,6 +450,7 @@ function render_selection_map(screen_w, screen_h)
 
         g_is_vehicle_team_colors = ui:checkbox(update_get_loc(e_loc.upp_vehicle_team_colors), g_is_vehicle_team_colors)
         g_is_island_team_colors = ui:checkbox(update_get_loc(e_loc.upp_island_team_colors), g_is_island_team_colors)
+		g_is_pip_enable = ui:checkbox("ENABLE CCTV FEED", g_is_pip_enable)
 
         ui:spacer(5)
 
@@ -1478,40 +1480,41 @@ function update(screen_w, screen_h)
         local viewing_vehicle = update_get_map_vehicle_by_id(g_viewing_vehicle_id)
 
         if viewing_vehicle:get() then
-			local is_render_vehicle = viewing_vehicle:get_definition_index() ~= e_game_object_type.chassis_sea_barge
-		
-			update_set_screen_background_type(9)
-			update_set_screen_camera_attach_vehicle(g_viewing_vehicle_id, 0)
+			if update_get_is_focus_local() or not g_is_pip_enable then
+				g_camera_pos_x = viewing_vehicle:get_position_xz():x()
+				g_camera_pos_y = viewing_vehicle:get_position_xz():y()
 
-			update_set_screen_camera_cull_distance(5000)
-			update_set_screen_camera_lod_level(0)
-			update_set_screen_camera_is_render_map_vehicles(true)
-			update_set_screen_camera_render_attached_vehicle(is_render_vehicle)
-			update_set_screen_camera_is_render_ocean(true)
---[[
-            g_camera_pos_x = viewing_vehicle:get_position_xz():x()
-            g_camera_pos_y = viewing_vehicle:get_position_xz():y()
+				local connecting_text = update_get_loc(e_loc.connecting)
+				local dot_count = math.floor(g_animation_time / (30 / 4)) % 4
 
-            local connecting_text = update_get_loc(e_loc.connecting)
-            local dot_count = math.floor(g_animation_time / (30 / 4)) % 4
+				for i = 1, dot_count, 1 do
+					connecting_text = connecting_text .. "."
+				end
 
-            for i = 1, dot_count, 1 do
-                connecting_text = connecting_text .. "."
-            end
+				local cx = screen_w / 2 - 40
+				local cy = screen_h / 2 - 5
+				update_ui_text(cx, cy, connecting_text, 100, 0, color_white, 0)
 
-            local cx = screen_w / 2 - 40
-            local cy = screen_h / 2 - 5
-            update_ui_text(cx, cy, connecting_text, 100, 0, color_white, 0)
+				local anim = g_animation_time / 30.0
+				local bound_left = cx
+				local bound_right = bound_left + 75
+				local left = bound_left + (bound_right - bound_left) * math.abs(math.sin((anim - math.pi / 2) % (math.pi / 2))) ^ 4
+				local right = left + (bound_right - left) * math.abs(math.sin(anim % (math.pi / 2)))
 
-            local anim = g_animation_time / 30.0
-            local bound_left = cx
-            local bound_right = bound_left + 75
-            local left = bound_left + (bound_right - bound_left) * math.abs(math.sin((anim - math.pi / 2) % (math.pi / 2))) ^ 4
-            local right = left + (bound_right - left) * math.abs(math.sin(anim % (math.pi / 2)))
+				update_ui_rectangle(left, cy + 12, right - left, 1, color_status_ok)
+				update_ui_rectangle(bound_right + bound_left - right, cy - 3, right - left, 1, color_status_ok)
+			else
+				local is_render_vehicle = viewing_vehicle:get_definition_index() ~= e_game_object_type.chassis_sea_barge
+			
+				update_set_screen_background_type(9)
+				update_set_screen_camera_attach_vehicle(g_viewing_vehicle_id, 0)
 
-            update_ui_rectangle(left, cy + 12, right - left, 1, color_status_ok)
-            update_ui_rectangle(bound_right + bound_left - right, cy - 3, right - left, 1, color_status_ok)
---]]
+				update_set_screen_camera_cull_distance(5000)
+				update_set_screen_camera_lod_level(0)
+				update_set_screen_camera_is_render_map_vehicles(true)
+				update_set_screen_camera_render_attached_vehicle(is_render_vehicle)
+				update_set_screen_camera_is_render_ocean(true)
+			end
         else
             local cx = screen_w / 2 - 50
             local cy = screen_h / 2
