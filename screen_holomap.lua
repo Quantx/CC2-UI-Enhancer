@@ -471,12 +471,20 @@ function update(screen_w, screen_h)
 			
 			cy = cy - 10
 			
+			local map_pos_x = g_map_x + g_map_x_offset
+			local map_pos_y = g_map_z + g_map_z_offset
+			
+			if update_get_is_focus_local() then
+				map_pos_x = world_x
+				map_pos_y = world_y
+			end
+			
 			update_ui_text(cx, cy, "Y", 100, 0, icon_col, 0)
-			update_ui_text(cx + 15, cy, string.format("%.0f", world_y), 100, 0, text_col, 0)
+			update_ui_text(cx + 15, cy, string.format("%.0f", map_pos_x), 100, 0, text_col, 0)
 			cy = cy - 10
 			
 			update_ui_text(cx, cy, "X", 100, 0, icon_col, 0)
-			update_ui_text(cx + 15, cy, string.format("%.0f", world_x), 100, 0, text_col, 0)
+			update_ui_text(cx + 15, cy, string.format("%.0f", map_pos_y), 100, 0, text_col, 0)
 			cy = cy - 10
 		end
 		
