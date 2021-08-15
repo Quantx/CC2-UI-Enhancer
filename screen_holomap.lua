@@ -53,6 +53,7 @@ g_pointer_pos_x_prev = 0
 g_pointer_pos_y_prev = 0
 g_is_pointer_pressed = false
 g_is_mouse_mode = false
+g_pointer_inbounds = false
 
 g_is_ruler = false
 g_is_ruler_set = false
@@ -60,6 +61,10 @@ g_ruler_beg_x = 0
 g_ruler_beg_y = 0
 g_ruler_end_x = 0
 g_ruler_end_y = 0
+
+g_highlighted_vehicle_id = 0
+
+g_color_waypoint = color8(0, 255, 255, 8)
 
 g_is_dismiss_pressed = false
 g_animation_time = 0
@@ -91,6 +96,7 @@ function update(screen_w, screen_h)
     g_animation_time = g_animation_time + 1
 
     local screen_vehicle = update_get_screen_vehicle()
+	local world_x, world_y = get_world_from_holomap(g_pointer_pos_x, g_pointer_pos_y, screen_w, screen_h)
 
     if g_focus_mode ~= 0 then
         if g_focus_mode == 1 then
@@ -125,7 +131,10 @@ function update(screen_w, screen_h)
     update_add_ui_interaction_special(update_get_loc(e_loc.interaction_pan), e_ui_interaction_special.map_pan)
     update_add_ui_interaction_special(update_get_loc(e_loc.interaction_zoom), e_ui_interaction_special.map_zoom)
 	update_add_ui_interaction("map tool", e_game_input.interact_a)
-
+	if screen_vehicle:get() and screen_vehicle:get_dock_state() ~= e_vehicle_dock_state.docked then
+		update_add_ui_interaction("set carrier waypoint", e_game_input.interact_b)
+	end
+	
     if g_is_map_pos_initialised == false then
         g_is_map_pos_initialised = true
         focus_world()
@@ -233,11 +242,9 @@ function update(screen_w, screen_h)
             update_map_dismiss_notification()
         end
     else
-		--local world_x, world_y = get_world_from_holomap(g_pointer_pos_x, g_pointer_pos_y, screen_w, screen_h)
-		--local cal_x, cal_y = get_holomap_from_world(world_x, world_y, screen_w, screen_h)
-		--update_ui_image( cal_x - 3, cal_y - 3, atlas_icons.map_icon_waypoint, color_white, 0)
-		
-		if g_map_size < 70000 then
+		local map_zoom = g_map_size + g_map_size_offset
+
+		if map_zoom < 70000 then
 			local island_count = update_get_tile_count()
 			for i = 0, island_count - 1, 1 do 
 				local island = update_get_tile_by_index(i)
@@ -250,7 +257,7 @@ function update(screen_w, screen_h)
 					local screen_pos_x = 0
 					local screen_pos_y = 0
 					
-					if g_map_size < 15000 then
+					if map_zoom < 15000 then
 						screen_pos_x, screen_pos_y = get_holomap_from_world(island_pos:x(), island_pos:y() + (island_size:y() / 2), screen_w, screen_h)
 					else
 						screen_pos_x, screen_pos_y = get_holomap_from_world(island_pos:x(), island_pos:y(), screen_w, screen_h)
@@ -276,18 +283,120 @@ function update(screen_w, screen_h)
 				end
 			end
 		end
+
+		if screen_vehicle:get() then
+			local waypoint_count = screen_vehicle:get_waypoint_count()
+			
+			local screen_vehicle_pos = screen_vehicle:get_position_xz()
+			local waypoint_prev_x, waypoint_prev_y = get_holomap_from_world(screen_vehicle_pos:x(), screen_vehicle_pos:y(), screen_w, screen_h)
+			
+			local waypoint_remove = -1
+			
+			for i = 0, waypoint_count - 1, 1 do
+				local waypoint = screen_vehicle:get_waypoint(i)
+				local waypoint_pos = waypoint:get_position_xz()
+				
+				local waypoint_distance = vec2_dist( screen_vehicle_pos, waypoint_pos )
+				
+				if waypoint_distance < 500 then
+					waypoint_remove = i
+				end
+				
+				local waypoint_screen_pos_x, waypoint_screen_pos_y = get_holomap_from_world(waypoint_pos:x(), waypoint_pos:y(), screen_w, screen_h)
+				
+				update_ui_line(waypoint_prev_x, waypoint_prev_y, waypoint_screen_pos_x, waypoint_screen_pos_y, g_color_waypoint)
+				update_ui_image(waypoint_screen_pos_x - 3, waypoint_screen_pos_y - 3, atlas_icons.map_icon_waypoint, g_color_waypoint, 0)
+				
+				waypoint_prev_x = waypoint_screen_pos_x
+				waypoint_prev_y = waypoint_screen_pos_y
+			end
+			
+			if waypoint_remove > -1 then
+				local waypoint_path = {}
+				
+				for i = waypoint_remove + 1, waypoint_count - 1, 1 do
+					local waypoint = screen_vehicle:get_waypoint(i)
+					
+					waypoint_path[#waypoint_path + 1] = waypoint:get_position_xz()
+				end
+				
+				screen_vehicle:clear_waypoints()
+				
+				for i = 1, #waypoint_path, 1 do
+					screen_vehicle:add_waypoint(waypoint_path[i]:x(), waypoint_path[i]:y())
+				end
+			end
+		end
+
+		g_highlighted_vehicle_id = 0
+		if not g_is_pointer_pressed then
+			local highlighted_distance_best = 4 * math.max( 1, 2000 / map_zoom )
+			
+			local vehicle_count = update_get_map_vehicle_count()
+			for i = 0, vehicle_count - 1, 1 do 
+				local vehicle = update_get_map_vehicle_by_index(i)
+
+				if vehicle:get() then
+					local vehicle_definition_index = vehicle:get_definition_index()
+
+					if vehicle_definition_index ~= e_game_object_type.chassis_spaceship and vehicle_definition_index ~= e_game_object_type.drydock and vehicle_definition_index ~= e_game_object_type.carrier then
+						local vehicle_team = vehicle:get_team()
+						local vehicle_attached_parent_id = vehicle:get_attached_parent_id()
+
+						if vehicle_attached_parent_id == 0 and vehicle:get_is_visible() and vehicle:get_is_observation_revealed() then
+							local vehicle_pos_xz = vehicle:get_position_xz()
+
+							local screen_pos_x, screen_pos_y = get_holomap_from_world(vehicle_pos_xz:x(), vehicle_pos_xz:y(), screen_w, screen_h)
+
+							local vehicle_distance_to_cursor = vec2_dist( vec2( screen_pos_x, screen_pos_y ), vec2( g_pointer_pos_x, g_pointer_pos_y ) )
+
+							if vehicle_distance_to_cursor < highlighted_distance_best then
+								g_highlighted_vehicle_id = vehicle:get_id()
+--									g_highlighted_waypoint_id = 0
+								highlighted_distance_best = vehicle_distance_to_cursor
+							end
+						end
+--[[
+						if vehicle_team == update_get_screen_team_id() then
+							local waypoint_count = vehicle:get_waypoint_count()
+							
+							if g_drag_vehicle_id == 0 or g_drag_vehicle_id == vehicle:get_id() then
+								for j = 0, waypoint_count - 1, 1 do
+									local waypoint = vehicle:get_waypoint(j)
+									local waypoint_type = waypoint:get_type()
+
+									if waypoint_type == e_waypoint_type.move or waypoint_type == e_waypoint_type.deploy then
+										local waypoint_pos = waypoint:get_position_xz(j)
+										local waypoint_screen_pos_x, waypoint_screen_pos_y = get_screen_from_world(waypoint_pos:x(), waypoint_pos:y(), g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
+										local waypoint_distance_to_cursor = math.abs(waypoint_screen_pos_x - g_pointer_pos_x) + math.abs(waypoint_screen_pos_y - g_pointer_pos_y)
+
+										if waypoint_distance_to_cursor < highlighted_distance_best then
+											g_highlighted_vehicle_id = vehicle:get_id()
+											g_highlighted_waypoint_id = waypoint:get_id()
+											highlighted_distance_best = waypoint_distance_to_cursor
+										end
+									end
+								end
+							end
+						end
+--]]
+					end
+				end
+			end
+		end
+		
+		if g_pointer_inbounds then -- and not update_get_is_focus_local() then
+			local cursor_x, cursor_y = get_holomap_from_world(world_x, world_y, screen_w, screen_h)
+			update_ui_text(cursor_x - 3, cursor_y - 3, "x", 6, 0, color_white, 0)
+		end
 		
 		if g_is_ruler then
-			local world_x, world_y = get_world_from_holomap(g_pointer_pos_x, g_pointer_pos_y, screen_w, screen_h)
-		
-			if ( g_pointer_pos_x > 0 ) then
+			if g_pointer_inbounds then
 				g_ruler_end_x = world_x
-			end
-			if ( g_pointer_pos_y > 0 ) then
 				g_ruler_end_y = world_y
 			end
 			
-			if not g_is_ruler_set and g_pointer_pos_x > 0 and g_pointer_pos_y > 0 then
+			if not g_is_ruler_set and g_pointer_inbounds then
 				g_ruler_beg_x = g_ruler_end_x
 				g_ruler_beg_y = g_ruler_end_y
 				
@@ -334,6 +443,42 @@ function update(screen_w, screen_h)
 				update_ui_text(cx + 15, cy, string.format("%.0f deg", bearing), 100, 0, text_col, 0)
 				cy = cy + 10
 			end
+		else
+			if g_highlighted_vehicle_id > 0 then
+				local highlighted_vehicle = update_get_map_vehicle_by_id(g_highlighted_vehicle_id)
+
+				if highlighted_vehicle:get() then
+					if get_vehicle_has_robot_dogs(highlighted_vehicle) then
+						render_tooltip(10, 10, screen_w - 20, screen_h - 20, g_pointer_pos_x, g_pointer_pos_y, 128, 31, 10, function(w, h) render_vehicle_tooltip(w, h, highlighted_vehicle) end)
+					else
+						render_tooltip(10, 10, screen_w - 20, screen_h - 20, g_pointer_pos_x, g_pointer_pos_y, 128, 21, 10, function(w, h) render_vehicle_tooltip(w, h, highlighted_vehicle) end)
+					end
+				end
+			end
+		
+			local cy = screen_h - 15
+			local cx = 15
+			
+			local icon_col = color_grey_mid
+			local text_col = color_grey_dark
+			
+			if map_zoom < 10000 then
+				update_ui_image(cx, cy, atlas_icons.column_distance, icon_col, 0)
+				update_ui_text(cx + 15, cy, string.format("%.0f ", map_zoom) .. update_get_loc(e_loc.acronym_meters), 100, 0, text_col, 0)
+			else
+				update_ui_image(cx, cy, atlas_icons.column_distance, icon_col, 0)
+				update_ui_text(cx + 15, cy, string.format("%.2f ", map_zoom / 1000) .. update_get_loc(e_loc.acronym_kilometers), 100, 0, text_col, 0)
+			end
+			
+			cy = cy - 10
+			
+			update_ui_text(cx, cy, "Y", 100, 0, icon_col, 0)
+			update_ui_text(cx + 15, cy, string.format("%.0f", world_y), 100, 0, text_col, 0)
+			cy = cy - 10
+			
+			update_ui_text(cx, cy, "X", 100, 0, icon_col, 0)
+			update_ui_text(cx + 15, cy, string.format("%.0f", world_x), 100, 0, text_col, 0)
+			cy = cy - 10
 		end
 		
         g_dismiss_counter = 0
@@ -345,9 +490,26 @@ function update(screen_w, screen_h)
 end
 
 function input_event(event, action)
+	local screen_vehicle = update_get_screen_vehicle()
+	local world_x, world_y = get_world_from_holomap(g_pointer_pos_x, g_pointer_pos_y, 512, 256)
+
     if event == e_input.action_a then
         g_is_dismiss_pressed = action == e_input_action.press
 		g_is_ruler = action == e_input_action.press
+	elseif event == e_input.action_b then
+		if action == e_input_action.press and g_pointer_inbounds and screen_vehicle:get() and screen_vehicle:get_dock_state() ~= e_vehicle_dock_state.docked then
+			local screen_vehicle_pos = screen_vehicle:get_position_xz()
+			local carrier_pos_x, carrier_pos_y = get_holomap_from_world(screen_vehicle_pos:x(), screen_vehicle_pos:y(), 512, 256)
+		
+			local carrier_screen_size = 16 * math.max( 1, 2000 / (g_map_size + g_map_size_offset) )
+			local carrier_screen_dist = vec2_dist( vec2(carrier_pos_x, carrier_pos_y), vec2(g_pointer_pos_x, g_pointer_pos_y ) )
+			
+			if carrier_screen_dist <= carrier_screen_size then
+				screen_vehicle:clear_waypoints()
+			else
+				screen_vehicle:add_waypoint(world_x, world_y)
+			end
+		end
     elseif event == e_input.pointer_1 then
         g_is_pointer_pressed = action == e_input_action.press
     elseif event == e_input.back then
@@ -371,8 +533,11 @@ end
 function input_pointer(is_hovered, x, y)
     g_is_pointer_hovered = is_hovered
     
+	g_pointer_inbounds = (x > 0 and y > 0)
+	
     g_pointer_pos_x = x
     g_pointer_pos_y = y
+	
 end
 
 function input_scroll(dy)
@@ -614,11 +779,15 @@ function transition_to_map_pos(x, z, size)
 end
 
 function get_holomap_from_world(world_x, world_y, screen_w, screen_h)
-    local view_w = g_map_size * 1.64
-    local view_h = g_map_size
+	local map_x = g_map_x + g_map_x_offset
+	local map_z = g_map_z + g_map_z_offset
+	local map_size = g_map_size + g_map_size_offset
+
+    local view_w = map_size * 1.64
+    local view_h = map_size
     
-    local view_x = (world_x - g_map_x) / view_w
-    local view_y = (g_map_z - world_y) / view_h
+    local view_x = (world_x - map_x) / view_w
+    local view_y = (map_z - world_y) / view_h
 
     local screen_x = math.floor(((view_x + 0.5) * screen_w) + 0.5)
     local screen_y = math.floor(((view_y + 0.5) * screen_h) + 0.5)
@@ -627,21 +796,171 @@ function get_holomap_from_world(world_x, world_y, screen_w, screen_h)
 end
 
 function get_world_from_holomap(screen_x, screen_y, screen_w, screen_h)
-	local view_w = g_map_size * 1.64
-    local view_h = g_map_size
+	local map_x = g_map_x + g_map_x_offset
+	local map_z = g_map_z + g_map_z_offset
+	local map_size = g_map_size + g_map_size_offset
 
-	-- Why the fuck is this needed?
-	local sdv_x = (screen_x * 2 - screen_w) / screen_w
-	local sdv_y = (screen_y * 2 - screen_h) / screen_h
-
-	screen_x = screen_x + sdv_x * 10
-	screen_y = screen_y + sdv_y * 8
+	local view_w = map_size * 1.64
+    local view_h = map_size
 
     local view_x = (screen_x / screen_w) - 0.5
     local view_y = (screen_y / screen_h) - 0.5
 
-    local world_x = g_map_x + (view_x * view_w)
-    local world_y = g_map_z - (view_y * view_h)
+    local world_x = map_x + (view_x * view_w)
+    local world_y = map_z - (view_y * view_h)
 
     return world_x, world_y
+end
+
+function get_is_vehicle_enterable(vehicle)
+    local screen_vehicle = update_get_screen_vehicle()
+                        
+    if screen_vehicle:get() and vehicle:get() then
+        local team = vehicle:get_team()
+        local def = vehicle:get_definition_index()
+
+        if team == update_get_screen_team_id() and def ~= e_game_object_type.chassis_carrier and def ~= e_game_object_type.chassis_land_robot_dog then
+            return true
+        end
+    end
+
+    return false
+end
+
+function get_vehicle_has_robot_dogs(vehicle)
+    if get_is_vehicle_land(vehicle:get_definition_index()) then
+        local attachment_count = vehicle:get_attachment_count()
+
+        for i = 0, attachment_count - 1 do
+            local attachment = vehicle:get_attachment(i)
+
+            if attachment:get() then
+                if attachment:get_definition_index() == e_game_object_type.attachment_turret_robot_dog_capsule then
+                    return true, attachment
+                end
+            end
+        end
+    end
+
+    return false, nil
+end
+
+function render_vehicle_tooltip(w, h, vehicle)
+    local screen_vehicle = update_get_screen_vehicle()
+    local vehicle_pos_xz = vehicle:get_position_xz()
+    local vehicle_definition_index = vehicle:get_definition_index()
+    local vehicle_definition_name, vehicle_definition_region = get_chassis_data_by_definition_index(vehicle_definition_index)
+
+    local bar_h = 17
+    local repair_factor = vehicle:get_repair_factor()
+    local fuel_factor = vehicle:get_fuel_factor()
+    local ammo_factor = vehicle:get_ammo_factor()
+    local repair_bar = math.floor(repair_factor * bar_h)
+    local fuel_bar = math.floor(fuel_factor * bar_h)
+    local ammo_bar = math.floor(ammo_factor * bar_h)
+
+    local cx = 2
+    local cy = 2
+
+    local team = vehicle:get_team()
+    local color_inactive = color8(8, 8, 8, 255)
+
+    if vehicle:get_is_observation_type_revealed() then
+        update_ui_rectangle(cx + 0, cy, 1, bar_h, color8(16, 16, 16, 255))
+        update_ui_rectangle(cx + 0, cy + bar_h - repair_bar, 1, repair_bar, color8(47, 116, 255, 255))
+        update_ui_rectangle(cx + 2, cy, 1, bar_h, color8(16, 16, 16, 255))
+        update_ui_rectangle(cx + 2, cy + bar_h - fuel_bar, 1, fuel_bar, color8(119, 85, 161, 255))
+        update_ui_rectangle(cx + 4, cy, 1, bar_h, color8(16, 16, 16, 255))
+        update_ui_rectangle(cx + 4, cy + bar_h - ammo_bar, 1, ammo_bar, color8(201, 171, 68, 255))
+    else
+        update_ui_rectangle(cx + 0, cy, 1, bar_h, color_inactive)
+        update_ui_rectangle(cx + 2, cy, 1, bar_h, color_inactive)
+        update_ui_rectangle(cx + 4, cy, 1, bar_h, color_inactive)
+    end
+
+    cx = cx + 6
+
+    if vehicle:get_is_observation_type_revealed() then
+        update_ui_image(cx, 2, vehicle_definition_region, color8(255, 255, 255, 255), 0)
+        cx = cx + 18
+
+		local display_name = vehicle_definition_name
+
+		if vehicle_definition_index == e_game_object_type.chassis_sea_barge then
+			display_name = display_name .. " " .. tostring(vehicle:get_id())
+		end
+
+        update_ui_text(cx, 6, display_name, 124, 0, color8(255, 255, 255, 255), 0)
+        cx = cx + update_ui_get_text_size(display_name, 10000, 0) + 2
+    else
+        update_ui_image(cx, 2, atlas_icons.icon_chassis_16_wheel_small, color_inactive, 0)
+        cx = cx + 18
+
+        local display_name = "***"
+        update_ui_text(cx, 6, display_name, 124, 0, color_inactive, 0)
+        cx = cx + update_ui_get_text_size(display_name, 10000, 0) + 2
+    end
+
+    if vehicle_definition_index ~= e_game_object_type.chassis_carrier then
+        if vehicle:get_is_observation_weapon_revealed() then
+            -- render primary attachment icon
+
+            for i = 0, vehicle:get_attachment_count() - 1 do
+                local attachment_type = vehicle:get_attachment_type(i)
+                if attachment_type == e_game_object_attachment_type.plate_large or attachment_type == e_game_object_attachment_type.plate_huge then
+                    local attachment = vehicle:get_attachment(i)
+
+                    if attachment:get() then
+                        local icon, icon_16 = get_attachment_icons(attachment:get_definition_index())
+
+                        if icon_16 ~= nil then
+                            update_ui_image(cx, cy, icon_16, color_white, 0)
+                            break
+                        end
+                    end
+                end
+            end
+        else
+            update_ui_image(cx, cy, atlas_icons.icon_attachment_16_unknown, color_inactive, 0)
+        end
+    end
+
+    if vehicle:get_is_observation_fully_revealed() == false then
+        local data_factor = vehicle:get_observation_factor()
+        update_ui_text(0, 6, string.format("%.0f%%", data_factor * 100), w - 2, 2, color_inactive, 0)
+    end
+
+    if team == update_get_screen_team_id() then
+        cx = w - 12
+
+        if get_is_vehicle_air(vehicle_definition_index) then
+            local vehicle_attachment_count = vehicle:get_vehicle_attachment_count()
+
+            if vehicle_attachment_count > 0 then
+                local is_vehicle_attached = false
+
+                for i = 0, vehicle_attachment_count do
+                    if vehicle:get_attached_vehicle_id(i) ~= 0 then
+                        is_vehicle_attached = true
+                        break
+                    end
+                end
+
+                if is_vehicle_attached then
+                    update_ui_image(cx, 7, atlas_icons.icon_attack_type_airlift, color_status_ok, 0)
+                    cx = cx - 8
+                end
+            end
+        end
+    end
+
+    local has_robot_dogs, attachment_robot_dogs = get_vehicle_has_robot_dogs(vehicle)
+    if attachment_robot_dogs ~= nil then
+        cx = 12
+        cy = h - 2 - 10
+        local ammo_count = attachment_robot_dogs:get_ammo_remaining()
+        local virus_text = ammo_count .. " x " .. update_get_loc(e_loc.upp_control_bots)
+
+        update_ui_text(cx, cy, virus_text, w - 4, 0, iff(ammo_count > 0, color_status_ok, color_status_bad), 0)
+    end
 end

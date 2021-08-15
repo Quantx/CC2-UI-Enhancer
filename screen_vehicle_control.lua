@@ -16,7 +16,7 @@ g_is_selection_map = false
 g_map_render_mode = 1
 g_is_drag_pan_map = false
 g_viewing_vehicle_id = 0
-g_is_vehicle_team_colors = false
+g_is_vehicle_team_colors = true
 g_is_island_team_colors = true
 g_is_pip_enable = true
 
@@ -868,7 +868,7 @@ function update(screen_w, screen_h)
                         local waypoint_pos_x_prev = screen_pos_x
                         local waypoint_pos_y_prev = screen_pos_y
                         
-                        if vehicle_team == update_get_screen_team_id() and vehicle:get_definition_index() ~= e_game_object_type.chassis_sea_barge then
+                        if vehicle_team == update_get_screen_team_id() and vehicle:get_definition_index() ~= e_game_object_type.chassis_sea_barge and vehicle:get_definition_index() ~= e_game_object_type.chassis_carrier then
                             local waypoint_color = g_color_waypoint
 
                             if g_highlighted_vehicle_id == vehicle:get_id() and g_highlighted_waypoint_id == 0 then
@@ -1075,6 +1075,17 @@ function update(screen_w, screen_h)
                             end
 
                             update_ui_image(screen_pos_x - icon_offset, screen_pos_y - icon_offset, region_vehicle_icon, element_color, 0)
+							
+							if vehicle:get_definition_index() == e_game_object_type.chassis_carrier then
+								update_ui_image(screen_pos_x - 5, screen_pos_y - 5, atlas_icons.map_icon_circle_9, color_white, 0)
+
+								local vehicle_dir = vehicle:get_direction()
+								
+								local screen_icon_x = screen_pos_x - icon_offset
+								local screen_icon_y = screen_pos_y - icon_offset
+								
+								update_ui_line(screen_pos_x, screen_pos_y, screen_pos_x + (vehicle_dir:x() * 20), screen_pos_y + (vehicle_dir:y() * -20), color_white)
+							end
 
                             local damage_indicator_factor = vehicle:get_damage_indicator_factor()
                             local damage_factor = clamp(vehicle:get_hitpoints() / vehicle:get_total_hitpoints(), 0, 1)
@@ -1925,8 +1936,14 @@ function render_vehicle_tooltip(w, h, vehicle)
         update_ui_image(cx, 2, vehicle_definition_region, color8(255, 255, 255, 255), 0)
         cx = cx + 18
 
-        update_ui_text(cx, 6, vehicle_definition_name, 124, 0, color8(255, 255, 255, 255), 0)
-        cx = cx + update_ui_get_text_size(vehicle_definition_name, 10000, 0) + 2
+		local display_name = vehicle_definition_name
+
+		if vehicle_definition_index == e_game_object_type.chassis_sea_barge then
+			display_name = display_name .. " " .. tostring(vehicle:get_id())
+		end
+
+        update_ui_text(cx, 6, display_name, 124, 0, color8(255, 255, 255, 255), 0)
+        cx = cx + update_ui_get_text_size(display_name, 10000, 0) + 2
     else
         update_ui_image(cx, 2, atlas_icons.icon_chassis_16_wheel_small, color_inactive, 0)
         cx = cx + 18
