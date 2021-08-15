@@ -1170,7 +1170,8 @@ function render_startup_sys( screen_w, screen_h )
 		
 		if anim > 120 + #crew * 20 then
 			g_startup_phase_anim = g_animation_time
-			g_startup_phase = g_startup_phase + 1
+			g_startup_phase = holomap_startup_phases.finish -- bypass manual stage
+			--g_startup_phase = g_startup_phase + 1
 		end
 	end
 end
