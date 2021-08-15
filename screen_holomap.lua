@@ -570,9 +570,11 @@ function input_event(event, action)
 			local carrier_screen_size = 16 * math.max( 1, 2000 / (g_map_size + g_map_size_offset) )
 			local carrier_screen_dist = vec2_dist( vec2(carrier_pos_x, carrier_pos_y), vec2(g_pointer_pos_x, g_pointer_pos_y ) )
 			
+			local waypoint_count = screen_vehicle:get_waypoint_count()
+			
 			if carrier_screen_dist <= carrier_screen_size then
 				screen_vehicle:clear_waypoints()
-			else
+			elseif waypoint_count < 20 then
 				screen_vehicle:add_waypoint(world_x, world_y)
 			end
 		end
