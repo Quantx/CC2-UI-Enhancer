@@ -461,12 +461,20 @@ function update(screen_w, screen_h)
 			local icon_col = color_grey_mid
 			local text_col = color_grey_dark
 			
-			if map_zoom < 10000 then
+			local map_scale = 500
+			local map_scale_size = map_zoom
+			
+			while map_scale_size > 2000 and map_scale < 16000 do
+				map_scale_size = map_scale_size / 2
+				map_scale = map_scale * 2
+			end
+			
+			if map_scale < 10000 then
 				update_ui_image(cx, cy, atlas_icons.column_distance, icon_col, 0)
-				update_ui_text(cx + 15, cy, string.format("%.0f ", map_zoom) .. update_get_loc(e_loc.acronym_meters), 100, 0, text_col, 0)
+				update_ui_text(cx + 15, cy, string.format("%.0f ", map_scale) .. update_get_loc(e_loc.acronym_meters), 100, 0, text_col, 0)
 			else
 				update_ui_image(cx, cy, atlas_icons.column_distance, icon_col, 0)
-				update_ui_text(cx + 15, cy, string.format("%.2f ", map_zoom / 1000) .. update_get_loc(e_loc.acronym_kilometers), 100, 0, text_col, 0)
+				update_ui_text(cx + 15, cy, string.format("%.2f ", map_scale / 1000) .. update_get_loc(e_loc.acronym_kilometers), 100, 0, text_col, 0)
 			end
 			
 			cy = cy - 10
