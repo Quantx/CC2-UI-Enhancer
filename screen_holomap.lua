@@ -1,4 +1,3 @@
-
 g_colors = {
     backlight_default = color8(0, 2, 10, 255),
     glow_default = color8(64, 204, 255, 255),
@@ -385,7 +384,7 @@ function update(screen_w, screen_h)
 			end
 		end
 		
-		if g_pointer_inbounds then -- and not update_get_is_focus_local() then
+		if g_pointer_inbounds and update_get_is_focus_local() then
 			local cursor_x, cursor_y = get_holomap_from_world(world_x, world_y, screen_w, screen_h)
 			update_ui_text(cursor_x - 3, cursor_y - 3, "x", 6, 0, color_white, 0)
 		end
