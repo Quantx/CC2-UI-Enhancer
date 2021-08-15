@@ -18,6 +18,8 @@ g_map_x_offset = 0
 g_map_z_offset = 0
 g_map_size_offset = 0
 
+g_ui = nil
+
 g_button_mode = 0
 g_is_map_pos_initialised = false
 g_is_render_holomap = true
@@ -54,6 +56,18 @@ g_is_pointer_pressed = false
 g_is_mouse_mode = false
 g_pointer_inbounds = false
 
+g_startup_op_num = 0
+g_startup_phase = 0
+g_startup_phase_anim = 0
+
+holomap_startup_phases = {
+	memchk = 0,
+	bios = 1,
+	sys = 2,
+	manual = 3,
+	finish = 4
+}
+
 g_is_ruler = false
 g_is_ruler_set = false
 g_ruler_beg_x = 0
@@ -85,9 +99,11 @@ function parse()
 end
 
 function begin()
-    g_ui = lib_imgui:create_ui()
     begin_load()
     begin_load_inventory_data()
+	g_ui = lib_imgui:create_ui()
+	
+	g_startup_op_num = math.random(9999999999)
 end
 
 function update(screen_w, screen_h)
@@ -104,6 +120,7 @@ function update(screen_w, screen_h)
             focus_world()
         end
 
+		g_startup_phase = holomap_startup_phases.finish
         g_focus_mode = 0
     end
 
@@ -131,6 +148,9 @@ function update(screen_w, screen_h)
     update_add_ui_interaction_special(update_get_loc(e_loc.interaction_zoom), e_ui_interaction_special.map_zoom)
 	update_add_ui_interaction("map tool", e_game_input.interact_a)
 	if screen_vehicle:get() and screen_vehicle:get_dock_state() ~= e_vehicle_dock_state.docked then
+		if g_startup_phase ~= holomap_startup_phases.finish then focus_world() end
+		g_startup_phase = holomap_startup_phases.finish
+		
 		update_add_ui_interaction("set carrier waypoint", e_game_input.interact_b)
 	end
 	
@@ -161,27 +181,54 @@ function update(screen_w, screen_h)
         end
     end
 
-    update_set_screen_background_type(g_button_mode + 1)
-    update_set_screen_background_is_render_islands(false)
-    update_set_screen_map_position_scale(g_map_x + g_map_x_offset, g_map_z + g_map_z_offset, g_map_size + g_map_size_offset)
-    g_is_render_holomap_tiles = true
-    g_is_render_holomap_vehicles = true
-    g_is_render_holomap_missiles = true
-    g_is_render_holomap_grids = true
-    g_is_render_holomap_backlight = true
-    g_is_render_team_capture = true
-    g_is_override_holomap_island_color = false
-    g_holomap_override_island_color_low = g_colors.island_low_default
-    g_holomap_override_island_color_high = g_colors.island_high_default
-    g_holomap_override_base_layer_color = g_colors.base_layer_default
-    g_holomap_backlight_color = g_colors.backlight_default
-    g_holomap_glow_color = g_colors.glow_default
-    g_holomap_grid_1_color = g_colors.grid_1_default
-    g_holomap_grid_2_color = g_colors.grid_2_default
 
-    update_ui_rectangle(0, 0, screen_w, screen_h, color8(0, 0, 0, 220))
+	update_set_screen_background_type(g_button_mode + 1)
+	update_set_screen_background_is_render_islands(false)
+	update_set_screen_map_position_scale(g_map_x + g_map_x_offset, g_map_z + g_map_z_offset, g_map_size + g_map_size_offset)
+	g_is_render_holomap_tiles = true
+	g_is_render_holomap_vehicles = true
+	g_is_render_holomap_missiles = true
+	g_is_render_holomap_grids = true
+	g_is_render_holomap_backlight = true
+	g_is_render_team_capture = true
+	g_is_override_holomap_island_color = false
+	g_holomap_override_island_color_low = g_colors.island_low_default
+	g_holomap_override_island_color_high = g_colors.island_high_default
+	g_holomap_override_base_layer_color = g_colors.base_layer_default
+	g_holomap_backlight_color = g_colors.backlight_default
+	g_holomap_glow_color = g_colors.glow_default
+	g_holomap_grid_1_color = g_colors.grid_1_default
+	g_holomap_grid_2_color = g_colors.grid_2_default
 
-    if update_get_is_notification_holomap_set() then
+	update_ui_rectangle(0, 0, screen_w, screen_h, color8(0, 0, 0, 220))
+
+	g_ui:begin_ui()
+
+	if g_startup_phase ~= holomap_startup_phases.finish then
+		update_set_screen_background_type(0)
+		update_set_screen_background_is_render_islands(false)
+		update_set_screen_map_position_scale(-10000, -10000, 500)
+	
+		if screen_vehicle:get() then
+			local veh = update_get_vehicle_by_id(screen_vehicle:get_id())
+			local target_desired, target_allocated = veh:get_power_system_state(4) -- Radar
+			if target_desired == 0 then	g_startup_phase_anim = g_startup_phase_anim + 1	end
+		end
+	
+		if g_startup_phase == holomap_startup_phases.memchk then
+			render_startup_memchk( screen_w, screen_h )
+		elseif g_startup_phase == holomap_startup_phases.bios then
+			render_startup_bios( screen_w, screen_h )
+		elseif g_startup_phase == holomap_startup_phases.sys then
+			render_startup_sys( screen_w, screen_h )
+		elseif g_startup_phase == holomap_startup_phases.manual then
+			render_startup_manual( screen_w, screen_h )
+		end
+		
+		if g_startup_phase == holomap_startup_phases.finish then
+			focus_world()
+		end
+    elseif update_get_is_notification_holomap_set() then
         g_notification_time = g_notification_time + 1
 
         update_set_screen_background_type(0)
@@ -502,9 +549,13 @@ function update(screen_w, screen_h)
 
     g_pointer_pos_x_prev = g_pointer_pos_x
     g_pointer_pos_y_prev = g_pointer_pos_y
+	
+	g_ui:end_ui()
 end
 
 function input_event(event, action)
+	g_ui:input_event(event, action)
+	
 	local screen_vehicle = update_get_screen_vehicle()
 	local world_x, world_y = get_world_from_holomap(g_pointer_pos_x, g_pointer_pos_y, 512, 256)
 
@@ -546,6 +597,8 @@ function input_axis(x, y, z, w)
 end
 
 function input_pointer(is_hovered, x, y)
+	g_ui:input_pointer(is_hovered, x, y)
+	
     g_is_pointer_hovered = is_hovered
     
 	g_pointer_inbounds = (x > 0 and y > 0)
@@ -556,6 +609,8 @@ function input_pointer(is_hovered, x, y)
 end
 
 function input_scroll(dy)
+	g_ui:input_scroll(dy)
+	
     if update_get_is_notification_holomap_set() == false then
         if g_is_mouse_mode then
             map_zoom(1 - dy * 0.15)
@@ -979,3 +1034,168 @@ function render_vehicle_tooltip(w, h, vehicle)
         update_ui_text(cx, cy, virus_text, w - 4, 0, iff(ammo_count > 0, color_status_ok, color_status_bad), 0)
     end
 end
+
+function render_startup_memchk( screen_w, screen_h )
+	local anim = (g_animation_time - g_startup_phase_anim) * 2
+	
+	local mem = math.min( 640, anim )
+	update_ui_text(16, 16, string.format("%.0fKB OK", math.floor(mem)), 128, 0, color_white, 0)
+	
+	if anim > 700 then
+		g_startup_phase_anim = g_animation_time
+		g_startup_phase = g_startup_phase + 1
+	end
+end
+
+function render_startup_bios( screen_w, screen_h )
+	local anim = math.floor( (g_animation_time - g_startup_phase_anim) / 5 ) + 1
+	
+	local bios_text = {
+		"Firmware Version 3.22.7\n",
+		"Firmware Checksum ", ".", ".", ".", " OK\n\n",
+		
+		
+		"Welcome to your:\n",
+		"Series 7 - Battlefield Command and Control Mainframe\n",
+		"A Sigletics© Tactical Computer System\n\n",
+		
+		
+		"Accessing Master Boot Record ", ".", ".", ".",	" Done\n",
+		"Loading Image: ACC Carrier Operating System ", ".", ".", ".", ".", ".", " Done\n",
+		"Operating System Handoff\n",
+		"******************************************************\n",
+		"CRR OS: Loading Drivers:\n",
+		"CRR OS:     PS/2 Keyboard ", ".", ".", ".", " Okay\n",
+		"CRR OS:     PS/2 Mouse ", ".", ".", ".", " Okay\n",
+		"CRR OS:     VGA Graphics ", ".", ".", ".", " Okay\n",
+		"CRR OS:     Sound Caster 16 ", ".", ".", ".", " Okay\n",
+		"CRR OS:     3D Accelerator ", ".", ".", ".", " Fail\n",
+		
+		"CRR OS: Starting user interface"
+	}
+	
+	local out = ""
+	
+	local stop = math.min( #bios_text, anim )
+	
+	for i = 1, stop, 1 do
+		out = out .. bios_text[i]
+	end
+	
+	update_ui_text(16, 16, out, 496, 0, color_white, 0)
+	
+	if anim > #bios_text + 12 then
+		g_startup_phase_anim = g_animation_time
+		g_startup_phase = g_startup_phase + 1
+	end
+end
+
+function render_startup_sys( screen_w, screen_h )
+	local anim = (g_animation_time - g_startup_phase_anim)
+	
+	local vessel_names = {
+		"Mu",
+		
+		"Epsilon",
+		"Omega",
+		
+		"Upsilon",
+		"Omicron",
+		"Sigma",
+		"Lambda",
+		
+		"Alpha",
+		"Beta",
+		"Gamma",
+		"Delta",
+		"Zeta",
+		"Eta",
+		"Theta",
+		"Iota",
+		"Kappa"
+	}
+	
+	local team_id = update_get_screen_team_id()
+	
+	local crew = {"Altus Gage"}
+--[[
+	if update_get_is_multiplayer() then
+		local peer_count = update_get_peer_count()
+		for i = 0, peer_count - 1 do
+			local name = update_get_peer_name(i)
+			local team = update_get_peer_team(i)
+			
+			if team == team_id then
+				crew[#crew + 1] = name
+			end
+		end
+	else
+		crew[1] = "Altus Gage"
+	end
+--]]
+	local ui = g_ui
+	
+	local win_w = 256
+	local win_h = 85
+	
+	local anim_win_w = math.min( win_w, anim * 8 )
+	local anim_win_h = math.min( win_h, anim * 8 )
+	
+	local win_title = ""
+	if anim_win_w > 128 then win_title = "Vessel Registration" end
+	
+	local reg_win = ui:begin_window(win_title, 128, 16, anim_win_w, anim_win_h, atlas_icons.column_pending, true, 2)
+
+	if anim > 37 then ui:stat("Registrant", "United Earth Coalition", color_white) end
+	if anim > 42 then ui:stat("Vessel Name", vessel_names[team_id + 1], color_white) end
+	if anim > 47 then ui:stat("Vessel Class", "Amphibious Assault Carrier", color_white) end
+	if anim > 52 then ui:stat("Operating Number", string.format( "%010.0f", g_startup_op_num), color_white) end
+	
+	ui:end_window()
+	
+	if anim > 80 then
+		local login_win = ui:begin_window("Crew Manifest", 128, 110, 256, 128, atlas_icons.column_pending, true, 2)
+		
+		for i = 1, #crew, 1 do
+			local status = "Validating Credentials"
+		
+			if anim > 90 + i * 20 then
+				status = "Authenticated"
+			end
+			
+			ui:stat( crew[i], status, color_white )
+		end
+		
+		ui:end_window()
+		
+		if anim > 120 + #crew * 20 then
+			g_startup_phase_anim = g_animation_time
+			g_startup_phase = g_startup_phase + 1
+		end
+	end
+end
+
+function render_startup_manual( screen_w, screen_h )
+	local anim = (g_animation_time - g_startup_phase_anim)
+
+	local ui = g_ui
+	
+	local win_w = 192
+	local win_h = 32
+	
+	local anim_win_w = math.min( win_w, anim * 4 )
+	local anim_win_h = math.min( win_h, anim * 4 )
+	
+	local win_title = ""
+	if anim_win_w > 128 then win_title = "Carrier Command" end
+	
+	local reg_win = ui:begin_window(win_title, 160, 16, anim_win_w, anim_win_h, atlas_icons.column_pending, true, 2)
+
+	if anim > 37 and imgui_list_item_blink(ui, "Enable Manual Override", true) then
+        g_startup_phase_anim = g_animation_time
+		g_startup_phase = g_startup_phase + 1
+    end
+	
+	ui:end_window()
+end
+
