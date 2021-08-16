@@ -9,6 +9,7 @@ g_ui = nil
 g_is_pointer_hovered = false
 g_is_vehicle_team_colors = true
 g_is_island_team_colors = true
+g_is_island_names = true
 g_is_deploy_carrier_triggered = false
 g_dock_state_prev = nil
 g_color_waypoint = color8(0, 255, 255, 8)
@@ -190,7 +191,8 @@ function update(screen_w, screen_h)
 
             g_is_vehicle_team_colors = ui:checkbox(update_get_loc(e_loc.upp_vehicle_team_colors), g_is_vehicle_team_colors)
             g_is_island_team_colors = ui:checkbox(update_get_loc(e_loc.upp_island_team_colors), g_is_island_team_colors)
-    
+			g_is_island_names = ui:checkbox("ISLAND NAMES", g_is_island_names)
+
             ui:spacer(5)
     
         ui:end_window()
