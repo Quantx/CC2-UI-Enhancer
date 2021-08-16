@@ -567,8 +567,27 @@ function update(screen_w, screen_h)
 		g_pointer_pos_x_prev = g_pointer_pos_x
 		g_pointer_pos_y_prev = g_pointer_pos_y
 	end
-	
-	g_ui:end_ui()
+
+    -- Adds a scale marker to the holomap; values are derived empirically
+    update_ui_image(0, 0, atlas_icons.column_distance, color_white, 0)
+    local grid_size_guess = 0
+
+    if g_map_size < 2000 then
+        grid_size_guess = 250
+    elseif g_map_size >= 2000 and g_map_size < 4000 then
+        grid_size_guess = 500
+    elseif g_map_size >= 4000 and g_map_size < 8000 then
+        grid_size_guess = 1000
+    elseif g_map_size >= 8000 and g_map_size < 16000 then
+        grid_size_guess = 2000
+    elseif g_map_size >= 16000 and g_map_size < 32000 then
+        grid_size_guess = 4000
+    elseif g_map_size >= 32000 then
+        grid_size_guess = 8000
+    end
+    update_ui_text(-10, 0, string.format("%.0f", grid_size_guess) .. update_get_loc(e_loc.upp_acronym_meters), 128, 1, color_white, 0)
+
+    g_ui:end_ui()
 end
 
 function input_event(event, action)
