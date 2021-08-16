@@ -430,11 +430,6 @@ function update(screen_w, screen_h)
 			end
 		end
 		
-		if g_pointer_inbounds and update_get_is_focus_local() then
-			local cursor_x, cursor_y = get_holomap_from_world(world_x, world_y, screen_w, screen_h)
-			update_ui_text(cursor_x - 3, cursor_y - 3, "x", 6, 0, color_white, 0)
-		end
-		
 		if g_is_ruler then
 			if g_pointer_inbounds then
 				g_ruler_end_x = world_x
@@ -542,6 +537,12 @@ function update(screen_w, screen_h)
 			cy = cy - 10
 		end
 		
+		-- render cursor last
+		if g_pointer_inbounds and update_get_is_focus_local() then
+			local cursor_x, cursor_y = get_holomap_from_world(world_x, world_y, screen_w, screen_h)
+			update_ui_text(cursor_x - 3, cursor_y - 6, "x", 6, 0, color_white, 0)
+		end
+
         g_dismiss_counter = 0
         g_notification_time = 0
     end
