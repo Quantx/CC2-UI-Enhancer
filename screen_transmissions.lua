@@ -17,10 +17,10 @@ function parse()
     g_transmission_selected_index = parse_s32(g_transmission_selected_index)
 end
 
-function update(screen_w, screen_h, delta_time)
-	g_animation_time = g_animation_time + 1
+function update(screen_w, screen_h, ticks)
+	g_animation_time = g_animation_time + ticks
 
-    if update_screen_overrides(screen_w, screen_h) then return end
+    if update_screen_overrides(screen_w, screen_h, ticks)  then return end
 	
 	local ui = g_ui
 	local team = update_get_team(update_get_screen_team_id())

@@ -7,8 +7,8 @@ function begin()
     begin_load()
 end
 
-function update(screen_w, screen_h)
-    if update_screen_overrides(screen_w, screen_h) then return end
+function update(screen_w, screen_h, ticks) 
+    if update_screen_overrides(screen_w, screen_h, ticks)  then return end
 
     update_ui_image(0, 0, atlas_icons.screen_compass_background, color_white, 0)
     update_ui_rectangle(50, 28, 28, 12, color_white)

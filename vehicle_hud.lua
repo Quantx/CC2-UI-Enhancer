@@ -184,15 +184,13 @@ function update(screen_w, screen_h, tick_fraction, delta_time, local_peer_id, ve
                     if attachment:get_is_controllable() then
                         local control_mode = attachment:get_control_mode()
 
-                        if vehicle:get_definition_index() ~= e_game_object_type.chassis_sea_barge then
-                            if control_mode == "auto" then
-                                update_add_ui_interaction(update_get_loc(e_loc.interaction_manual), e_game_input.toggle_control_mode)
-                            elseif control_mode == "manual" then
-                                update_add_ui_interaction(update_get_loc(e_loc.interaction_auto), e_game_input.toggle_control_mode)
-                                
-                                if attachment:get_ammo_capacity() > 0 then
-                                    update_add_ui_interaction(update_get_loc(e_loc.interaction_fire), e_game_input.attachment_fire)
-                                end
+                        if control_mode == "auto" then
+                            update_add_ui_interaction(update_get_loc(e_loc.interaction_manual), e_game_input.toggle_control_mode)
+                        elseif control_mode == "manual" then
+                            update_add_ui_interaction(update_get_loc(e_loc.interaction_auto), e_game_input.toggle_control_mode)
+                            
+                            if attachment:get_ammo_capacity() > 0 then
+                                update_add_ui_interaction(update_get_loc(e_loc.interaction_fire), e_game_input.attachment_fire)
                             end
                         end
                     end
@@ -1703,7 +1701,11 @@ function render_barge_hud(screen_w, screen_h, vehicle)
     local col = color8(0, 255, 0, 255)
     local col_red = color8(255, 0, 0, 255)
 
+    render_airspeed_meter(vec2(hud_min:x(), hud_min:y() + (hud_size:y() - 110) / 2), vehicle, 1, col)
+    render_compass(vec2(hud_pos:x(), hud_min:y() + hud_size:y()), col)
+    render_fuel_gauge(vec2(hud_min:x() + hud_size:x() - 16, hud_pos:y() + 45 - 50), 50, vehicle, col)
     render_damage_gauge(vec2(hud_min:x() + hud_size:x() - 1, hud_pos:y() + 45 - 50), 50, vehicle, col)
+    render_control_mode(vec2(hud_min:x() + hud_size:x() - 16, hud_pos:y() + 45 + 5), vehicle, col)
 
     if get_is_damage_warning(vehicle) then
         render_warning_text(hud_pos:x(), hud_min:y() - 10, update_get_loc(e_loc.upp_dmg_critical), col_red)
@@ -2955,7 +2957,6 @@ end
 
 function get_is_vehicle_controllable(vehicle)
     return vehicle:get_definition_index() ~= e_game_object_type.chassis_carrier
-    and vehicle:get_definition_index() ~= e_game_object_type.chassis_sea_barge
 end
 
 function get_vehicle_attachment_count(vehicle)

@@ -79,14 +79,14 @@ function begin()
     g_ui = lib_imgui:create_ui()
 end
 
-function update(screen_w, screen_h)
-    if update_screen_overrides(screen_w, screen_h) then return end
+function update(screen_w, screen_h, ticks) 
+    if update_screen_overrides(screen_w, screen_h, ticks)  then return end
 
     if g_no_stock_counter < 1000 then
         g_no_stock_counter = g_no_stock_counter + 1
     end
 
-    g_animation_time = g_animation_time + 1
+    g_animation_time = g_animation_time + ticks
 
     local this_vehicle = update_get_screen_vehicle()
     if this_vehicle:get() == false then return end

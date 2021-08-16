@@ -44,17 +44,17 @@ function begin()
     end
 end
 
-function update(screen_w, screen_h)
-    g_tick = g_tick + 1
+function update(screen_w, screen_h, ticks) 
+    g_tick = g_tick + ticks
 
-    g_scan_cursor = g_scan_cursor + 1
+    g_scan_cursor = g_scan_cursor + ticks
     local scan_angle = math.pi * 2 * (g_scan_cursor - 1) / g_scan_increment_count
 
     if g_scan_cursor > g_scan_increment_count then
         g_scan_cursor = 1
     end
 
-    if update_screen_overrides(screen_w, screen_h) then return end
+    if update_screen_overrides(screen_w, screen_h, ticks)  then return end
 
     local this_vehicle = update_get_screen_vehicle()
     if this_vehicle:get() then
@@ -79,7 +79,7 @@ function update(screen_w, screen_h)
     for i=g_scan_layer_count, 1, -1 do
         update_ui_begin_triangles()
         for j=1, g_scan_increment_count do
-            local cursor_next = (j + 1)
+            local cursor_next = (j + ticks)
             if cursor_next > g_scan_increment_count then
                 cursor_next = 1
             end

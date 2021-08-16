@@ -826,7 +826,9 @@ function tab_options_render(screen_w, screen_h, x, y, w, h, delta_time, is_activ
     ui:list_item(update_get_loc(e_loc.upp_graphics))
     ui:list_item(update_get_loc(e_loc.upp_audio))
     ui:list_item(update_get_loc(e_loc.upp_ui))
-    if update_get_is_vr() == false then
+    if update_get_is_vr() then
+        ui:list_item(update_get_loc(e_loc.upp_vr))
+    else
         ui:list_item(update_get_loc(e_loc.upp_keyboard))
         ui:list_item(update_get_loc(e_loc.upp_mouse))
         ui:list_item(update_get_loc(e_loc.upp_gamepad))

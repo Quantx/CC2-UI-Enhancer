@@ -64,7 +64,7 @@ function begin()
 	g_text["join_password"] = update_get_join_password()
 end
 
-function update(screen_w, screen_h, delta_time)
+function update(screen_w, screen_h, ticks)
 	if g_is_menu_active ~= g_is_menu_active_prev then
 		g_is_menu_active_prev = g_is_menu_active
 
@@ -73,12 +73,12 @@ function update(screen_w, screen_h, delta_time)
 		end
 	end
 	
-	if update_screen_overrides(screen_w, screen_h) then return end
+	if update_screen_overrides(screen_w, screen_h, ticks)  then return end
 
 	update_interaction_ui()
 
-	g_animation_time = g_animation_time + 1
-	g_text_blink_time = g_text_blink_time + 1
+	g_animation_time = g_animation_time + ticks
+	g_text_blink_time = g_text_blink_time + ticks
 
 	local ui = g_ui
 	local is_active = g_edit_text == nil
@@ -438,7 +438,7 @@ function update(screen_w, screen_h, delta_time)
 			ui:end_window()
 		end
 
-		imgui_menu_focus_overlay(ui, screen_w, screen_h, update_get_loc(e_loc.upp_game))
+		imgui_menu_focus_overlay(ui, screen_w, screen_h, update_get_loc(e_loc.upp_game), ticks)
 	else
 		local color = color8_lerp(color_black, color_status_ok, math.sin(g_animation_time * 0.2) * 0.5 + 0.5)
 		local text = ""

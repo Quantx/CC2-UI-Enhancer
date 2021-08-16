@@ -106,9 +106,9 @@ function begin()
 	g_startup_op_num = math.random(9999999999)
 end
 
-function update(screen_w, screen_h)
+function update(screen_w, screen_h, ticks) 
     g_is_mouse_mode = update_get_active_input_type() == e_active_input.keyboard
-    g_animation_time = g_animation_time + 1
+    g_animation_time = g_animation_time + ticks
 
     local screen_vehicle = update_get_screen_vehicle()
 	local world_x, world_y = get_world_from_holomap(g_pointer_pos_x, g_pointer_pos_y, screen_w, screen_h)

@@ -1920,26 +1920,40 @@ function imgui_options_menu(ui, x, y, w, h, is_active, selected_category_index, 
             end
         ui:end_window()
     elseif selected_category_index == 3 then
-        local window = ui:begin_window(update_get_loc(e_loc.upp_keyboard), x, y, w, h, nil, is_active, 0, true, is_highlight)
-            window.label_bias = window_label_bias
+        if update_get_is_vr() then
+            local window = ui:begin_window(update_get_loc(e_loc.upp_vr), x, y, w, h, nil, is_active, 0, true, is_highlight)
+                window.label_bias = window_label_bias
 
-            settings.keyboard_back_opens_pause      = ui:checkbox(update_get_loc(e_loc.BACK_opens_pause_menu), settings.keyboard_back_opens_pause)
-
-            ui:header(update_get_loc(e_loc.upp_bindings_keys))
-
-            if ui:button(update_get_loc(e_loc.upp_reset), true, 1) then
-                update_ui_event("rebind_input keyboard reset")
-            end
-            
-            for i = 0, input_count - 1 do
-                if update_get_is_input_rebindable_keyboard(i) then
-                    if ui:keybinding(update_get_game_input_name(i), update_get_input_binding_keyboard_key(i), update_get_input_binding_keyboard_pointer(i), -1, -1) then
-                        update_ui_event("rebind_input keyboard " .. i)
-                    end
-                    ui:divider()
+                settings.vr_world_scale                 = ui:slider(update_get_loc(e_loc.vr_world_scale), settings.vr_world_scale, 0.5, 2, 0.1)
+                settings.vr_tablet_index                = ui:combo(update_get_loc(e_loc.vr_tablet_index), settings.vr_tablet_index, { "1", "2" })
+                settings.vr_controller_tooltips         = ui:checkbox(update_get_loc(e_loc.vr_controller_tooltips), settings.vr_controller_tooltips)
+                --settings.vr_screen_tilt                 = ui:checkbox(update_get_loc(e_loc.vr_screen_tilt), settings.vr_screen_tilt)
+                --settings.vr_move_mode                   = ui:combo(update_get_loc(e_loc.vr_move_mode), settings.vr_move_mode, { update_get_loc(e_loc.vr_move_mode_teleport), update_get_loc(e_loc.vr_move_mode_smooth) })
+                --settings.vr_smooth_move_speed           = ui:slider(update_get_loc(e_loc.vr_smooth_move_speed), settings.vr_smooth_move_speed, 0.5, 2, 0.1)
+                --settings.vr_smooth_rotate_speed         = ui:slider(update_get_loc(e_loc.vr_smooth_rotate_speed), settings.vr_smooth_rotate_speed, 0.5, 2, 0.1)
+            ui:end_window()
+        else
+            local window = ui:begin_window(update_get_loc(e_loc.upp_keyboard), x, y, w, h, nil, is_active, 0, true, is_highlight)
+                window.label_bias = window_label_bias
+    
+                settings.keyboard_back_opens_pause      = ui:checkbox(update_get_loc(e_loc.BACK_opens_pause_menu), settings.keyboard_back_opens_pause)
+    
+                ui:header(update_get_loc(e_loc.upp_bindings_keys))
+    
+                if ui:button(update_get_loc(e_loc.upp_reset), true, 1) then
+                    update_ui_event("rebind_input keyboard reset")
                 end
-            end
-        ui:end_window()
+                
+                for i = 0, input_count - 1 do
+                    if update_get_is_input_rebindable_keyboard(i) then
+                        if ui:keybinding(update_get_game_input_name(i), update_get_input_binding_keyboard_key(i), update_get_input_binding_keyboard_pointer(i), -1, -1) then
+                            update_ui_event("rebind_input keyboard " .. i)
+                        end
+                        ui:divider()
+                    end
+                end
+            ui:end_window()
+        end
     elseif selected_category_index == 4 then
         local window = ui:begin_window(update_get_loc(e_loc.upp_mouse), x, y, w, h, nil, is_active, 0, true, is_highlight)
             window.label_bias = window_label_bias
@@ -3090,7 +3104,7 @@ end
 
 g_menu_overlay_factor = 1
 
-function imgui_menu_focus_overlay(ui, screen_w, screen_h, text)
+function imgui_menu_focus_overlay(ui, screen_w, screen_h, text, ticks)
     text = text .. "  "
     local text_h = 25
     local text_w = math.min(screen_w - 80, update_ui_get_text_size(text, 10000, 0) * 3)
@@ -3106,7 +3120,7 @@ function imgui_menu_focus_overlay(ui, screen_w, screen_h, text)
     local y = (screen_h - h) / 2
 
     local target_factor = iff(update_get_is_focus_local(), 0, 1)
-    g_menu_overlay_factor = g_menu_overlay_factor + clamp(target_factor - g_menu_overlay_factor, -2 / 30, 2 / 30)
+    g_menu_overlay_factor = g_menu_overlay_factor + clamp(target_factor - g_menu_overlay_factor, -ticks / 15, ticks / 15)
 
     if g_menu_overlay_factor < 1 and update_get_is_focus_local() then
         if g_menu_overlay_factor > 0.7 then

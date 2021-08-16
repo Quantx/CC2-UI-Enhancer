@@ -155,14 +155,14 @@ end
 --
 --------------------------------------------------------------------------------
 
-function update(screen_w, screen_h)
+function update(screen_w, screen_h, ticks) 
     g_is_mouse_mode = update_get_active_input_type() == e_active_input.keyboard
-    g_animation_time = g_animation_time + 1
+    g_animation_time = g_animation_time + ticks
 
     local vehicle = update_get_screen_vehicle()
     if vehicle:get() == false then return end
     
-    if update_screen_overrides(screen_w, screen_h) then return end
+    if update_screen_overrides(screen_w, screen_h, ticks)  then return end
 
     update_interaction_ui()
 

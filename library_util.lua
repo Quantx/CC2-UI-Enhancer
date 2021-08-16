@@ -686,8 +686,8 @@ g_self_destruct_modes = {
     countdown = 3,
 }
 
-function update_screen_overrides(screen_w, screen_h)
-	if update_boot_override(screen_w, screen_h) then
+function update_screen_overrides(screen_w, screen_h, ticks)
+	if update_boot_override(screen_w, screen_h, ticks) then
 		return true
 	elseif update_self_destruct_override(screen_w, screen_h) then
 		return true
@@ -696,7 +696,7 @@ function update_screen_overrides(screen_w, screen_h)
 	return false
 end
 
-function update_boot_override(screen_w, screen_h)
+function update_boot_override(screen_w, screen_h, ticks)
 	if g_is_on then
 		if g_boot_counter > 0 then
 		
@@ -706,7 +706,7 @@ function update_boot_override(screen_w, screen_h)
 			update_ui_rectangle(cx - 31, cy - 4, 62, 8, color_white)
 			update_ui_rectangle(cx - 30, cy - 3, 60, 6, color_black)
 			update_ui_rectangle(cx - 30, cy - 3, 60 - (g_boot_counter * 2), 6, color_status_ok)
-			g_boot_counter = g_boot_counter - math.random(0, 1)
+			g_boot_counter = g_boot_counter - math.random(0, ticks)
 			
 			return true
 		end

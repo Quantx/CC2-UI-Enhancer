@@ -43,9 +43,9 @@ function begin()
     g_damage_zones.hull.name = update_get_loc(e_loc.upp_hull)
 end
 
-function update(screen_w, screen_h)
+function update(screen_w, screen_h, ticks) 
     if update_self_destruct_override(screen_w, screen_h) then return end
-	if update_screen_overrides(screen_w, screen_h) then return end
+	if update_screen_overrides(screen_w, screen_h, ticks)  then return end
     
     local map_vehicle = update_get_screen_vehicle()
     if map_vehicle:get() == false then return end
@@ -55,7 +55,7 @@ function update(screen_w, screen_h)
 
     local ui = g_ui
     update_damage_zones(vehicle)
-    g_animation_time = g_animation_time + 1
+    g_animation_time = g_animation_time + ticks
     g_highlighted_zone_index = -1
 
     ui:begin_ui()

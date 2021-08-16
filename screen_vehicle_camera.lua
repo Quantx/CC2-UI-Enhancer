@@ -13,9 +13,9 @@ function begin()
     g_region_icon = begin_get_ui_region_index("microprose")
 end
 
-function update(screen_w, screen_h)
+function update(screen_w, screen_h, ticks) 
     update_set_screen_background_type(0)
-    if update_screen_overrides(screen_w, screen_h) then return end
+    if update_screen_overrides(screen_w, screen_h, ticks)  then return end
 
     local screen_vehicle = update_get_screen_vehicle()
 

@@ -47,10 +47,10 @@ function begin()
     begin_load()
 end
 
-function update(screen_w, screen_h)
+function update(screen_w, screen_h, ticks) 
     g_tick = g_tick + 1
 
-    if update_screen_overrides(screen_w, screen_h) then return end
+    if update_screen_overrides(screen_w, screen_h, ticks)  then return end
 
     local throttle_factor = 0
     local steering = 0
