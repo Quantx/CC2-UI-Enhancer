@@ -6,6 +6,7 @@ end
 
 function begin()
     begin_load()
+	begin_load_inventory_data()
 end
 
 function update(screen_w, screen_h, ticks) 

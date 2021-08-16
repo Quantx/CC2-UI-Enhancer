@@ -650,9 +650,15 @@ function render_map_details(screen_vehicle, screen_w, screen_h, is_tab_active)
         if is_collapse_icons then
             update_ui_rectangle(screen_pos_x - 1, screen_pos_y - 1, 2, 2, tile_col)
         else
-            update_ui_rectangle(screen_pos_x - 5, screen_pos_y - 4, 10, 8, color_black)
-            update_ui_rectangle(screen_pos_x - 4, screen_pos_y - 5, 8, 10, color_black)
-            update_ui_image(screen_pos_x - 4, screen_pos_y - 4, category_data.icon, tile_col, 0)
+			update_ui_rectangle(screen_pos_x - 5, screen_pos_y - 4, 10, 8, color_black)
+			update_ui_rectangle(screen_pos_x - 4, screen_pos_y - 5, 8, 10, color_black)
+
+			local is_collapse_names = g_tab_map.camera_size < g_tab_map.camera_size_max * 0.2
+			if is_collapse_names then
+				update_ui_text(screen_pos_x - 64, screen_pos_y - 16, tile:get_name(), 128, 1, color_black, 0)
+			end
+
+			update_ui_image(screen_pos_x - 4, screen_pos_y - 4, category_data.icon, tile_col, 0)
         end
         
         if category_data.index ~= 0 and tile:get_team_control() == vehicle_team then
@@ -1101,7 +1107,7 @@ function render_node_tooltip(w, h, id, type)
         if barge:get() then
             local cy = 3
             update_ui_image(2, h / 2 - 8, atlas_icons.icon_chassis_16_barge, color, 0)
-            update_ui_text(18, cy, name, 200, 0, color_white, 0)
+            update_ui_text(18, cy, name .. " " .. tostring(id), 200, 0, color_white, 0)
             update_ui_image(w - 13, cy, atlas_icons.column_transit, color_highlight, 0)
 
             cy = cy + 10
