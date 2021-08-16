@@ -601,25 +601,27 @@ function render_map_details(screen_vehicle, screen_w, screen_h, is_tab_active)
     update_set_screen_background_is_render_islands(is_render_islands)
 
     for _, vehicle in iter_vehicles(vehicle_filter) do
-        local waypoint_count = vehicle:get_waypoint_count()
+		if vehicle:get_definition_index() ~= e_game_object_type.chassis_carrier then
+			local waypoint_count = vehicle:get_waypoint_count()
 
-        local pos_prev = vehicle:get_position_xz()
+			local pos_prev = vehicle:get_position_xz()
 
-        for i = 0, waypoint_count do
-            local waypoint_data = vehicle:get_waypoint(i)
+			for i = 0, waypoint_count do
+				local waypoint_data = vehicle:get_waypoint(i)
 
-            if waypoint_data:get() then
-                local waypoint_pos = waypoint_data:get_position_xz()
+				if waypoint_data:get() then
+					local waypoint_pos = waypoint_data:get_position_xz()
 
-                local s0x, s0y = get_screen_from_world(pos_prev:x(), pos_prev:y(), g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
-                
-                local s1x, s1y = get_screen_from_world(waypoint_pos:x(), waypoint_pos:y(), g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
+					local s0x, s0y = get_screen_from_world(pos_prev:x(), pos_prev:y(), g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
+					
+					local s1x, s1y = get_screen_from_world(waypoint_pos:x(), waypoint_pos:y(), g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
 
-                update_ui_line(s0x, s0y, s1x, s1y, color_grey_dark)
+					update_ui_line(s0x, s0y, s1x, s1y, color_grey_dark)
 
-                pos_prev = waypoint_pos
-            end
-        end
+					pos_prev = waypoint_pos
+				end
+			end
+		end
     end
 
     for _, link in iter_resource_links() do
