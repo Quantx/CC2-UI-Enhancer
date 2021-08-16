@@ -33,7 +33,7 @@ function update(screen_w, screen_h, ticks)
                 local w, h = ui:get_region()
                 
                 update_ui_image(w / 2 - 36, 30, atlas_icons.microprose, color_grey_mid, 0)
-                update_ui_text(0, 10, "GEOMETA\n+\n\n\nUI Mod by Quantx", w, 1, color_grey_mid, 0)
+                update_ui_text(0, 10, "GEOMETA\n+\n\n\nUI Mod by QuantX", w, 1, color_grey_mid, 0)
 
             ui:end_window()
         else

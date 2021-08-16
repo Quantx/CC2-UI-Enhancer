@@ -18,6 +18,7 @@ g_is_drag_pan_map = false
 g_viewing_vehicle_id = 0
 g_is_vehicle_team_colors = true
 g_is_island_team_colors = true
+g_is_carrier_waypoint = false
 g_is_pip_enable = true
 
 g_blend_tick = 0
@@ -450,6 +451,7 @@ function render_selection_map(screen_w, screen_h)
 
         g_is_vehicle_team_colors = ui:checkbox(update_get_loc(e_loc.upp_vehicle_team_colors), g_is_vehicle_team_colors)
         g_is_island_team_colors = ui:checkbox(update_get_loc(e_loc.upp_island_team_colors), g_is_island_team_colors)
+		g_is_carrier_waypoint = ui:checkbox("SHOW CARRIER WAYPOINTS", g_is_carrier_waypoint)
 		g_is_pip_enable = ui:checkbox("ENABLE CCTV FEED", g_is_pip_enable)
 
         ui:spacer(5)
@@ -706,7 +708,7 @@ function update(screen_w, screen_h, ticks)
                             end
                         end
 
-                        if vehicle_team == update_get_screen_team_id() then
+                        if vehicle_team == update_get_screen_team_id() and vehicle_definition_index ~= e_game_object_type.chassis_carrier then
                             local waypoint_count = vehicle:get_waypoint_count()
                             
                             if g_drag_vehicle_id == 0 or g_drag_vehicle_id == vehicle:get_id() then
@@ -868,7 +870,14 @@ function update(screen_w, screen_h, ticks)
                         local waypoint_pos_x_prev = screen_pos_x
                         local waypoint_pos_y_prev = screen_pos_y
                         
-                        if vehicle_team == update_get_screen_team_id() and vehicle:get_definition_index() ~= e_game_object_type.chassis_sea_barge and vehicle:get_definition_index() ~= e_game_object_type.chassis_carrier then
+						local show_waypoints = true
+						if vehicle:get_definition_index() == e_game_object_type.chassis_sea_barge then
+							show_waypoints = false
+						elseif vehicle:get_definition_index() == e_game_object_type.chassis_carrier then
+							show_waypoints = g_is_carrier_waypoint
+						end
+						
+                        if vehicle_team == update_get_screen_team_id() and show_waypoints then
                             local waypoint_color = g_color_waypoint
 
                             if g_highlighted_vehicle_id == vehicle:get_id() and g_highlighted_waypoint_id == 0 then
