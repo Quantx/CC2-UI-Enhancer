@@ -391,7 +391,6 @@ function update(screen_w, screen_h)
 
 						if vehicle_attached_parent_id == 0 and vehicle:get_is_visible() and vehicle:get_is_observation_revealed() then
 							local vehicle_pos_xz = vehicle:get_position_xz()
-
 							local screen_pos_x, screen_pos_y = get_holomap_from_world(vehicle_pos_xz:x(), vehicle_pos_xz:y(), screen_w, screen_h)
 
 							local vehicle_distance_to_cursor = vec2_dist( vec2( screen_pos_x, screen_pos_y ), vec2( g_pointer_pos_x, g_pointer_pos_y ) )
