@@ -171,7 +171,7 @@ function update(screen_w, screen_h)
         g_map_size = lerp(g_prev_size, g_next_size, blend_factor)
     end
     
-    if g_is_mouse_mode and update_get_is_notification_holomap_set() == false then
+    if g_is_mouse_mode and g_pointer_inbounds and update_get_is_notification_holomap_set() == false then
         local pointer_dx = g_pointer_pos_x - g_pointer_pos_x_prev
         local pointer_dy = g_pointer_pos_y - g_pointer_pos_y_prev
 
@@ -546,8 +546,10 @@ function update(screen_w, screen_h)
         g_notification_time = 0
     end
 
-    g_pointer_pos_x_prev = g_pointer_pos_x
-    g_pointer_pos_y_prev = g_pointer_pos_y
+	if g_pointer_inbounds then
+		g_pointer_pos_x_prev = g_pointer_pos_x
+		g_pointer_pos_y_prev = g_pointer_pos_y
+	end
 	
 	g_ui:end_ui()
 end
