@@ -1223,6 +1223,7 @@ function render_subtitles(screen_w, screen_h, delta_time)
 	
 	local margin = 128
 	local text_w = math.floor((screen_w - margin * 2) / 2) * 2
+	text_w = math.max(text_w, 256)
 
 	local words = get_words_from_string(g_subtitles.text)
 	local display_text = ""

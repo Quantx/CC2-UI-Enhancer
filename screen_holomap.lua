@@ -225,42 +225,6 @@ function update(screen_w, screen_h)
             update_map_dismiss_notification()
         end
     else
-		if g_map_size < 15000 then
-			local island_count = update_get_tile_count()
-			for i = 0, island_count - 1, 1 do 
-				local island = update_get_tile_by_index(i)
-
-				if island ~= nil then
-						
-					--if island:get() then
-						local island_color = color_friendly
-						--local island_color = get_island_team_color(island:get_team_control())
-						local island_position = island:get_position_xz()
-
-						local screen_pos_x, screen_pos_y = get_screen_from_world(island_position:x(), island_position:y() + 3000.0, g_map_x, g_map_z, g_map_size, screen_w, screen_h)
-
-						update_ui_text(screen_pos_x - 64, screen_pos_y - 10, island:get_name(), 128, 1, island_color, 0)
-						
-						local category_data = g_item_categories[island:get_facility_category()]
-						
-						update_ui_image(screen_pos_x - 4, screen_pos_y, category_data.icon, island_color, 0)
-						
-						if island:get_team_control() ~= update_get_screen_team_id() then
-							local difficulty_level = island:get_difficulty_level()
-							local icon_w = 6
-							local icon_spacing = 2
-							local total_w = icon_w * difficulty_level + icon_spacing * (difficulty_level - 1)
-
-							for i = 0, difficulty_level - 1 do
-								update_ui_image(screen_pos_x - total_w / 2 + (icon_w + icon_spacing) * i, screen_pos_y + 9, atlas_icons.column_difficulty, island_color, 0)
-							end
-						end
-				
-					--end
-				end
-			end
-		end
-		
         g_dismiss_counter = 0
         g_notification_time = 0
     end

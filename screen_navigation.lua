@@ -9,7 +9,6 @@ g_ui = nil
 g_is_pointer_hovered = false
 g_is_vehicle_team_colors = false
 g_is_island_team_colors = true
-g_is_island_names = true
 g_is_deploy_carrier_triggered = false
 g_dock_state_prev = nil
 
@@ -80,7 +79,7 @@ function update(screen_w, screen_h)
             local is_render_islands = (g_camera_size < (64 * 1024))
 
             update_set_screen_background_is_render_islands(is_render_islands)
---[[
+
             if is_render_islands == false then
                 island_count = update_get_tile_count()
 
@@ -97,37 +96,6 @@ function update(screen_w, screen_h)
                     end
                 end
             end
---]]
-			local island_count = update_get_tile_count()
-
-			for i = 0, island_count - 1, 1 do 
-				local island = update_get_tile_by_index(i)
-
-				if island:get() then
-					local island_color = get_island_team_color(island:get_team_control())
-					local island_position = island:get_position_xz()
-								
-					if is_render_islands == false then
-						local screen_pos_x, screen_pos_y = get_screen_from_world(island_position:x(), island_position:y(), g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
-						update_ui_image(screen_pos_x - 4, screen_pos_y - 4, atlas_icons.map_icon_island, island_color, 0)
-					elseif g_is_island_names then
-						local screen_pos_x, screen_pos_y = get_screen_from_world(island_position:x(), island_position:y() + 3000.0, g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
-									
-						update_ui_text(screen_pos_x - 64, screen_pos_y - 9, island:get_name(), 128, 1, island_color, 0)
-									
-						if island:get_team_control() ~= update_get_screen_team_id() then
-							local difficulty_level = island:get_difficulty_level()
-							local icon_w = 6
-							local icon_spacing = 2
-							local total_w = icon_w * difficulty_level + icon_spacing * (difficulty_level - 1)
-
-							for i = 0, difficulty_level - 1 do
-								update_ui_image(screen_pos_x - total_w / 2 + (icon_w + icon_spacing) * i, screen_pos_y, atlas_icons.column_difficulty, island_color, 0)
-							end
-						end
-					end
-				end
-			end
 
             local vehicle_count = update_get_map_vehicle_count()
 
@@ -187,7 +155,6 @@ function update(screen_w, screen_h)
 
             g_is_vehicle_team_colors = ui:checkbox(update_get_loc(e_loc.upp_vehicle_team_colors), g_is_vehicle_team_colors)
             g_is_island_team_colors = ui:checkbox(update_get_loc(e_loc.upp_island_team_colors), g_is_island_team_colors)
-			g_is_island_names = ui:checkbox("ISLAND NAMES", g_is_island_names)
     
             ui:spacer(5)
     

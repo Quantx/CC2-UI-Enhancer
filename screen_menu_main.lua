@@ -13,6 +13,7 @@ g_screens = {
 	join_code = 11,
 	host_new_game_type = 12,
 	load_game_error = 13,
+	vr_multiplayer_warning = 14,
 }
 
 g_region_icon = 0
@@ -105,11 +106,19 @@ function update(screen_w, screen_h, delta_time)
 			ui:header(update_get_loc(e_loc.upp_multiplayer))
 			
 			if ui:list_item(update_get_loc(e_loc.upp_join), true) then
-				nav_set_screen(g_screens.join)
+				if update_get_is_show_vr_multiplayer_warning() then
+					nav_set_screen(g_screens.vr_multiplayer_warning)
+				else
+					nav_set_screen(g_screens.join)
+				end
 			end
 			
 			if ui:list_item(update_get_loc(e_loc.upp_host), true) then
-				nav_set_screen(g_screens.host)
+				if update_get_is_show_vr_multiplayer_warning() then
+					nav_set_screen(g_screens.vr_multiplayer_warning)
+				else
+					nav_set_screen(g_screens.host)
+				end
 			end
 
 			ui:divider()
@@ -144,6 +153,18 @@ function update(screen_w, screen_h, delta_time)
 				update_ui_event("new_game_custom")
 			end
 			
+			ui:end_window()
+		elseif g_screen_index == g_screens.vr_multiplayer_warning then
+			local window = ui:begin_window(update_get_loc(e_loc.upp_multiplayer), win_x, win_y, win_w, win_h, atlas_icons.column_controlling_peer, is_active)
+			local region_w, region_h = ui:get_region()
+
+			local error_text = "$[0]To play multiplayer, please launch the VR $[1]carrier_command.exe$[0] directly from the folder rather than through Steam. The exe can usually be found at:\n\n$[2]C:\\Program Files (x86)\\Steam\\steamapps\\common\\Carrier Command 2 VR\\carrier_command.exe$[0]\n\nThe reason for this is that Steam networking doesn't currently support cross-app multiplayer. Launching the exe directly causes Steam to think you are playing the non-VR version and therefore you can communicate with non-VR players."
+
+			update_ui_set_text_color(0, color_grey_dark)
+			update_ui_set_text_color(1, color_grey_mid)
+			update_ui_set_text_color(2, color_grey_mid)
+			update_ui_text(5, 5, error_text, region_w - 10, 0, color_white, 0)
+
 			ui:end_window()
 		elseif g_screen_index == g_screens.join then
 			local window = ui:begin_window(update_get_loc(e_loc.upp_join), win_x, win_y, win_w, win_h, atlas_icons.column_controlling_peer, is_active)

@@ -1478,17 +1478,6 @@ function update(screen_w, screen_h)
         local viewing_vehicle = update_get_map_vehicle_by_id(g_viewing_vehicle_id)
 
         if viewing_vehicle:get() then
-			local is_render_vehicle = viewing_vehicle:get_definition_index() ~= e_game_object_type.chassis_sea_barge
-		
-			update_set_screen_background_type(9)
-			update_set_screen_camera_attach_vehicle(g_viewing_vehicle_id, 0)
-
-			update_set_screen_camera_cull_distance(5000)
-			update_set_screen_camera_lod_level(0)
-			update_set_screen_camera_is_render_map_vehicles(true)
-			update_set_screen_camera_render_attached_vehicle(is_render_vehicle)
-			update_set_screen_camera_is_render_ocean(true)
---[[
             g_camera_pos_x = viewing_vehicle:get_position_xz():x()
             g_camera_pos_y = viewing_vehicle:get_position_xz():y()
 
@@ -1511,7 +1500,6 @@ function update(screen_w, screen_h)
 
             update_ui_rectangle(left, cy + 12, right - left, 1, color_status_ok)
             update_ui_rectangle(bound_right + bound_left - right, cy - 3, right - left, 1, color_status_ok)
---]]
         else
             local cx = screen_w / 2 - 50
             local cy = screen_h / 2
