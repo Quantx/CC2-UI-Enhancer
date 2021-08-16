@@ -13,12 +13,12 @@ function begin()
     g_ui = lib_imgui:create_ui()
 end
 
-function update(screen_w, screen_h)
+function update(screen_w, screen_h, ticks) 
     update_set_screen_background_type(0)
-    if update_screen_overrides(screen_w, screen_h) then return end
+    if update_screen_overrides(screen_w, screen_h, ticks)  then return end
 
-    g_animation_time = g_animation_time + 1
-    g_transition_time = g_transition_time + 1
+    g_animation_time = g_animation_time + ticks
+    g_transition_time = g_transition_time + ticks
 
     local ui = g_ui
     ui:begin_ui()

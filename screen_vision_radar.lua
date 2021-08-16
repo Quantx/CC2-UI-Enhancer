@@ -15,8 +15,8 @@ function begin()
     begin_load()
 end
 
-function update(screen_w, screen_h)
-    g_animation_time = g_animation_time + 1
+function update(screen_w, screen_h, ticks) 
+    g_animation_time = g_animation_time + ticks
 
     local screen_vehicle_map = update_get_screen_vehicle()
     local screen_vehicle = update_get_vehicle_by_id(screen_vehicle_map:get_id())
@@ -25,7 +25,7 @@ function update(screen_w, screen_h)
         return
     end
 
-    if update_screen_overrides(screen_w, screen_h) then return end
+    if update_screen_overrides(screen_w, screen_h, ticks)  then return end
 
     update_add_ui_interaction_special(update_get_loc(e_loc.interaction_zoom_level), e_ui_interaction_special.mouse_wheel)
     update_add_ui_interaction_special(update_get_loc(e_loc.interaction_zoom_level), e_ui_interaction_special.gamepad_dpad_ud)

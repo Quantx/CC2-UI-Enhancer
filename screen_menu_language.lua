@@ -44,8 +44,8 @@ function get_event_string(index)
     return "set_game_setting language "..tostring(index)
 end
 
-function update(screen_w, screen_h)
-    if update_screen_overrides(screen_w, screen_h) then return end
+function update(screen_w, screen_h, ticks) 
+    if update_screen_overrides(screen_w, screen_h, ticks)  then return end
 
     update_interaction_ui()
     

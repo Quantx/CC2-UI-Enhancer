@@ -18,8 +18,8 @@ function begin()
     g_ui = lib_imgui:create_ui()
 end
 
-function update(screen_w, screen_h)
-	if update_screen_overrides(screen_w, screen_h) then return end
+function update(screen_w, screen_h, ticks) 
+	if update_screen_overrides(screen_w, screen_h, ticks)  then return end
 
     update_interaction_ui()
 
@@ -62,7 +62,9 @@ function update(screen_w, screen_h)
     ui:list_item(update_get_loc(e_loc.upp_graphics))
     ui:list_item(update_get_loc(e_loc.upp_audio))
     ui:list_item(update_get_loc(e_loc.upp_ui))
-    if update_get_is_vr() == false then
+    if update_get_is_vr() then
+        ui:list_item(update_get_loc(e_loc.upp_vr))
+    else
         ui:list_item(update_get_loc(e_loc.upp_keyboard))
         ui:list_item(update_get_loc(e_loc.upp_mouse))
         ui:list_item(update_get_loc(e_loc.upp_gamepad))
@@ -75,7 +77,7 @@ function update(screen_w, screen_h)
 
     ui:end_ui()
 
-	imgui_menu_focus_overlay(ui, screen_w, screen_h, update_get_loc(e_loc.upp_options))
+	imgui_menu_focus_overlay(ui, screen_w, screen_h, update_get_loc(e_loc.upp_options), ticks)
 end
 
 function update_interaction_ui()

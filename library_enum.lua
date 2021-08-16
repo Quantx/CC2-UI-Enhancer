@@ -1513,8 +1513,18 @@ e_loc = {
 	radar_golfball_desc = 1373,
 	upp_paste = 1374,
 	upp_load_stock = 1375,
+	upp_vr = 1376,
+	vr_world_scale = 1377,
+	vr_tablet_index = 1378,
+	vr_controller_tooltips = 1379,
+	vr_screen_tilt = 1380,
+	vr_move_mode = 1381,
+	vr_move_mode_teleport = 1382,
+	vr_move_mode_smooth = 1383,
+	vr_smooth_move_speed = 1384,
+	vr_smooth_rotate_speed = 1385,
 
-	count = 1376,
+	count = 1386,
 }
 
 e_resource_node_type = {

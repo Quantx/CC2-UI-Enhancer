@@ -23,8 +23,8 @@ function begin()
     create_power_system(update_get_loc(e_loc.upp_radar), atlas_icons.screen_radar_air)
 end
 
-function update(screen_w, screen_h)
-    if update_screen_overrides(screen_w, screen_h) then return end
+function update(screen_w, screen_h, ticks) 
+    if update_screen_overrides(screen_w, screen_h, ticks)  then return end
 
     local map_vehicle = update_get_screen_vehicle()
     if map_vehicle:get() == false then return end

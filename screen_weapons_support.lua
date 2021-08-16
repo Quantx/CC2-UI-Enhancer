@@ -8,13 +8,13 @@ function begin()
     begin_load()
 end
 
-function update(screen_w, screen_h)
-    g_animation_time = g_animation_time + 1
+function update(screen_w, screen_h, ticks) 
+    g_animation_time = g_animation_time + ticks
 
     local vehicle = update_get_screen_vehicle()
     local attachment_indices = { 8, 7 }
 
-    if update_screen_overrides(screen_w, screen_h) then return end
+    if update_screen_overrides(screen_w, screen_h, ticks)  then return end
 
     if vehicle:get() then
         local team = update_get_team(vehicle:get_team())

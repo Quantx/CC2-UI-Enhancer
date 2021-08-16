@@ -41,7 +41,7 @@ function begin()
     g_ui = lib_imgui:create_ui()
 end
 
-function update(screen_w, screen_h)
+function update(screen_w, screen_h, ticks) 
     local this_vehicle = update_get_screen_vehicle()
     update_set_screen_background_type(0)
 
@@ -57,7 +57,7 @@ function update(screen_w, screen_h)
 
     g_dock_state_prev = this_vehicle:get_dock_state()
 
-    if update_screen_overrides(screen_w, screen_h) then return end
+    if update_screen_overrides(screen_w, screen_h, ticks)  then return end
 
     local ui = g_ui
     ui:begin_ui()

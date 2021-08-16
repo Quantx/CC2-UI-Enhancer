@@ -8,9 +8,9 @@ function begin()
     begin_load()
 end
 
-function update(screen_w, screen_h)
+function update(screen_w, screen_h, ticks) 
 
-    if update_screen_overrides(screen_w, screen_h) then return end
+    if update_screen_overrides(screen_w, screen_h, ticks)  then return end
 
     local this_vehicle = update_get_screen_vehicle()
     if this_vehicle:get() == false then return end

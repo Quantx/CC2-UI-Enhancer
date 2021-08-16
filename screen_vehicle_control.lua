@@ -526,9 +526,9 @@ function begin()
     g_ui = lib_imgui:create_ui()
 end
 
-function update(screen_w, screen_h)
+function update(screen_w, screen_h, ticks) 
     g_is_mouse_mode = g_is_pointer_hovered and update_get_active_input_type() == e_active_input.keyboard
-    g_animation_time = g_animation_time + 1
+    g_animation_time = g_animation_time + ticks
 
     local screen_vehicle = update_get_screen_vehicle()
 
@@ -544,7 +544,7 @@ function update(screen_w, screen_h)
 
     update_set_screen_vehicle_control_id(g_viewing_vehicle_id)
 
-    g_blink_timer = g_blink_timer + 1
+    g_blink_timer = g_blink_timer + ticks
     if g_blink_timer > 30 then 
         g_blink_timer = 0 
     end
@@ -554,14 +554,14 @@ function update(screen_w, screen_h)
         g_next_pos_y = g_camera_pos_y
         g_next_size = g_camera_size
     else
-        g_blend_tick = g_blend_tick + 1
+        g_blend_tick = g_blend_tick + ticks
         local blend_factor = clamp(g_blend_tick / 10.0, 0.0, 1.0)
         g_camera_pos_x = lerp(g_prev_pos_x, g_next_pos_x, blend_factor)
         g_camera_pos_y = lerp(g_prev_pos_y, g_next_pos_y, blend_factor)
         g_camera_size = lerp(g_prev_size, g_next_size, blend_factor)
     end
 
-    if update_screen_overrides(screen_w, screen_h) then return end
+    if update_screen_overrides(screen_w, screen_h, ticks)  then return end
 
     g_tut_is_carrier_selected = false
     g_tut_is_context_menu_open = get_is_selection()
@@ -966,21 +966,25 @@ function update(screen_w, screen_h)
                                     local attack_target_count = waypoint:get_attack_target_count()
                                 
                                     for k = 0, attack_target_count - 1, 1 do
-                                        local attack_target_pos = waypoint:get_attack_target_position_xz(k)
-                                        local attack_target_attack_type = waypoint:get_attack_target_attack_type(k)
-                                        local attack_target_icon = get_attack_type_icon(attack_target_attack_type)
+                                        local is_valid = waypoint:get_attack_target_is_valid(k)
 
-                                        local attack_target_screen_pos_x, attack_target_screen_pos_y = get_screen_from_world(attack_target_pos:x(), attack_target_pos:y(), g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
+                                        if is_valid then
+                                            local attack_target_pos = waypoint:get_attack_target_position_xz(k)
+                                            local attack_target_attack_type = waypoint:get_attack_target_attack_type(k)
+                                            local attack_target_icon = get_attack_type_icon(attack_target_attack_type)
 
-                                        local color = g_color_attack_order
+                                            local attack_target_screen_pos_x, attack_target_screen_pos_y = get_screen_from_world(attack_target_pos:x(), attack_target_pos:y(), g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
 
-                                        if attack_target_attack_type == e_attack_type.airlift then
-                                            color = g_color_airlift_order
+                                            local color = g_color_attack_order
+
+                                            if attack_target_attack_type == e_attack_type.airlift then
+                                                color = g_color_airlift_order
+                                            end
+
+                                            update_ui_line(waypoint_screen_pos_x, waypoint_screen_pos_y, attack_target_screen_pos_x, attack_target_screen_pos_y, color)
+                                            update_ui_image(attack_target_screen_pos_x - 8, attack_target_screen_pos_y - 8, atlas_icons.map_icon_attack, color, 0)
+                                            update_ui_image(attack_target_screen_pos_x - 4, attack_target_screen_pos_y - 4 - 8, attack_target_icon, color, 0)
                                         end
-
-                                        update_ui_line(waypoint_screen_pos_x, waypoint_screen_pos_y, attack_target_screen_pos_x, attack_target_screen_pos_y, color)
-                                        update_ui_image(attack_target_screen_pos_x - 8, attack_target_screen_pos_y - 8, atlas_icons.map_icon_attack, color, 0)
-                                        update_ui_image(attack_target_screen_pos_x - 4, attack_target_screen_pos_y - 4 - 8, attack_target_icon, color, 0)
                                     end
                                 end
 

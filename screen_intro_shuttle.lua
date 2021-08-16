@@ -12,13 +12,13 @@ function begin()
     g_ui = lib_imgui:create_ui()
 end
 
-function update(screen_w, screen_h)
-    if update_screen_overrides(screen_w, screen_h) then return end
+function update(screen_w, screen_h, ticks) 
+    if update_screen_overrides(screen_w, screen_h, ticks)  then return end
 
     local ui = g_ui
     ui:begin_ui()
 
-    g_animation_time = g_animation_time + 1
+    g_animation_time = g_animation_time + ticks
 
     local function get_timing_factor(timing_pair)
         return invlerp_clamp(g_launch_time, timing_pair[1], timing_pair[2])
