@@ -112,6 +112,7 @@ function update(screen_w, screen_h)
 
     local screen_vehicle = update_get_screen_vehicle()
 	local world_x, world_y = get_world_from_holomap(g_pointer_pos_x, g_pointer_pos_y, screen_w, screen_h)
+	local is_local = update_get_is_focus_local()
 
     if g_focus_mode ~= 0 then
         if g_focus_mode == 1 then
@@ -159,7 +160,7 @@ function update(screen_w, screen_h)
         focus_world()
     end
 
-    if update_get_is_focus_local() then
+    if is_local then
         g_next_pos_x = g_map_x
         g_next_pos_y = g_map_z
         g_next_size = g_map_size
@@ -180,7 +181,6 @@ function update(screen_w, screen_h)
             g_map_z = g_map_z + pointer_dy * g_map_size * 0.005
         end
     end
-
 
 	update_set_screen_background_type(g_button_mode + 1)
 	update_set_screen_background_is_render_islands(false)
@@ -295,7 +295,7 @@ function update(screen_w, screen_h)
 			for i = 0, island_count - 1, 1 do 
 				local island = update_get_tile_by_index(i)
 
-				if island ~= nil then
+				if island ~= nil and island:get() then
 					local island_color = update_get_team_color(island:get_team_control())
 					local island_pos = island:get_position_xz()
 					local island_size = island:get_size()
@@ -303,11 +303,27 @@ function update(screen_w, screen_h)
 					local screen_pos_x = 0
 					local screen_pos_y = 0
 					
-					if map_zoom < 15000 then
+					if map_zoom < 16000 then
 						screen_pos_x, screen_pos_y = get_holomap_from_world(island_pos:x(), island_pos:y() + (island_size:y() / 2), screen_w, screen_h)
 					else
 						screen_pos_x, screen_pos_y = get_holomap_from_world(island_pos:x(), island_pos:y(), screen_w, screen_h)
 						screen_pos_y = screen_pos_y - 27
+					end
+
+					local command_center_count = island:get_command_center_count()
+					if command_center_count > 0 then
+						--local command_center_position = island:get_command_center_position(0)
+						--local cmd_pos_x, cmd_pos_y = get_holomap_from_world(command_center_position:x(), command_center_position:y(), screen_w, screen_h)
+
+						local island_capture = island:get_team_capture()
+						local island_team = island:get_team_control()
+						local island_capture_progress = island:get_team_capture_progress()
+						local team_color = update_get_team_color(island_capture)
+
+						if island_capture ~= island_team and island_capture ~= -1 and island_capture_progress > 0 then
+							update_ui_rectangle(screen_pos_x - 13, screen_pos_y - 16, 26, 5, color_black)
+							update_ui_rectangle(screen_pos_x - 12, screen_pos_y - 15, 24 * island_capture_progress, 3, team_color)
+						end
 					end
 
 					update_ui_text(screen_pos_x - 64, screen_pos_y - 10, island:get_name(), 128, 1, island_color, 0)
@@ -375,7 +391,7 @@ function update(screen_w, screen_h)
 		end
 
 		g_highlighted_vehicle_id = 0
-		if not g_is_pointer_pressed then
+		if not g_is_pointer_pressed and is_local then
 			local highlighted_distance_best = 4 * math.max( 1, 2000 / map_zoom )
 			
 			local vehicle_count = update_get_map_vehicle_count()
@@ -523,7 +539,7 @@ function update(screen_w, screen_h)
 			local map_pos_x = g_map_x + g_map_x_offset
 			local map_pos_y = g_map_z + g_map_z_offset
 			
-			if update_get_is_focus_local() then
+			if is_local then
 				map_pos_x = world_x
 				map_pos_y = world_y
 			end
@@ -538,7 +554,7 @@ function update(screen_w, screen_h)
 		end
 		
 		-- render cursor last
-		if g_pointer_inbounds and update_get_is_focus_local() then
+		if g_pointer_inbounds and is_local then
 			local cursor_x, cursor_y = get_holomap_from_world(world_x, world_y, screen_w, screen_h)
 			update_ui_text(cursor_x - 3, cursor_y - 6, "x", 6, 0, color_white, 0)
 		end
