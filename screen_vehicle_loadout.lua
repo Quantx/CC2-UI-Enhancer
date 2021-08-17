@@ -114,8 +114,11 @@ function update(screen_w, screen_h, ticks)
         end
 
         if is_pressed and selected_bay_index ~= -1 then
-            g_screen_index = 1
-            g_selected_bay_index = selected_bay_index
+			local attached_vehicle = update_get_map_vehicle_by_id(this_vehicle:get_attached_vehicle_id(selected_bay_index))
+			if attached_vehicle:get() and attached_vehicle:get_dock_state() == 4 then
+				g_screen_index = 1
+				g_selected_bay_index = selected_bay_index
+			end
         end
 
         ui:end_window()

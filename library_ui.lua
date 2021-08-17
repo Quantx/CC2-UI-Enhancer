@@ -2095,8 +2095,6 @@ function imgui_carrier_docking_bays(ui, carrier_vehicle, item_spacing, column_sp
 
             local attached_vehicle_id = carrier_vehicle:get_attached_vehicle_id(bay_index)
 
-			local is_docked = true
-
             if attached_vehicle_id ~= 0 then
                 local attached_vehicle = update_get_map_vehicle_by_id(attached_vehicle_id)
 
@@ -2110,8 +2108,7 @@ function imgui_carrier_docking_bays(ui, carrier_vehicle, item_spacing, column_sp
                     vehicle_color = iff(is_fuel_blocked or is_ammo_blocked, color_grey_dark, iff(is_selected, color_selected, color_white))
                     bay_color = color_white
 
-					if attached_vehicle:get_dock_state() ~= 4 then
-						is_docked = false
+                    if attached_vehicle:get_dock_state() ~= 4 then
                         if animation_tick % 20 > 10 then
                             vehicle_color = color_highlight
                         end
@@ -2157,7 +2154,7 @@ function imgui_carrier_docking_bays(ui, carrier_vehicle, item_spacing, column_sp
                 render_bar(x + item_w - 18, y + 9, ammo_factor, color_ammo)
             end
 
-            if is_selected and is_docked then
+            if is_selected then
                 selected_bay_index = bay_index
             end
 
