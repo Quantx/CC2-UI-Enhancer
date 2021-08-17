@@ -556,7 +556,7 @@ function update(screen_w, screen_h, ticks)
 		-- render cursor last
 		if g_pointer_inbounds and is_local then
 			local cursor_x, cursor_y = get_holomap_from_world(world_x, world_y, screen_w, screen_h)
-			update_ui_text(cursor_x - 3, cursor_y - 6, "x", 6, 0, color_white, 0)
+			update_ui_image(cursor_x - 5, cursor_y - 6, atlas_icons.map_icon_crosshair, color_white, 0)
 		end
 
         g_dismiss_counter = 0
