@@ -114,7 +114,6 @@ function render_attachment_info(x, y, w, h, attachment, vehicle, team, name, ite
 
 		render_health_bar(w - 5, cy - 1, 20, vehicle, col)
 		
-		
 		local ammo_stock = vehicle:get_inventory_count_by_item_index(item_index)
 
 		cx = 4
@@ -181,6 +180,16 @@ function render_attachment_info(x, y, w, h, attachment, vehicle, team, name, ite
 
 			local _, icon, handle = get_chassis_data_by_definition_index(definition_index)
 
+--[[		-- Not supported yet :(
+			local target_name = ""
+			
+			if update_get_is_multiplayer() then
+				local target_attachment = target_vehicle:get_attachment(target_attachment_index)
+				local target_peer = target_attachment:get_controlling_peer_id()
+				local peer_index = update_get_peer_index_by_id(target_peer)
+				local target_name = update_get_peer_name(peer_index)
+			end
+--]]
 			update_ui_rectangle(0, cy, w, 11, col)
 			update_ui_text(0, cy + 1, update_get_loc(e_loc.upp_order), math.floor(w / 2) * 2, 1, color_black, 0)
 			cy = cy + 15
