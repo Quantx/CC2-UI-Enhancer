@@ -111,8 +111,43 @@ function update(screen_w, screen_h, ticks)
     g_animation_time = g_animation_time + ticks
 
     local screen_vehicle = update_get_screen_vehicle()
-	local world_x, world_y = get_world_from_holomap(g_pointer_pos_x, g_pointer_pos_y, screen_w, screen_h)
+	
 	local is_local = update_get_is_focus_local()
+	
+	local world_x = 0
+	local world_y = 0
+
+	local vehicle_count = update_get_map_vehicle_count()
+	for i = 0, vehicle_count - 1, 1 do 
+		local vehicle = update_get_map_vehicle_by_index(i)
+		
+		-- A little hack to use the drydock's waypoint as a cursor
+		if vehicle:get() and vehicle:get_definition_index() == e_game_object_type.drydock and vehicle:get_team() == update_get_screen_team_id() then
+			if is_local then
+				world_x, world_y = get_world_from_holomap(g_pointer_pos_x, g_pointer_pos_y, screen_w, screen_h)
+				
+				vehicle:clear_waypoints()
+				vehicle:add_waypoint(world_x, world_y)
+				vehicle:set_waypoint_wait_group(0, 0, g_is_ruler)
+			else
+				local waypoint_count = vehicle:get_waypoint_count()
+				if waypoint_count > 0 then
+					local waypoint = vehicle:get_waypoint(0)
+					local waypoint_pos = waypoint:get_position_xz()
+					
+					world_x = waypoint_pos:x()
+					world_y = waypoint_pos:y()
+					
+					g_is_ruler = waypoint:get_is_wait_group(0)
+					
+					g_pointer_pos_x, g_pointer_pos_y = get_holomap_from_world( world_x, world_y, screen_w, screen_h )
+				end
+			end
+			break
+		end
+	end
+	
+	g_pointer_inbounds = (g_pointer_pos_x > 0 and g_pointer_pos_y > 0 and g_pointer_pos_x < screen_w and g_pointer_pos_y < screen_h)
 
     if g_focus_mode ~= 0 then
         if g_focus_mode == 1 then
@@ -391,10 +426,9 @@ function update(screen_w, screen_h, ticks)
 		end
 
 		g_highlighted_vehicle_id = 0
-		if not g_is_pointer_pressed and is_local then
+		if not g_is_pointer_pressed then
 			local highlighted_distance_best = 4 * math.max( 1, 2000 / map_zoom )
-			
-			local vehicle_count = update_get_map_vehicle_count()
+
 			for i = 0, vehicle_count - 1, 1 do 
 				local vehicle = update_get_map_vehicle_by_index(i)
 
@@ -535,26 +569,26 @@ function update(screen_w, screen_h, ticks)
 			end
 			
 			cy = cy - 10
-			
+--[[			
 			local map_pos_x = g_map_x + g_map_x_offset
 			local map_pos_y = g_map_z + g_map_z_offset
-			
+
 			if is_local then
 				map_pos_x = world_x
 				map_pos_y = world_y
 			end
-			
+--]]
 			update_ui_text(cx, cy, "Y", 100, 0, icon_col, 0)
-			update_ui_text(cx + 15, cy, string.format("%.0f", map_pos_x), 100, 0, text_col, 0)
+			update_ui_text(cx + 15, cy, string.format("%.0f", world_x), 100, 0, text_col, 0)
 			cy = cy - 10
 			
 			update_ui_text(cx, cy, "X", 100, 0, icon_col, 0)
-			update_ui_text(cx + 15, cy, string.format("%.0f", map_pos_y), 100, 0, text_col, 0)
+			update_ui_text(cx + 15, cy, string.format("%.0f", world_y), 100, 0, text_col, 0)
 			cy = cy - 10
 		end
 		
 		-- render cursor last
-		if g_pointer_inbounds and is_local then
+		if g_pointer_inbounds then
 			local cursor_x, cursor_y = get_holomap_from_world(world_x, world_y, screen_w, screen_h)
 			update_ui_image(cursor_x - 5, cursor_y - 6, atlas_icons.map_icon_crosshair, color_white, 0)
 		end
@@ -600,6 +634,17 @@ function input_event(event, action)
         g_is_pointer_pressed = action == e_input_action.press
     elseif event == e_input.back then
         g_is_ruler = false
+		
+		local vehicle_count = update_get_map_vehicle_count()
+		for i = 0, vehicle_count - 1, 1 do 
+			local vehicle = update_get_map_vehicle_by_index(i)
+			local waypoint_count = vehicle:get_waypoint_count()
+
+			if vehicle:get() and vehicle:get_definition_index() == e_game_object_type.drydock and vehicle:get_team() == update_get_screen_team_id() and waypoint_count > 0 then
+				vehicle:set_waypoint_wait_group(0, 0, false)
+			end
+		end
+		
         update_set_screen_state_exit()
     end
 	
@@ -620,8 +665,6 @@ function input_pointer(is_hovered, x, y)
 	g_ui:input_pointer(is_hovered, x, y)
 	
     g_is_pointer_hovered = is_hovered
-    
-	g_pointer_inbounds = (x > 0 and y > 0)
 	
     g_pointer_pos_x = x
     g_pointer_pos_y = y

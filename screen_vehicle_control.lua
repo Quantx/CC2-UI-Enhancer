@@ -1560,6 +1560,20 @@ function update(screen_w, screen_h, ticks)
     end
 
     g_ui:end_ui()
+	
+	local vehicle_count = update_get_map_vehicle_count()
+	for i = 0, vehicle_count - 1, 1 do 
+		local vehicle = update_get_map_vehicle_by_index(i)
+		local waypoint_count = vehicle:get_waypoint_count()
+
+		if vehicle:get() and vehicle:get_definition_index() == e_game_object_type.drydock and vehicle:get_team() == update_get_screen_team_id() and waypoint_count > 0 then
+			local waypoint = vehicle:get_waypoint(0)
+			local waypoint_pos = waypoint:get_position_xz()
+			
+			local cursor_x, cursor_y = get_screen_from_world( waypoint_pos:x(), waypoint_pos:y(), g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
+			update_ui_image(cursor_x - 5, cursor_y - 6, atlas_icons.map_icon_crosshair, color_white, 0)
+		end
+	end
 
     g_pointer_pos_dx = 0
     g_pointer_pos_dy = 0
