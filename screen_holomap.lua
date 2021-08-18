@@ -395,8 +395,12 @@ function update(screen_w, screen_h, ticks)
 			end
 		end
 
-		if g_is_pointer_pressed then
-			g_selection_vehicle_id = g_highlighted_vehicle_id
+		if g_is_pointer_pressed and g_highlighted_vehicle_id > 0 then
+			local vehicle = update_get_map_vehicle_by_index(g_highlighted_vehicle_id)
+		
+			if vehicle:get() and vehicle:get_team() == update_get_screen_team_id() then
+				g_selection_vehicle_id = g_highlighted_vehicle_id
+			end
 		else
 			g_highlighted_vehicle_id = 0
 			local highlighted_distance_best = 4 * math.max( 1, 2000 / map_zoom )
