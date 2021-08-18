@@ -18,6 +18,11 @@ g_map_x_offset = 0
 g_map_z_offset = 0
 g_map_size_offset = 0
 
+g_override = false
+g_override_x = -64000
+g_override_z = -64000
+g_override_zoom = 16000
+
 g_ui = nil
 
 g_button_mode = 0
@@ -75,6 +80,7 @@ g_ruler_end_x = 0
 g_ruler_end_y = 0
 
 g_highlighted_vehicle_id = 0
+g_selection_vehicle_id = 0
 
 g_color_waypoint = color8(0, 255, 255, 8)
 
@@ -146,7 +152,10 @@ function update(screen_w, screen_h, ticks)
         g_focus_mode = 0
     end
 	
-	if holomap_override(screen_w, screen_h, ticks) then return end
+	if holomap_override(screen_w, screen_h, ticks) then
+		render_cursor(world_x, world_y, screen_w, screen_h)
+		return
+	end
 
     local function step(a, b, c)
         return a + clamp(b - a, -c, c)
@@ -192,7 +201,7 @@ function update(screen_w, screen_h, ticks)
         g_map_size = lerp(g_prev_size, g_next_size, blend_factor)
     end
     
-    if g_is_mouse_mode and g_is_pointer_hovered and update_get_is_notification_holomap_set() == false then
+    if g_is_mouse_mode and g_is_pointer_hovered and g_highlighted_vehicle_id == 0 and not update_get_is_notification_holomap_set() then
         local pointer_dx = g_pointer_pos_x - g_pointer_pos_x_prev
         local pointer_dy = g_pointer_pos_y - g_pointer_pos_y_prev
 
@@ -272,7 +281,7 @@ function update(screen_w, screen_h, ticks)
         end
 
         if is_dismiss then
-            g_dismiss_counter = g_dismiss_counter + 1
+            g_dismiss_counter = g_dismiss_counter + ticks
         else
             g_dismiss_counter = 0
         end
@@ -386,8 +395,10 @@ function update(screen_w, screen_h, ticks)
 			end
 		end
 
-		g_highlighted_vehicle_id = 0
-		if not g_is_pointer_pressed then
+		if g_is_pointer_pressed then
+			g_selection_vehicle_id = g_highlighted_vehicle_id
+		else
+			g_highlighted_vehicle_id = 0
 			local highlighted_distance_best = 4 * math.max( 1, 2000 / map_zoom )
 
 			local vehicle_count = update_get_map_vehicle_count()
@@ -550,10 +561,7 @@ function update(screen_w, screen_h, ticks)
 		end
 		
 		-- render cursor last
-		if g_is_pointer_hovered then
-			local cursor_x, cursor_y = get_holomap_from_world(world_x, world_y, screen_w, screen_h)
-			update_ui_image(cursor_x - 5, cursor_y - 6, atlas_icons.map_icon_crosshair, color_white, 0)
-		end
+		render_cursor(world_x, world_y, screen_w, screen_h)
 
         g_dismiss_counter = 0
         g_notification_time = 0
@@ -565,6 +573,13 @@ function update(screen_w, screen_h, ticks)
 	end
 	
 	g_ui:end_ui()
+end
+
+function render_cursor(world_x, world_y, screen_w, screen_h)
+	if g_is_pointer_hovered then
+		local cursor_x, cursor_y = get_holomap_from_world(world_x, world_y, screen_w, screen_h)
+		update_ui_image(cursor_x - 5, cursor_y - 6, atlas_icons.map_icon_crosshair, color_white, 0)
+	end
 end
 
 function input_event(event, action)
@@ -594,20 +609,24 @@ function input_event(event, action)
 		end
     elseif event == e_input.pointer_1 then
         g_is_pointer_pressed = action == e_input_action.press
-    elseif event == e_input.back then
-        g_is_ruler = false
+    elseif event == e_input.back and action == e_input_action.press then		
+		if g_selection_vehicle_id > 0 then
+			g_selection_vehicle_id = 0
+		else
+			g_is_ruler = false
 		
-		local vehicle_count = update_get_map_vehicle_count()
-		for i = 0, vehicle_count - 1, 1 do 
-			local vehicle = update_get_map_vehicle_by_index(i)
-			local waypoint_count = vehicle:get_waypoint_count()
+			local vehicle_count = update_get_map_vehicle_count()
+			for i = 0, vehicle_count - 1, 1 do 
+				local vehicle = update_get_map_vehicle_by_index(i)
+				local waypoint_count = vehicle:get_waypoint_count()
 
-			if vehicle:get() and vehicle:get_definition_index() == e_game_object_type.drydock and vehicle:get_team() == update_get_screen_team_id() and waypoint_count > 0 then
-				vehicle:set_waypoint_wait_group(0, 0, false)
+				if vehicle:get() and vehicle:get_definition_index() == e_game_object_type.drydock and vehicle:get_team() == update_get_screen_team_id() and waypoint_count > 0 then
+					vehicle:set_waypoint_wait_group(0, 0, false)
+				end
 			end
-		end
 		
-        update_set_screen_state_exit()
+			update_set_screen_state_exit()
+		end
     end
 	
 	if not g_is_ruler then
@@ -616,7 +635,7 @@ function input_event(event, action)
 end
 
 function input_axis(x, y, z, w)
-    if update_get_is_notification_holomap_set() == false then
+    if not g_override and not update_get_is_notification_holomap_set() then
         g_map_x = g_map_x + x * g_map_size * 0.02
         g_map_z = g_map_z + y * g_map_size * 0.02
         map_zoom(1.0 - w * 0.1)
@@ -877,6 +896,12 @@ function get_holomap_from_world(world_x, world_y, screen_w, screen_h)
 	local map_x = g_map_x + g_map_x_offset
 	local map_z = g_map_z + g_map_z_offset
 	local map_size = g_map_size + g_map_size_offset
+	
+	if g_override then
+		map_x = g_override_x
+		map_z = g_override_z
+		map_size = g_override_zoom
+	end
 
     local view_w = map_size * 1.64
     local view_h = map_size
@@ -894,6 +919,12 @@ function get_world_from_holomap(screen_x, screen_y, screen_w, screen_h)
 	local map_x = g_map_x + g_map_x_offset
 	local map_z = g_map_z + g_map_z_offset
 	local map_size = g_map_size + g_map_size_offset
+
+	if g_override then
+		map_x = g_override_x
+		map_z = g_override_z
+		map_size = g_override_zoom
+	end
 
 	local view_w = map_size * 1.64
     local view_h = map_size
@@ -1080,20 +1111,22 @@ function get_team_drydock()
 end
 
 function holomap_override( screen_w, screen_h, ticks )
-	local ovr = false
+	g_override = false
 
-	if holomap_override_startup ( screen_w, screen_h, ticks ) then
-		ovr = true
-	elseif update_self_destruct_override(screen_w, screen_h) then
-		ovr = true
+	if update_self_destruct_override(screen_w, screen_h) then
+		g_override = true
+	elseif holomap_override_startup ( screen_w, screen_h, ticks ) then
+		g_override = true
+	elseif render_selection(screen_w, screen_h) then
+		g_override = true
 	end
 	
-	if ovr then
+	if g_override then
 		update_set_screen_background_type(0)
-		update_set_screen_map_position_scale(-64000, -64000, 16000)
+		update_set_screen_map_position_scale(g_override_x, g_override_z, g_override_zoom)
 	end
 	
-	return ovr
+	return g_override
 end
 
 function holomap_override_startup( screen_w, screen_h, ticks )
@@ -1296,3 +1329,188 @@ function render_startup_manual( screen_w, screen_h )
 	ui:end_window()
 end
 
+function ui_render_selection_carrier_vehicle_overview(x, y, w, h)
+    local vehicle_count = update_get_map_vehicle_count()
+    local deployed_vehicles = {}
+
+    for i = 0, vehicle_count - 1 do
+        local vehicle = update_get_map_vehicle_by_index(i)
+
+        if vehicle:get() then
+            local vehicle_team = vehicle:get_team()
+
+            if vehicle_team == update_get_screen_team_id() then
+                local def = vehicle:get_definition_index()
+
+                if def ~= e_game_object_type.chassis_carrier and def ~= e_game_object_type.chassis_sea_barge and def ~= e_game_object_type.chassis_land_turret and def ~= e_game_object_type.chassis_land_robot_dog and def ~= e_game_object_type.chassis_spaceship and def ~= e_game_object_type.drydock then
+                    local parent_vehicle_index = vehicle:get_attached_parent_id()
+
+                    if parent_vehicle_index == 0 then
+                        table.insert(deployed_vehicles, vehicle)
+                    end
+                end
+            end
+        end
+    end
+
+    local cell_spacing = 2
+    local grid_w = w
+    local cells_x = 6
+    local cell_w = grid_w / cells_x - cell_spacing
+    local cell_h = 16
+
+    local grid_x = x + (w - grid_w) / 2
+    local grid_y = y
+    local cell_x = 0
+    local cell_y = 0
+
+    for i = 1, #deployed_vehicles do
+        local cx = grid_x + cell_x * (cell_w + cell_spacing)
+        local cy = grid_y + cell_y * (cell_h + cell_spacing)
+
+        local vehicle = deployed_vehicles[i]
+
+        local vehicle_definition_type = vehicle:get_definition_index()
+        local vehicle_definition_name, vehicle_definition_region = get_chassis_data_by_definition_index(vehicle_definition_type)
+        local region_vehicle_icon, icon_offset = get_icon_data_by_definition_index(vehicle_definition_type)
+
+        update_ui_rectangle(cx, cy, cell_w, cell_h, color_black)
+        update_ui_image(cx, cy, vehicle_definition_region, color_white, 0)
+
+        local bar_h = 10
+        local repair_factor = vehicle:get_repair_factor()
+        local fuel_factor = vehicle:get_fuel_factor()
+        local ammo_factor = vehicle:get_ammo_factor()
+        local repair_bar = math.floor(repair_factor * bar_h)
+        local fuel_bar = math.floor(fuel_factor * bar_h)
+        local ammo_bar = math.floor(ammo_factor * bar_h)
+
+        local bx = cx + 17
+        local by = cy + 3
+
+        update_ui_rectangle(bx, by, 1, bar_h, color8(16, 16, 16, 255))
+        update_ui_rectangle(bx, by + bar_h - repair_bar, 1, repair_bar, color8(47, 116, 255, 255))
+        update_ui_rectangle(bx + 2, by, 1, bar_h, color8(16, 16, 16, 255))
+        update_ui_rectangle(bx + 2, by + bar_h - fuel_bar, 1, fuel_bar, color8(119, 85, 161, 255))
+        update_ui_rectangle(bx + 4, by, 1, bar_h, color8(16, 16, 16, 255))
+        update_ui_rectangle(bx + 4, by + bar_h - ammo_bar, 1, ammo_bar, color8(201, 171, 68, 255))
+
+        cell_x = cell_x + 1
+        if cell_x >= cells_x then
+            cell_x = 0
+            cell_y = cell_y + 1
+        end
+    end
+end
+
+function render_selection_carrier(screen_w, screen_h, carrier_vehicle)
+    local ui = g_ui
+    
+    local selected_bay_index = -1
+    local is_undock = false
+    local loadout_w = 74
+    local left_w = (screen_w / 2) - loadout_w - 25
+    local selected_vehicle = nil
+    local region_w = 0
+    local region_h = 0
+
+    update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_all)
+
+    local window = ui:begin_window(update_get_loc(e_loc.upp_docked), 10 + (screen_w / 4), 10, left_w, 130, atlas_icons.column_pending, true, 2)
+        region_w, region_h = ui:get_region()
+        update_ui_line(region_w / 2, 0, region_w / 2, region_h, color_white)
+
+        window.cy = window.cy + 5
+        selected_bay_index, is_undock = imgui_carrier_docking_bays(ui, carrier_vehicle, 8, 22, g_animation_time)
+        selected_vehicle = update_get_map_vehicle_by_id(carrier_vehicle:get_attached_vehicle_id(selected_bay_index))
+
+    ui:end_window()
+    
+    ui:begin_window(update_get_loc(e_loc.upp_deployed), 10 + (screen_w / 4), 145, left_w, 100, atlas_icons.column_pending, false, 2)
+        ui_render_selection_carrier_vehicle_overview(0, 0, left_w, 100)
+    ui:end_window()
+    
+    window = ui:begin_window(update_get_loc(e_loc.upp_loadout), 10 + (screen_w / 4) + left_w + 5, 10, 74, 84, atlas_icons.column_stock, false, 2)
+        region_w, region_h = ui:get_region()
+        window.cy = region_h / 2 - 32
+        imgui_vehicle_chassis_loadout(ui, selected_vehicle, selected_bay_index)
+    ui:end_window()
+end
+
+function render_selection_vehicle(screen_w, screen_h, vehicle)
+    local screen_vehicle = update_get_screen_vehicle()
+
+    update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_ud)
+
+    if screen_vehicle:get() then
+        if screen_vehicle:get_team() == vehicle:get_team() then
+            local ui = g_ui
+            
+            local loadout_w = 74
+            local left_w = (screen_w / 2) - loadout_w - 25
+
+            local window = ui:begin_window(update_get_loc(e_loc.upp_loadout), 10 + (screen_w / 4) + left_w + 5, 10, loadout_w, 84, atlas_icons.column_stock, false, 2)
+                local region_w, region_h = ui:get_region()
+                window.cy = region_h / 2 - 32
+                imgui_vehicle_chassis_loadout(ui, vehicle, selected_bay_index)
+            ui:end_window()
+
+            local hitpoints = vehicle:get_hitpoints()
+            local hitpoints_total = vehicle:get_total_hitpoints()
+            local damage_factor = clamp(hitpoints / hitpoints_total, 0, 1)
+            local fuel_factor = vehicle:get_fuel_factor()
+            local ammo_factor = vehicle:get_ammo_factor()
+            local color_low = color_status_bad
+            local color_mid = color8(255, 255, 0, 255)
+            local color_high = color_status_ok
+
+            ui:begin_window(update_get_loc(e_loc.upp_status), 10 + (screen_w / 4), 10, left_w, 100, atlas_icons.column_pending, true, 2)
+                ui:stat(update_get_loc(e_loc.hp), hitpoints .. "/" .. hitpoints_total, iff(damage_factor < 0.2, color_low, color_high))
+
+                if vehicle:get_definition_index() == e_game_object_type.chassis_land_turret then
+                    ui:stat(update_get_loc(e_loc.upp_fuel), "---", color_grey_dark)
+                    ui:stat(update_get_loc(e_loc.upp_ammo), "---", color_grey_dark)
+                else
+                    ui:stat(update_get_loc(e_loc.upp_fuel), string.format("%.0f%%", fuel_factor * 100), iff(fuel_factor < 0.25, color_low, iff(fuel_factor < 0.5, color_mid, color_high)))
+                    ui:stat(update_get_loc(e_loc.upp_ammo), string.format("%.0f%%", ammo_factor * 100), iff(ammo_factor < 0.25, color_low, iff(ammo_factor < 0.5, color_mid, color_high)))
+                end
+
+                ui:header(update_get_loc(e_loc.upp_actions))
+                
+                if ui:list_item(update_get_loc(e_loc.upp_center_to_vehicle), true) then
+					local pos_xz = vehicle:get_position_xz()
+					transition_to_map_pos(pos_xz:x(), pos_xz:y(), 2000)
+					g_selection_vehicle_id = 0
+					g_is_pointer_pressed = false
+                end
+
+            ui:end_window()
+        end
+    end
+end
+
+function render_selection(screen_w, screen_h)
+    update_add_ui_interaction(update_get_loc(e_loc.interaction_cancel), e_game_input.back)
+
+    if g_selection_vehicle_id > 0 then
+        local selected_vehicle = update_get_map_vehicle_by_id(g_selection_vehicle_id)
+
+        if selected_vehicle:get() then
+            local vehicle_definition_index = selected_vehicle:get_definition_index()
+
+			if selected_vehicle:get_team() == update_get_screen_team_id() then
+				if vehicle_definition_index == e_game_object_type.chassis_carrier then
+					render_selection_carrier(screen_w, screen_h, selected_vehicle)
+				else
+					render_selection_vehicle(screen_w, screen_h, selected_vehicle)
+				end
+			end
+        else
+            g_selection_vehicle_id = 0
+        end
+		
+		return g_selection_vehicle_id > 0
+    end
+	
+	return false
+end
