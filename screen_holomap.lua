@@ -54,7 +54,6 @@ g_pointer_pos_x_prev = 0
 g_pointer_pos_y_prev = 0
 g_is_pointer_pressed = false
 g_is_mouse_mode = false
-g_pointer_inbounds = false
 
 g_startup_op_num = 0
 g_startup_phase = 0
@@ -111,43 +110,29 @@ function update(screen_w, screen_h, ticks)
     g_animation_time = g_animation_time + ticks
 
     local screen_vehicle = update_get_screen_vehicle()
-	
 	local is_local = update_get_is_focus_local()
 	
 	local world_x = 0
 	local world_y = 0
 
-	local vehicle_count = update_get_map_vehicle_count()
-	for i = 0, vehicle_count - 1, 1 do 
-		local vehicle = update_get_map_vehicle_by_index(i)
-		
-		-- A little hack to use the drydock's waypoint as a cursor
-		if vehicle:get() and vehicle:get_definition_index() == e_game_object_type.drydock and vehicle:get_team() == update_get_screen_team_id() then
-			if is_local then
-				world_x, world_y = get_world_from_holomap(g_pointer_pos_x, g_pointer_pos_y, screen_w, screen_h)
-				
-				vehicle:clear_waypoints()
-				vehicle:add_waypoint(world_x, world_y)
-				vehicle:set_waypoint_wait_group(0, 0, g_is_ruler)
-			else
-				local waypoint_count = vehicle:get_waypoint_count()
-				if waypoint_count > 0 then
-					local waypoint = vehicle:get_waypoint(0)
-					local waypoint_pos = waypoint:get_position_xz()
-					
-					world_x = waypoint_pos:x()
-					world_y = waypoint_pos:y()
-					
-					g_is_ruler = waypoint:get_is_wait_group(0)
-					
-					g_pointer_pos_x, g_pointer_pos_y = get_holomap_from_world( world_x, world_y, screen_w, screen_h )
-				end
-			end
-			break
-		end
-	end
+	local drydock, drydock_waypoint = get_team_drydock()
 	
-	g_pointer_inbounds = (g_pointer_pos_x > 0 and g_pointer_pos_y > 0 and g_pointer_pos_x < screen_w and g_pointer_pos_y < screen_h)
+	if is_local then
+		world_x, world_y = get_world_from_holomap( g_pointer_pos_x, g_pointer_pos_y, screen_w, screen_h )
+				
+		drydock:clear_waypoints()
+		drydock:add_waypoint(world_x, world_y)
+		drydock:set_waypoint_wait_group(0, 0, g_is_ruler)
+	elseif drydock_waypoint then
+		local waypoint_pos = drydock_waypoint:get_position_xz()
+					
+		world_x = waypoint_pos:x()
+		world_y = waypoint_pos:y()
+					
+		g_is_ruler = drydock_waypoint:get_is_wait_group(0)
+					
+		g_pointer_pos_x, g_pointer_pos_y = get_holomap_from_world( world_x, world_y, screen_w, screen_h )
+	end
 
     if g_focus_mode ~= 0 then
         if g_focus_mode == 1 then
@@ -156,9 +141,12 @@ function update(screen_w, screen_h, ticks)
             focus_world()
         end
 
+		g_is_map_pos_initialised = true
 		g_startup_phase = holomap_startup_phases.finish
         g_focus_mode = 0
     end
+	
+	if holomap_override(screen_w, screen_h, ticks) then return end
 
     local function step(a, b, c)
         return a + clamp(b - a, -c, c)
@@ -184,13 +172,10 @@ function update(screen_w, screen_h, ticks)
     update_add_ui_interaction_special(update_get_loc(e_loc.interaction_zoom), e_ui_interaction_special.map_zoom)
 	update_add_ui_interaction("map tool", e_game_input.interact_a)
 	if screen_vehicle:get() and screen_vehicle:get_dock_state() ~= e_vehicle_dock_state.docked then
-		if g_startup_phase ~= holomap_startup_phases.finish then focus_world() end
-		g_startup_phase = holomap_startup_phases.finish
-		
 		update_add_ui_interaction("set carrier waypoint", e_game_input.interact_b)
 	end
 	
-    if g_is_map_pos_initialised == false then
+    if not g_is_map_pos_initialised  then
         g_is_map_pos_initialised = true
         focus_world()
     end
@@ -207,7 +192,7 @@ function update(screen_w, screen_h, ticks)
         g_map_size = lerp(g_prev_size, g_next_size, blend_factor)
     end
     
-    if g_is_mouse_mode and g_pointer_inbounds and update_get_is_notification_holomap_set() == false then
+    if g_is_mouse_mode and g_is_pointer_hovered and update_get_is_notification_holomap_set() == false then
         local pointer_dx = g_pointer_pos_x - g_pointer_pos_x_prev
         local pointer_dy = g_pointer_pos_y - g_pointer_pos_y_prev
 
@@ -239,31 +224,7 @@ function update(screen_w, screen_h, ticks)
 
 	g_ui:begin_ui()
 
-	if g_startup_phase ~= holomap_startup_phases.finish then
-		update_set_screen_background_type(0)
-		update_set_screen_background_is_render_islands(false)
-		update_set_screen_map_position_scale(-10000, -10000, 500)
-	
-		if screen_vehicle:get() then
-			local veh = update_get_vehicle_by_id(screen_vehicle:get_id())
-			local target_desired, target_allocated = veh:get_power_system_state(4) -- Radar
-			if target_desired == 0 then	g_startup_phase_anim = g_startup_phase_anim + 1	end
-		end
-	
-		if g_startup_phase == holomap_startup_phases.memchk then
-			render_startup_memchk( screen_w, screen_h )
-		elseif g_startup_phase == holomap_startup_phases.bios then
-			render_startup_bios( screen_w, screen_h )
-		elseif g_startup_phase == holomap_startup_phases.sys then
-			render_startup_sys( screen_w, screen_h )
-		elseif g_startup_phase == holomap_startup_phases.manual then
-			render_startup_manual( screen_w, screen_h )
-		end
-		
-		if g_startup_phase == holomap_startup_phases.finish then
-			focus_world()
-		end
-    elseif update_get_is_notification_holomap_set() then
+	if update_get_is_notification_holomap_set() then
         g_notification_time = g_notification_time + 1
 
         update_set_screen_background_type(0)
@@ -429,6 +390,7 @@ function update(screen_w, screen_h, ticks)
 		if not g_is_pointer_pressed then
 			local highlighted_distance_best = 4 * math.max( 1, 2000 / map_zoom )
 
+			local vehicle_count = update_get_map_vehicle_count()
 			for i = 0, vehicle_count - 1, 1 do 
 				local vehicle = update_get_map_vehicle_by_index(i)
 
@@ -481,12 +443,12 @@ function update(screen_w, screen_h, ticks)
 		end
 		
 		if g_is_ruler then
-			if g_pointer_inbounds then
+			if g_is_pointer_hovered then
 				g_ruler_end_x = world_x
 				g_ruler_end_y = world_y
 			end
 			
-			if not g_is_ruler_set and g_pointer_inbounds then
+			if not g_is_ruler_set and g_is_pointer_hovered then
 				g_ruler_beg_x = g_ruler_end_x
 				g_ruler_beg_y = g_ruler_end_y
 				
@@ -588,7 +550,7 @@ function update(screen_w, screen_h, ticks)
 		end
 		
 		-- render cursor last
-		if g_pointer_inbounds then
+		if g_is_pointer_hovered then
 			local cursor_x, cursor_y = get_holomap_from_world(world_x, world_y, screen_w, screen_h)
 			update_ui_image(cursor_x - 5, cursor_y - 6, atlas_icons.map_icon_crosshair, color_white, 0)
 		end
@@ -597,7 +559,7 @@ function update(screen_w, screen_h, ticks)
         g_notification_time = 0
     end
 
-	if g_pointer_inbounds then
+	if g_is_pointer_hovered then
 		g_pointer_pos_x_prev = g_pointer_pos_x
 		g_pointer_pos_y_prev = g_pointer_pos_y
 	end
@@ -615,7 +577,7 @@ function input_event(event, action)
         g_is_dismiss_pressed = action == e_input_action.press
 		g_is_ruler = action == e_input_action.press
 	elseif event == e_input.action_b then
-		if action == e_input_action.press and g_pointer_inbounds and screen_vehicle:get() and screen_vehicle:get_dock_state() ~= e_vehicle_dock_state.docked then
+		if action == e_input_action.press and g_is_pointer_hovered and screen_vehicle:get() and screen_vehicle:get_dock_state() ~= e_vehicle_dock_state.docked then
 			local screen_vehicle_pos = screen_vehicle:get_position_xz()
 			local carrier_pos_x, carrier_pos_y = get_holomap_from_world(screen_vehicle_pos:x(), screen_vehicle_pos:y(), 512, 256)
 		
@@ -1014,8 +976,8 @@ function render_vehicle_tooltip(w, h, vehicle)
     cx = cx + 6
 
     if vehicle:get_is_observation_type_revealed() then
-        update_ui_image(cx, 2, vehicle_definition_region, color8(255, 255, 255, 255), 0)
-        cx = cx + 18
+--        update_ui_image(cx, 2, vehicle_definition_region, color8(255, 255, 255, 255), 0)
+--        cx = cx + 18
 
 		local display_name = vehicle_definition_name
 
@@ -1026,8 +988,8 @@ function render_vehicle_tooltip(w, h, vehicle)
         update_ui_text(cx, 6, display_name, 124, 0, color8(255, 255, 255, 255), 0)
         cx = cx + update_ui_get_text_size(display_name, 10000, 0) + 2
     else
-        update_ui_image(cx, 2, atlas_icons.icon_chassis_16_wheel_small, color_inactive, 0)
-        cx = cx + 18
+--        update_ui_image(cx, 2, atlas_icons.icon_chassis_16_wheel_small, color_inactive, 0)
+--        cx = cx + 18
 
         local display_name = "***"
         update_ui_text(cx, 6, display_name, 124, 0, color_inactive, 0)
@@ -1096,6 +1058,77 @@ function render_vehicle_tooltip(w, h, vehicle)
 
         update_ui_text(cx, cy, virus_text, w - 4, 0, iff(ammo_count > 0, color_status_ok, color_status_bad), 0)
     end
+end
+
+function get_team_drydock()
+	local vehicle_count = update_get_map_vehicle_count()
+	for i = 0, vehicle_count - 1, 1 do 
+		local vehicle = update_get_map_vehicle_by_index(i)
+		
+		if vehicle:get() and vehicle:get_definition_index() == e_game_object_type.drydock and vehicle:get_team() == update_get_screen_team_id() then
+			local waypoint_count = vehicle:get_waypoint_count()
+			local waypoint = nil
+			
+			if waypoint_count > 0 then
+				waypoint = vehicle:get_waypoint(0)
+			end
+			
+			
+			return vehicle, waypoint
+		end
+	end
+end
+
+function holomap_override( screen_w, screen_h, ticks )
+	local ovr = false
+
+	if holomap_override_startup ( screen_w, screen_h, ticks ) then
+		ovr = true
+	elseif update_self_destruct_override(screen_w, screen_h) then
+		ovr = true
+	end
+	
+	if ovr then
+		update_set_screen_background_type(0)
+		update_set_screen_map_position_scale(-64000, -64000, 16000)
+	end
+	
+	return ovr
+end
+
+function holomap_override_startup( screen_w, screen_h, ticks )
+
+	local screen_vehicle = update_get_screen_vehicle()
+
+	if g_startup_phase == holomap_startup_phases.finish then
+		return false
+	elseif screen_vehicle:get() and screen_vehicle:get_dock_state() ~= e_vehicle_dock_state.docked then
+		g_startup_phase = holomap_startup_phases.finish
+		return false
+	end
+
+	if screen_vehicle:get() then
+		local veh = update_get_vehicle_by_id(screen_vehicle:get_id())
+		local target_desired, target_allocated = veh:get_power_system_state(4) -- Radar
+		if target_desired == 0 then	g_startup_phase_anim = g_startup_phase_anim + ticks	end
+	end
+
+	if g_startup_phase == holomap_startup_phases.memchk then
+		render_startup_memchk( screen_w, screen_h )
+	elseif g_startup_phase == holomap_startup_phases.bios then
+		render_startup_bios( screen_w, screen_h )
+	elseif g_startup_phase == holomap_startup_phases.sys then
+		render_startup_sys( screen_w, screen_h )
+	elseif g_startup_phase == holomap_startup_phases.manual then
+		render_startup_manual( screen_w, screen_h )
+	end
+	
+	if g_startup_phase == holomap_startup_phases.finish then
+		focus_carrier()
+		return false
+	end
+	
+	return true
 end
 
 function render_startup_memchk( screen_w, screen_h )
