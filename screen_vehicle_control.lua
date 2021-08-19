@@ -59,6 +59,10 @@ g_cursor_pos_y = 0
 
 g_ui = nil
 
+g_holomap_last_x = 0
+g_holomap_last_y = 0
+g_holomap_last_anim = 0
+
 -- tutorial controls
 g_tut_is_carrier_selected = false
 g_tut_is_context_menu_open = false
@@ -1521,9 +1525,22 @@ function update(screen_w, screen_h, ticks)
 			if vehicle:get() and vehicle:get_definition_index() == e_game_object_type.drydock and vehicle:get_team() == update_get_screen_team_id() and waypoint_count > 0 then
 				local waypoint = vehicle:get_waypoint(0)
 				local waypoint_pos = waypoint:get_position_xz()
-				
-				local cursor_x, cursor_y = get_screen_from_world( waypoint_pos:x(), waypoint_pos:y(), g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
-			        update_ui_image_rot(cursor_x, cursor_y, atlas_icons.map_icon_crosshair, color_white, math.pi / 4)
+
+				local waypoint_x = waypoint_pos:x()
+				local waypoint_y = waypoint_pos:y()
+
+				local cursor_x, cursor_y = get_screen_from_world( waypoint_x, waypoint_y, g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
+
+				if waypoint_x ~= g_holomap_last_x or waypoint_y ~= g_holomap_last_y then
+					g_holomap_last_x = waypoint_x
+					g_holomap_last_y = waypoint_y
+					g_holomap_last_anim = g_animation_time
+				end
+
+                                local fade = math.max( 255 - math.floor(g_animation_time - g_holomap_last_anim), 0 )
+			        update_ui_image_rot(cursor_x, cursor_y, atlas_icons.map_icon_crosshair, color8(255, 255, 255, fade), math.pi / 4)
+
+				break
 			end
 		end
     elseif g_screen_index == 1 then
