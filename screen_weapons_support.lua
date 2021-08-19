@@ -6,6 +6,7 @@ end
 
 function begin()
     begin_load()
+	begin_load_inventory_data()
 end
 
 function update(screen_w, screen_h, ticks) 
@@ -35,8 +36,8 @@ function update(screen_w, screen_h, ticks)
             local section_w = (screen_w - 2 * border_out - border_in) / 2
             local section_h = screen_h - 2 * border_out
 
-            render_attachment_info(border_out, border_out, section_w, section_h, attachments[1], vehicle, team, update_get_loc(e_loc.upp_icbm))
-            render_attachment_info(border_out + section_w + border_in, border_out, section_w, section_h, attachments[2], vehicle, team, update_get_loc(e_loc.upp_gun))
+            render_attachment_info(border_out, border_out, section_w, section_h, attachments[1], vehicle, team, update_get_loc(e_loc.upp_icbm), 29)
+            render_attachment_info(border_out + section_w + border_in, border_out, section_w, section_h, attachments[2], vehicle, team, update_get_loc(e_loc.upp_gun), 35)
         end
     end
 
@@ -64,12 +65,12 @@ end
 --
 --------------------------------------------------------------------------------
 
-function render_attachment_info(x, y, w, h, attachment, vehicle, team, name)
+function render_attachment_info(x, y, w, h, attachment, vehicle, team, name, item_index)
     update_ui_push_offset(x, y)
 
     local col = color_white
 
-    if attachment == nil then
+    if attachment == nil or vehicle:get_dock_state() == e_vehicle_dock_state.docked then
         render_status_label(2, h / 2 - 7, w - 4, 13, update_get_loc(e_loc.upp_offline), col, is_blink_on(15))
     else
         local definition_index = attachment:get_definition_index()
@@ -103,126 +104,122 @@ function render_attachment_info(x, y, w, h, attachment, vehicle, team, name)
         local cy = 2
         local cx = 2
         
-        if attachment:get_is_damaged() then
-            if control_mode == "off" then
-                render_status_label(2, h / 2 - 7, w - 4, 13, update_get_loc(e_loc.upp_damaged), color_status_bad, is_blink_on(15))
-            else
-                update_ui_image(cx, cy, icon, col, 0)
-                update_ui_line(cx + 18, 0, cx + 18, 19, col)
-                update_ui_text(cx + 21, cy + 4, name, 200, 0, col, 0)
-                cy = cy + 17
-                update_ui_line(0, cy, w, cy, col)
-        
-                render_status_label(2, h / 2 - 7, w - 4, 13, update_get_loc(e_loc.upp_damaged), color_status_bad, is_blink_on(15))
-            end
-        elseif control_mode == "off" then
-            render_status_label(2, h / 2 - 7, w - 4, 13, update_get_loc(e_loc.upp_offline), col, is_blink_on(15))
-        else
-            update_ui_image(cx, cy, icon, col, 0)
-            update_ui_line(cx + 18, 0, cx + 18, 19, col)
-            update_ui_text(cx + 21, cy + 4, name, 200, 0, col, 0)
-            cy = cy + 17
-    
-            update_ui_line(0, cy, w, cy, col)
-            cy = cy + 2
+		update_ui_image(cx, cy, icon, col, 0)
+		update_ui_line(cx + 18, 0, cx + 18, 19, col)
+		update_ui_text(cx + 21, cy + 4, name, 200, 0, col, 0)
+		cy = cy + 17
 
-            render_ammo_bar(w - 5, cy, 20, clamp(ammo_remaining / ammo_capacity, 0, 1), col)
+		update_ui_line(0, cy, w, cy, col)
+		cy = cy + 2
 
-            cx = 4
-            update_ui_image(cx, cy, atlas_icons.column_ammo, iff(ammo_remaining > 0, col, color_status_bad), 0)
-            update_ui_text(cx + 10, cy, math.min(ammo_remaining, 99999), 200, 0, iff(ammo_remaining > 0, col, color_status_bad), 0)
-            cy = cy + 10
+		render_health_bar(w - 5, cy - 1, 20, vehicle, col)
+		
+		local ammo_stock = vehicle:get_inventory_count_by_item_index(item_index)
 
-            update_ui_image(cx, cy, atlas_icons.column_laser, iff(target_id ~= 0, col, color_grey_dark), 0)
-            update_ui_text(cx + 10, cy, string.format("%.0f%%", target_accuracy), 200, 0, iff(target_id ~= 0, col, color_grey_dark), 0)
-            cy = cy + 11
+		cx = 4
+		update_ui_image(cx, cy, atlas_icons.column_stock, iff(ammo_stock > 0, col, color_status_bad), 0)
+		update_ui_text(cx + 10, cy, math.min(ammo_stock, 99999), 200, 0, iff(ammo_stock > 0, col, color_status_bad), 0)
+		cy = cy + 10
 
-            if target_id ~= 0 then
-                if ammo_remaining > 0 then
-                    render_status_label(2, h - 15, w - 4, 13, update_get_loc(e_loc.upp_tracking), color_status_bad, is_blink_on(5))
+		update_ui_image(cx, cy, atlas_icons.column_laser, iff(target_id ~= 0, col, color_grey_dark), 0)
+		update_ui_text(cx + 10, cy, string.format("%.0f%%", target_accuracy), 200, 0, iff(target_id ~= 0, col, color_grey_dark), 0)
+		cy = cy + 11
 
-                    if is_blink_on(5, true) then
-                        g_is_beep = true
-                    end
-                else
-                    render_status_label(2, h - 15, w - 4, 13, update_get_loc(e_loc.upp_empty), color_status_bad, true)
-                end
-            else
-                if ammo_remaining > 0 then
-                    render_status_label(2, h - 15, w - 4, 13, update_get_loc(e_loc.upp_armed), color_status_ok, true)
-                else
-                    render_status_label(2, h - 15, w - 4, 13, update_get_loc(e_loc.upp_empty), color_status_bad, true)
-                end
-            end
+		if attachment:get_is_damaged() then
+			render_status_label(2, h - 15, w - 4, 13, update_get_loc(e_loc.upp_damaged), color_status_bad, is_blink_on(15))
+		elseif control_mode == "off" then
+			render_status_label(2, h - 15, w - 4, 13, update_get_loc(e_loc.upp_offline), col, is_blink_on(15))
+		elseif ammo_remaining > 0 then
+			if target_id ~= 0 then
+				render_status_label(2, h - 15, w - 4, 13, update_get_loc(e_loc.upp_tracking), color_status_bad, is_blink_on(5))
 
-            local function render_missile(x, y, is_ammo, is_tracking)
-                update_ui_push_offset(x, y)
+				if is_blink_on(5, true) then
+					g_is_beep = true
+				end
+			else
+				render_status_label(2, h - 15, w - 4, 13, update_get_loc(e_loc.upp_armed), color_status_ok, true)
+			end
+		else
+			render_status_label(2, h - 15, w - 4, 13, update_get_loc(e_loc.upp_empty), color_status_bad, true)
+		end
 
-                if is_ammo and is_tracking then
-                    update_ui_image(1, 1, atlas_icons.screen_weapon_missile_cruise, iff(is_blink_on(5), color_black, color_status_bad), 0)
-                else
-                    update_ui_image(1, 1, atlas_icons.screen_weapon_missile_cruise, iff(is_ammo, color_status_ok, color_grey_dark), 0)
-                end
+		local function render_missile(x, y, is_ammo, is_tracking)
+			update_ui_push_offset(x, y)
 
-                update_ui_pop_offset()
-            end
+			if is_ammo and is_tracking then
+				update_ui_image(1, 1, atlas_icons.screen_weapon_missile_cruise, iff(is_blink_on(5), color_black, color_status_bad), 0)
+			else
+				update_ui_image(1, 1, atlas_icons.screen_weapon_missile_cruise, iff(is_ammo, color_status_ok, color_grey_dark), 0)
+			end
 
-            local function render_shell(x, y, is_ammo, is_tracking)
-                update_ui_push_offset(x, y)
+			update_ui_pop_offset()
+		end
 
-                if is_ammo and is_tracking then
-                    update_ui_image(1, 1, atlas_icons.screen_weapon_shell, iff(is_blink_on(5), color_black, color_status_bad), 0)
-                else
-                    update_ui_image(1, 1, atlas_icons.screen_weapon_shell, iff(is_ammo, color_status_ok, color_grey_dark), 0)
-                end
+		local function render_shell(x, y, is_ammo, is_tracking)
+			update_ui_push_offset(x, y)
 
-                update_ui_pop_offset()
-            end
+			if is_ammo and is_tracking then
+				update_ui_image(1, 1, atlas_icons.screen_weapon_shell, iff(is_blink_on(5), color_black, color_status_bad), 0)
+			else
+				update_ui_image(1, 1, atlas_icons.screen_weapon_shell, iff(is_ammo, color_status_ok, color_grey_dark), 0)
+			end
 
-            update_ui_line(0, cy, w, cy, col)
-            cy = cy + 1
+			update_ui_pop_offset()
+		end
 
-            if target_vehicle_id ~= 0 then
-                local target_vehicle = update_get_map_vehicle_by_id(target_vehicle_id)
-                local definition_index = -1
-                
-                if target_vehicle:get() then
-                    definition_index = target_vehicle:get_definition_index()
-                end
+		update_ui_line(0, cy, w, cy, col)
+		cy = cy + 1
 
-                local _, icon, handle = get_chassis_data_by_definition_index(definition_index)
+		if target_vehicle_id ~= 0 then
+			local target_vehicle = update_get_map_vehicle_by_id(target_vehicle_id)
+			local definition_index = -1
+			
+			if target_vehicle:get() then
+				definition_index = target_vehicle:get_definition_index()
+			end
 
-                update_ui_rectangle(0, cy, w, 11, col)
-                update_ui_text(0, cy + 1, update_get_loc(e_loc.upp_order), math.floor(w / 2) * 2, 1, color_black, 0)
-                cy = cy + 15
+			local _, icon, handle = get_chassis_data_by_definition_index(definition_index)
 
-                update_ui_image(cx, cy, icon, color_white, 0)
-                update_ui_text(cx + 19, cy + 3, handle, 200, 0, color_white, 0)
-                update_ui_image(cx + 41, cy + 3, atlas_icons.column_controlling_peer, iff(is_blink_on(5), color_grey_dark, color_status_ok), 0)
-            else                
-                update_ui_rectangle(0, cy, w, 11, color_grey_dark)
-                update_ui_text(0, cy + 1, update_get_loc(e_loc.upp_order), math.floor(w / 2) * 2, 1, color_black, 0)
-                cy = cy + 15
+--[[		-- Not supported yet :(
+			local target_name = ""
+			
+			if update_get_is_multiplayer() then
+				local target_attachment = target_vehicle:get_attachment(target_attachment_index)
+				local target_peer = target_attachment:get_controlling_peer_id()
+				local peer_index = update_get_peer_index_by_id(target_peer)
+				local target_name = update_get_peer_name(peer_index)
+			end
+--]]
+			update_ui_rectangle(0, cy, w, 11, col)
+			update_ui_text(0, cy + 1, update_get_loc(e_loc.upp_order), math.floor(w / 2) * 2, 1, color_black, 0)
+			cy = cy + 15
 
-                update_ui_text(0, cy + 3, "---", math.floor(w / 2) * 2, 1, color_grey_dark, 0)
-            end
+			update_ui_image(cx, cy, icon, color_white, 0)
+			update_ui_text(cx + 19, cy + 3, handle, 200, 0, color_white, 0)
+			update_ui_image(cx + 41, cy + 3, atlas_icons.column_controlling_peer, iff(is_blink_on(5), color_grey_dark, color_status_ok), 0)
+		else                
+			update_ui_rectangle(0, cy, w, 11, color_grey_dark)
+			update_ui_text(0, cy + 1, update_get_loc(e_loc.upp_order), math.floor(w / 2) * 2, 1, color_black, 0)
+			cy = cy + 15
 
-            local y = h - 37
+			update_ui_text(0, cy + 3, "---", math.floor(w / 2) * 2, 1, color_grey_dark, 0)
+		end
 
-            if definition_index == e_game_object_type.attachment_turret_carrier_missile_silo then
-                update_ui_line(0, y - 1, w, y - 1, col)
+		local y = h - 37
 
-                for i = 0, 5 do
-                    render_missile(1 + i * 9, y, ammo_remaining > i, ammo_remaining == i + 1 and target_id ~= 0)
-                end
-            else
-                update_ui_line(0, y - 1, w, y - 1, col)
+		if definition_index == e_game_object_type.attachment_turret_carrier_missile_silo then
+			update_ui_line(0, y - 1, w, y - 1, col)
 
-                for i = 0, 9 do
-                    render_shell(3 + i * 5, y, ammo_remaining > i, ammo_remaining == i + 1 and target_id ~= 0)
-                    render_shell(3 + i * 5, y + 10, ammo_remaining > i + 10, ammo_remaining == i + 11 and target_id ~= 0)
-                end
-            end
+			for i = 0, 5 do
+				render_missile(1 + i * 9, y, ammo_remaining > i, ammo_remaining == i + 1 and target_id ~= 0)
+			end
+		else
+			update_ui_line(0, y - 1, w, y - 1, col)
+
+			for i = 0, 9 do
+				render_shell(3 + i * 5, y, ammo_remaining > i, ammo_remaining == i + 1 and target_id ~= 0)
+				render_shell(3 + i * 5, y + 10, ammo_remaining > i + 10, ammo_remaining == i + 11 and target_id ~= 0)
+			end
         end
     end
 
@@ -263,11 +260,26 @@ function is_blink_on(rate, is_pulse)
     end
 end
 
-function render_ammo_bar(x, y, h, factor, col)
+function render_health_bar(x, y, h, map_vehicle, col)
     update_ui_push_offset(x, y)
 
-    local bar_size = math.floor(factor * (h - 4));
-    update_ui_rectangle(0, math.floor(h - bar_size - 2), 2, bar_size, col)
+	local vehicle = update_get_vehicle_by_id(map_vehicle:get_id())
+	local index = vehicle:get_damage_zone_index_by_name("damage_zone_wep_l")
+	
+	local hp = vehicle:get_damage_zone_hitpoints(index)
+	local total_hp = vehicle:get_damage_zone_total_hitpoints(index)
+	
+	local health = 0
+	if total_hp > 0 then health = hp / total_hp end
+
+	local bar_color = color_status_warning
+	
+	if health < 0.5 then
+		bar_color = color_status_bad
+	elseif health == 1.0 then
+		bar_color = color_status_ok
+	end
+	
     update_ui_rectangle(-1, h - 1, 4, 1, col)
     update_ui_rectangle(-1, 0, 4, 1, col)
 
@@ -276,13 +288,24 @@ function render_ammo_bar(x, y, h, factor, col)
     
     for i = 1, segments - 1 do
         if i % 4 == 0 then
-            update_ui_rectangle(-1, h - i * step, 3, 1, col)
+            update_ui_rectangle(-1, h - i * step, 1, 1, col)
         elseif i % 2 == 0 then
-            update_ui_rectangle(-1, h - i * step, 2, 1, col)
+            update_ui_rectangle(-1, h - i * step, 1, 1, col)
         else
             update_ui_rectangle(-1, h - i * step, 1, 1, col)
         end
     end
+
+	local repair_color = bar_color
+	
+	if vehicle:get_damage_zone_repairing(index) and g_animation_time % 20 > 10 then
+		repair_color = color_white
+	end
+
+	local bar_size = math.floor(health * (h - 2))
+	update_ui_rectangle(0, math.floor(h - bar_size - 1), 2, bar_size, bar_color)
+
+	update_ui_image( -11, h - 8, atlas_icons.icon_health, repair_color, 0 )
 
     update_ui_pop_offset()
 end

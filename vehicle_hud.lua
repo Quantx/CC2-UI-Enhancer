@@ -1925,6 +1925,7 @@ end
 
 function render_altitude_ticker(pos, altitude, col)
     update_ui_image(pos:x(), pos:y(), atlas_icons.hud_ticker_large, col, 0)
+	if altitude >= 10000 then altitude = math.floor( altitude / 10 ) end
     render_number_ticker(vec2(pos:x() + 6, pos:y() + 2), vec2(30, 13), altitude, 4, 2, col, false)
 end
 
@@ -2007,7 +2008,7 @@ function render_timeline(pos, size, num_incr, spacing, offset, text_align, col, 
             if callback == nil then
                 local char_h = 10
     
-                update_ui_text(x, y - char_h / 2, (num_incr * (i + math.floor(offset / spacing))), size:x(), text_align, col, 0)
+                update_ui_text(x, y - char_h / 2, val, size:x(), text_align, col, 0)
             else
                 callback(x, y)
             end
