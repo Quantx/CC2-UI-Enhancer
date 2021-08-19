@@ -314,18 +314,22 @@ function render_selection_waypoint(screen_w, screen_h)
                 if get_is_vehicle_air(vehicle_definition_index) then
                     ui:header(update_get_loc(e_loc.upp_air))
 
+                    local max_altitude = 20000
+
                     -- waypont altitude selector
-                    waypoint_altitude, is_modified = ui:selector(update_get_loc(e_loc.upp_altitude), waypoint_altitude, 50, 20000, 50)
+                    waypoint_altitude, is_modified = ui:selector(update_get_loc(e_loc.upp_altitude), waypoint_altitude, 10, max_altitude, 10)
                     if is_modified then selected_vehicle:set_waypoint_altitude(g_selection_waypoint_id, waypoint_altitude) end
-                    local button_action = ui:button_group({ "400", "1200", "1500", "2000" }, true)
-                    if button_action == 0 then
-                        selected_vehicle:set_waypoint_altitude(g_selection_waypoint_id, 400)
-                    elseif button_action == 1 then
-                        selected_vehicle:set_waypoint_altitude(g_selection_waypoint_id, 1200)
-                    elseif button_action == 2 then
-                        selected_vehicle:set_waypoint_altitude(g_selection_waypoint_id, 1500)
-                    elseif button_action == 3 then
-                        selected_vehicle:set_waypoint_altitude(g_selection_waypoint_id, 2000)
+                    -- Additional increments
+                    local preset_increments = { -1000, -100, 100, 1000 }
+                    local button_increment = ui:button_group({ "-1000", "-100", "+100", "+1000" }, true)
+                    if button_increment >= 0 and button_increment < #preset_increments then
+                        selected_vehicle:set_waypoint_altitude(g_selection_waypoint_id, math.max( math.min( waypoint_altitude + preset_increments[button_increment + 1], max_altitude ), 0 ) )
+                    end
+                    -- Preset altitudes
+                    local preset_altitudes = { 100, 400, 1500, 2000, 4000 }
+                    local button_preset = ui:button_group({ "100", "400", "1500", "2000", "4000" }, true)
+                    if button_preset >= 0 and button_preset < #preset_altitudes then
+                        selected_vehicle:set_waypoint_altitude(g_selection_waypoint_id, preset_altitudes[button_preset + 1])
                     end
                 end
             ui:end_window()
@@ -1519,7 +1523,7 @@ function update(screen_w, screen_h, ticks)
 				local waypoint_pos = waypoint:get_position_xz()
 				
 				local cursor_x, cursor_y = get_screen_from_world( waypoint_pos:x(), waypoint_pos:y(), g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
-				update_ui_image(cursor_x - 5, cursor_y - 6, atlas_icons.map_icon_crosshair, color_white, 0)
+			        update_ui_image_rot(cursor_x, cursor_y, atlas_icons.map_icon_crosshair, color_white, math.pi / 4)
 			end
 		end
     elseif g_screen_index == 1 then

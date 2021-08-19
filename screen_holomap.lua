@@ -579,7 +579,7 @@ end
 
 function render_cursor(world_x, world_y, screen_w, screen_h)
 	local cursor_x, cursor_y = get_holomap_from_world(world_x, world_y, screen_w, screen_h)
-	update_ui_image(cursor_x - 5, cursor_y - 6, atlas_icons.map_icon_crosshair, color_white, 0)
+        update_ui_image_rot(cursor_x, cursor_y, atlas_icons.map_icon_crosshair, color_white, math.pi / 4)
 end
 
 function input_event(event, action)
