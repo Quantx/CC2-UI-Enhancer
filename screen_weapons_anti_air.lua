@@ -194,7 +194,7 @@ function render_health_bar(x, y, h, map_vehicle, col)
     update_ui_push_offset(x, y)
 
 	local vehicle = update_get_vehicle_by_id(map_vehicle:get_id())
-	local index = vehicle:get_damage_zone_index_by_name("damage_zone_wep_l")
+	local index = vehicle:get_damage_zone_index_by_name("damage_zone_wep_r")
 	
 	local hp = vehicle:get_damage_zone_hitpoints(index)
 	local total_hp = vehicle:get_damage_zone_total_hitpoints(index)
