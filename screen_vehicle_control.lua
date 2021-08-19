@@ -317,6 +317,16 @@ function render_selection_waypoint(screen_w, screen_h)
                     -- waypont altitude selector
                     waypoint_altitude, is_modified = ui:selector(update_get_loc(e_loc.upp_altitude), waypoint_altitude, 50, 20000, 50)
                     if is_modified then selected_vehicle:set_waypoint_altitude(g_selection_waypoint_id, waypoint_altitude) end
+                    local button_action = ui:button_group({ "400", "1200", "1500", "2000" }, true)
+                    if button_action == 0 then
+                        selected_vehicle:set_waypoint_altitude(g_selection_waypoint_id, 400)
+                    elseif button_action == 1 then
+                        selected_vehicle:set_waypoint_altitude(g_selection_waypoint_id, 1200)
+                    elseif button_action == 2 then
+                        selected_vehicle:set_waypoint_altitude(g_selection_waypoint_id, 1500)
+                    elseif button_action == 3 then
+                        selected_vehicle:set_waypoint_altitude(g_selection_waypoint_id, 2000)
+                    end
                 end
             ui:end_window()
         else
@@ -1498,7 +1508,20 @@ function update(screen_w, screen_h, ticks)
             update_ui_pop_clip()
             update_ui_pop_offset()
         end
+		
+		local vehicle_count = update_get_map_vehicle_count()
+		for i = 0, vehicle_count - 1, 1 do
+			local vehicle = update_get_map_vehicle_by_index(i)
+			local waypoint_count = vehicle:get_waypoint_count()
 
+			if vehicle:get() and vehicle:get_definition_index() == e_game_object_type.drydock and vehicle:get_team() == update_get_screen_team_id() and waypoint_count > 0 then
+				local waypoint = vehicle:get_waypoint(0)
+				local waypoint_pos = waypoint:get_position_xz()
+				
+				local cursor_x, cursor_y = get_screen_from_world( waypoint_pos:x(), waypoint_pos:y(), g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
+				update_ui_image(cursor_x - 5, cursor_y - 6, atlas_icons.map_icon_crosshair, color_white, 0)
+			end
+		end
     elseif g_screen_index == 1 then
         update_set_screen_background_type(0)
         local viewing_vehicle = update_get_map_vehicle_by_id(g_viewing_vehicle_id)
@@ -1560,20 +1583,6 @@ function update(screen_w, screen_h, ticks)
     end
 
     g_ui:end_ui()
-	
-	local vehicle_count = update_get_map_vehicle_count()
-	for i = 0, vehicle_count - 1, 1 do 
-		local vehicle = update_get_map_vehicle_by_index(i)
-		local waypoint_count = vehicle:get_waypoint_count()
-
-		if vehicle:get() and vehicle:get_definition_index() == e_game_object_type.drydock and vehicle:get_team() == update_get_screen_team_id() and waypoint_count > 0 then
-			local waypoint = vehicle:get_waypoint(0)
-			local waypoint_pos = waypoint:get_position_xz()
-			
-			local cursor_x, cursor_y = get_screen_from_world( waypoint_pos:x(), waypoint_pos:y(), g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
-			update_ui_image(cursor_x - 5, cursor_y - 6, atlas_icons.map_icon_crosshair, color_white, 0)
-		end
-	end
 
     g_pointer_pos_dx = 0
     g_pointer_pos_dy = 0
