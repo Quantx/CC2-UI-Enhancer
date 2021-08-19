@@ -317,6 +317,16 @@ function render_selection_waypoint(screen_w, screen_h)
                     -- waypont altitude selector
                     waypoint_altitude, is_modified = ui:selector(update_get_loc(e_loc.upp_altitude), waypoint_altitude, 50, 20000, 50)
                     if is_modified then selected_vehicle:set_waypoint_altitude(g_selection_waypoint_id, waypoint_altitude) end
+                    local button_action = ui:button_group({ "400", "1200", "1500", "2000" }, true)
+                    if button_action == 0 then
+                        selected_vehicle:set_waypoint_altitude(g_selection_waypoint_id, 400)
+                    elseif button_action == 1 then
+                        selected_vehicle:set_waypoint_altitude(g_selection_waypoint_id, 1200)
+                    elseif button_action == 2 then
+                        selected_vehicle:set_waypoint_altitude(g_selection_waypoint_id, 1500)
+                    elseif button_action == 3 then
+                        selected_vehicle:set_waypoint_altitude(g_selection_waypoint_id, 2000)
+                    end
                 end
             ui:end_window()
         else
