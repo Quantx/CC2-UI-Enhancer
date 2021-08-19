@@ -12,7 +12,7 @@ g_is_island_team_colors = true
 g_is_island_names = true
 g_is_deploy_carrier_triggered = false
 g_dock_state_prev = nil
-g_color_waypoint = color8(0, 255, 255, 8)
+g_color_waypoint = color8(127, 255, 255, 127)
 
 
 function parse()
