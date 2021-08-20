@@ -194,7 +194,15 @@ function update(screen_w, screen_h, ticks)
     update_add_ui_interaction_special(update_get_loc(e_loc.interaction_zoom), e_ui_interaction_special.map_zoom)
 	update_add_ui_interaction("map tool", e_game_input.interact_a)
 	if screen_vehicle:get() and screen_vehicle:get_dock_state() ~= e_vehicle_dock_state.docked then
-		update_add_ui_interaction("set carrier waypoint", e_game_input.interact_b)
+		if g_highlighted_vehicle_id == screen_vehicle:get_id() then
+			if g_highlighted_waypoint_id >= 0 then
+				update_add_ui_interaction("remove carrier waypoint", e_game_input.interact_b)
+			else
+				update_add_ui_interaction("remove all carrier waypoints", e_game_input.interact_b)
+			end
+		else
+			update_add_ui_interaction("set carrier waypoint", e_game_input.interact_b)
+		end
 	end
 
     if is_local then
@@ -621,18 +629,36 @@ function input_event(event, action)
 		g_is_ruler = action == e_input_action.press
 	elseif event == e_input.action_b then
 		if action == e_input_action.press and g_is_pointer_hovered and screen_vehicle:get() and screen_vehicle:get_dock_state() ~= e_vehicle_dock_state.docked then
-			local screen_vehicle_pos = screen_vehicle:get_position_xz()
-			local carrier_pos_x, carrier_pos_y = get_holomap_from_world(screen_vehicle_pos:x(), screen_vehicle_pos:y(), 512, 256)
-		
-			local carrier_screen_size = 16 * math.max( 1, 2000 / (g_map_size + g_map_size_offset) )
-			local carrier_screen_dist = vec2_dist( vec2(carrier_pos_x, carrier_pos_y), vec2(g_pointer_pos_x, g_pointer_pos_y ) )
-			
 			local waypoint_count = screen_vehicle:get_waypoint_count()
-			
-			if carrier_screen_dist <= carrier_screen_size then
+			-- Delete waypoint
+			if g_highlighted_vehicle_id == screen_vehicle:get_id() and g_highlighted_waypoint_id >= 0 then
+				local waypoint_path = {}
+				
+				for i = 0, waypoint_count - 1, 1 do
+					local waypoint = screen_vehicle:get_waypoint(i)
+					if waypoint:get_id() ~= g_highlighted_waypoint_id then
+						waypoint_path[#waypoint_path + 1] = waypoint:get_position_xz()
+					end
+				end
+					
 				screen_vehicle:clear_waypoints()
-			elseif waypoint_count < 20 then
-				screen_vehicle:add_waypoint(world_x, world_y)
+					
+				for i = 1, #waypoint_path, 1 do
+					screen_vehicle:add_waypoint(waypoint_path[i]:x(), waypoint_path[i]:y())
+				end
+			else
+				-- Add new waypoint
+				local screen_vehicle_pos = screen_vehicle:get_position_xz()
+				local carrier_pos_x, carrier_pos_y = get_holomap_from_world(screen_vehicle_pos:x(), screen_vehicle_pos:y(), 512, 256)
+			
+				local carrier_screen_size = 16 * math.max( 1, 2000 / (g_map_size + g_map_size_offset) )
+				local carrier_screen_dist = vec2_dist( vec2(carrier_pos_x, carrier_pos_y), vec2(g_pointer_pos_x, g_pointer_pos_y ) )
+				
+				if carrier_screen_dist <= carrier_screen_size then
+					screen_vehicle:clear_waypoints()
+				elseif waypoint_count < 20 then
+					screen_vehicle:add_waypoint(world_x, world_y)
+				end
 			end
 		end
     elseif event == e_input.pointer_1 then
@@ -1505,16 +1531,16 @@ function render_selection_vehicle(screen_w, screen_h, vehicle)
 				ui:stat(update_get_loc(e_loc.upp_fuel), string.format("%.0f%%", fuel_factor * 100), iff(fuel_factor < 0.25, color_low, iff(fuel_factor < 0.5, color_mid, color_high)))
 				ui:stat(update_get_loc(e_loc.upp_ammo), string.format("%.0f%%", ammo_factor * 100), iff(ammo_factor < 0.25, color_low, iff(ammo_factor < 0.5, color_mid, color_high)))
 			end
-
+--[[ 
 			ui:header(update_get_loc(e_loc.upp_actions))
-			
+			-- This is broken apparently
 			if ui:list_item(update_get_loc(e_loc.upp_center_to_vehicle), true) then
 				local pos_xz = vehicle:get_position_xz()
 				transition_to_map_pos(pos_xz:x(), pos_xz:y(), 2000)
 				g_selection_vehicle_id = -1
 				g_is_pointer_pressed = false
 			end
-
+--]]
 		ui:end_window()
     end
 end
