@@ -597,6 +597,36 @@ function update(screen_w, screen_h, ticks)
 			update_ui_text(cx + 15, cy, string.format("%.0f", world_y), 100, 0, text_col, 0)
 			cy = cy - 10
 		end
+
+		local label_x = 24
+		local label_y = 16
+		local label_w = screen_w - 2 * label_x
+		local label_h = 10
+
+		update_ui_push_offset(label_x, label_y)
+
+		if g_button_mode > 0 then
+			update_ui_rectangle(0, 0, label_w, label_h, color_black)
+		end
+
+		if g_button_mode == 1 then
+			update_ui_text(1, 1, string.format(update_get_loc(e_loc.upp_wind)..": %.2f", update_get_weather_wind_velocity(world_x, world_y)), label_w, 0, color_white, 0)
+		elseif g_button_mode == 2 then
+			update_ui_text(1, 1, string.format(update_get_loc(e_loc.upp_precipitation)..": %.0f%%", update_get_weather_precipitation_factor(world_x, world_y) * 100), label_w, 0, color_white, 0)
+
+			local cx = label_w - 42
+			update_ui_image(cx, 1, atlas_icons.column_power, color_white, 0)
+			cx = cx + 5
+			update_ui_text(cx, 1, string.format(": %.0f%%", update_get_weather_lightning_factor(world_x, world_y) * 100), label_w, 0, color_white, 0)
+		elseif g_button_mode == 3 then
+			update_ui_text(1, 1, string.format(update_get_loc(e_loc.upp_visibility)..": %.0f%%", update_get_weather_fog_factor(world_x, world_y) * 100), label_w, 0, color_white, 0)
+		elseif g_button_mode == 4 then
+			update_ui_text(1, 1, string.format(update_get_loc(e_loc.upp_ocean_current)..": %.2f", update_get_ocean_current_velocity(world_x, world_y)), label_w, 0, color_white, 0)
+		elseif g_button_mode == 5 then
+			update_ui_text(1, 1, string.format(update_get_loc(e_loc.upp_ocean_depth)..": %.2f", update_get_ocean_depth_factor(world_x, world_y)), label_w, 0, color_white, 0)
+		end
+		update_ui_pop_offset()
+
 		
 		-- render cursor last
 		render_cursor(world_x, world_y, screen_w, screen_h)
