@@ -16,9 +16,6 @@ g_colors = {
 
 g_hovered_vehicle_id = 0
 
-function parse()
-end
-
 function begin()
     begin_load()
     g_ui = lib_imgui:create_ui()

@@ -17,9 +17,6 @@ function arc_position(x, y, radius, angle)
     return (x + (radius * math.cos(angle - (math.pi * 0.5)))), (y + (radius * math.sin(angle - (math.pi * 0.5))))
 end
 
-function parse()
-end
-
 function begin()
     begin_load()
 

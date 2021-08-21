@@ -8,7 +8,7 @@ g_beep_counter = 0
 g_is_warning_on = false
 
 function parse()
-    g_zoom_level = parse_s32(g_zoom_level)
+    g_zoom_level = parse_s32("zoom", g_zoom_level)
 end
 
 function begin()
@@ -31,6 +31,7 @@ function update(screen_w, screen_h, ticks)
     update_add_ui_interaction_special(update_get_loc(e_loc.interaction_zoom_level), e_ui_interaction_special.gamepad_dpad_ud)
 
     local radar_attachment_index = -1
+    local radar_attachment = nil
 
     for i = 0, screen_vehicle_map:get_attachment_count() - 1 do
         local attachment = screen_vehicle_map:get_attachment(i)
@@ -38,12 +39,20 @@ function update(screen_w, screen_h, ticks)
         if attachment:get() then
             if attachment:get_definition_index() == e_game_object_type.attachment_radar_awacs then
                 radar_attachment_index = i
+                radar_attachment = attachment
                 break
             end
         end
     end
 
     local is_interference = screen_vehicle:get_is_attachment_radar_disabled(radar_attachment_index)
+    local is_powered = true
+    local is_damaged = false
+
+    if radar_attachment and radar_attachment:get() then
+        is_powered = radar_attachment:get_control_mode() ~= "off"
+        is_damaged = radar_attachment:get_is_damaged()
+    end
 
     local col = color_white
     local cx = screen_w / 2
@@ -77,16 +86,16 @@ function update(screen_w, screen_h, ticks)
         render_circle(0, 0, i / range * radius, radar_col(math.ceil(lerp(255, 32, distance_factor)) * 0.25))
     end
 
-    local screen_dir = screen_vehicle_map:get_direction()
-    update_ui_line(0, 0, screen_dir:x() * 20, -screen_dir:y() * 20, radar_col(32))
+    if is_interference == false and is_damaged == false and is_powered then
+        local screen_dir = screen_vehicle_map:get_direction()
+        update_ui_line(0, 0, screen_dir:x() * 20, -screen_dir:y() * 20, radar_col(32))
 
-    if screen_vehicle:get_is_carrier_torpedo_enabled() then
-        local torpedo_bearing = screen_vehicle:get_carrier_torpedo_bearing() / 180 * math.pi - math.pi / 2
-        local screen_dir_torpedo = vec2(math.cos(torpedo_bearing), -math.sin(torpedo_bearing))
-        update_ui_line(0, 0, screen_dir_torpedo:x() * 200, -screen_dir_torpedo:y() * 200, color8(255, 16, 16, 32))
-    end
+        if screen_vehicle:get_is_carrier_torpedo_enabled() then
+            local torpedo_bearing = screen_vehicle:get_carrier_torpedo_bearing() / 180 * math.pi - math.pi / 2
+            local screen_dir_torpedo = vec2(math.cos(torpedo_bearing), -math.sin(torpedo_bearing))
+            update_ui_line(0, 0, screen_dir_torpedo:x() * 200, -screen_dir_torpedo:y() * 200, color8(255, 16, 16, 32))
+        end
 
-    if is_interference == false then
         local angle = g_animation_time / 120 * math.pi * 2
         local radar_dir = vec2(math.cos(angle), math.sin(angle))
         update_ui_line(0, 0, radar_dir:x() * radius, radar_dir:y() * radius, color_white)
@@ -133,7 +142,11 @@ function update(screen_w, screen_h, ticks)
     update_ui_image(75, screen_h - 15, atlas_icons.column_distance, col, 0)
     update_ui_text(0, screen_h - 15, string.format("%.0f", step) .. update_get_loc(e_loc.upp_acronym_meters), screen_w - 10, 2, col, 0)
 
-    if is_interference then
+    if is_damaged then
+        render_status_label(10, screen_h / 2 - 9, screen_w - 20, 12, update_get_loc(e_loc.upp_damaged), color_status_bad, g_animation_time % 20 > 10, color_black)
+    elseif is_powered == false then
+        render_status_label(10, screen_h / 2 - 9, screen_w - 20, 12, update_get_loc(e_loc.upp_offline), color8(0, 16, 0, 255), g_animation_time % 20 > 10, color_black)
+    elseif is_interference then
         render_status_label(10, screen_h / 2 - 9, screen_w - 20, 12, update_get_loc(e_loc.upp_interference), color_status_bad, g_animation_time % 20 > 10, color_black)
     elseif hostile_missile_dist < hostile_warning_distance then
         local blink_rate = math.floor(lerp(2, 30, math.max(0, hostile_missile_dist - 200) / (hostile_warning_distance - 200)) + 0.5)

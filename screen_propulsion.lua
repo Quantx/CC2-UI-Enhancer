@@ -40,9 +40,6 @@ function render_prop(x, y, cycle)
     end
 end
 
-function parse()
-end
-
 function begin()
     begin_load()
 end

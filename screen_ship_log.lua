@@ -2,9 +2,6 @@ g_ui = nil
 g_last_read_index = 0
 g_page = 0
 
-function parse()
-end
-
 function begin()
     begin_load()
     g_ui = lib_imgui:create_ui()

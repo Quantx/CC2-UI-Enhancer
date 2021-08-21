@@ -1,8 +1,5 @@
 g_region_icon = 0
 
-function parse()
-end
-
 function begin()
     begin_load()
     g_region_icon = begin_get_ui_region_index("microprose")

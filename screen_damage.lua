@@ -25,9 +25,6 @@ g_highlighted_zone_index = -1
 
 g_ui = {}
 
-function parse()
-end
-
 function begin()
     begin_load()
     g_region_icon = begin_get_ui_region_index("microprose")

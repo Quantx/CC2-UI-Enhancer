@@ -1,9 +1,6 @@
 g_ui = {}
 g_page = 0
 
-function parse()
-end
-
 function begin()
     begin_load()
     begin_load_inventory_data()

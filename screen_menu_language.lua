@@ -11,9 +11,6 @@ g_is_pointer_hovered = false
 g_pointer_pos_x = 0
 g_pointer_pos_y = 0
 
-function parse()
-end
-
 function begin()
     begin_load()
     g_region_icon = begin_get_ui_region_index("microprose")

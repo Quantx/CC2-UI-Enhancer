@@ -106,19 +106,20 @@ g_is_mouse_mode = false
 --------------------------------------------------------------------------------
 
 function parse()
-    g_focused_screen = parse_s32(g_focused_screen)
-    g_active_tab = parse_s32(g_active_tab)
-    g_tab_map.camera_pos_x = parse_f32(g_tab_map.camera_pos_x)
-    g_tab_map.camera_pos_y = parse_f32(g_tab_map.camera_pos_y)
-    g_tab_map.camera_size = parse_f32(g_tab_map.camera_size)
-    g_tab_map.cursor_pos_x = parse_f32(g_tab_map.cursor_pos_x)
-    g_tab_map.cursor_pos_y = parse_f32(g_tab_map.cursor_pos_y)
-    g_tab_map.selected_facility_id = parse_s32(g_tab_map.selected_facility_id)
-    g_tab_map.selected_facility_item = parse_s32(g_tab_map.selected_facility_item)
-    g_tab_map.selected_facility_queue_item = parse_s32(g_tab_map.selected_facility_queue_item)
-    g_tab_map.selected_panel = parse_s32(g_tab_map.selected_panel)
-    g_tab_stock.selected_item = parse_s32(g_tab_stock.selected_item)
-    g_tab_barges.selected_item = parse_s32(g_tab_barges.selected_item)
+    g_focused_screen = parse_s32("", g_focused_screen)
+    g_active_tab = parse_s32("active_tab", g_active_tab)
+    g_tab_map.is_map_pos_initialised = parse_bool("is_map_init", g_tab_map.is_map_pos_initialised)
+    g_tab_map.camera_pos_x = parse_f32("map_x", g_tab_map.camera_pos_x)
+    g_tab_map.camera_pos_y = parse_f32("map_y", g_tab_map.camera_pos_y)
+    g_tab_map.camera_size = parse_f32("map_size", g_tab_map.camera_size)
+    g_tab_map.cursor_pos_x = parse_f32("", g_tab_map.cursor_pos_x)
+    g_tab_map.cursor_pos_y = parse_f32("", g_tab_map.cursor_pos_y)
+    g_tab_map.selected_facility_id = parse_s32("", g_tab_map.selected_facility_id)
+    g_tab_map.selected_facility_item = parse_s32("", g_tab_map.selected_facility_item)
+    g_tab_map.selected_facility_queue_item = parse_s32("", g_tab_map.selected_facility_queue_item)
+    g_tab_map.selected_panel = parse_s32("", g_tab_map.selected_panel)
+    g_tab_stock.selected_item = parse_s32("", g_tab_stock.selected_item)
+    g_tab_barges.selected_item = parse_s32("", g_tab_barges.selected_item)
 end
 
 function begin()
@@ -648,6 +649,10 @@ function render_map_details(screen_vehicle, screen_w, screen_h, is_tab_active)
         if is_collapse_icons then
             update_ui_rectangle(screen_pos_x - 1, screen_pos_y - 1, 2, 2, tile_col)
         else
+            local name = tile:get_name()
+            local name_factor = clamp(invlerp(g_tab_map.camera_size,  g_tab_map.camera_size_min, g_tab_map.camera_size_max * 0.35), 0, 1)
+            update_ui_text(screen_pos_x - 100, screen_pos_y - 16, name, 200, 1, color8_lerp(color_black, color_empty, name_factor), 0)
+
             update_ui_rectangle(screen_pos_x - 5, screen_pos_y - 4, 10, 8, color_black)
             update_ui_rectangle(screen_pos_x - 4, screen_pos_y - 5, 8, 10, color_black)
             update_ui_image(screen_pos_x - 4, screen_pos_y - 4, category_data.icon, tile_col, 0)
@@ -990,7 +995,7 @@ function render_map_ui(screen_w, screen_h, x, y, w, h, screen_vehicle, is_tab_ac
 
             if g_tab_map.hovered_id ~= 0 then
                 local tooltip_w = 128
-                local tooltip_h = 23
+                local tooltip_h = get_node_tooltip_h(tooltip_w, g_tab_map.hovered_id, g_tab_map.hovered_type)
                 render_tooltip(x + 10, y, w - 20, h - 10, g_tab_map.cursor_pos_x, g_tab_map.cursor_pos_y, tooltip_w, tooltip_h, 10, function(w, h) render_node_tooltip(w, h, g_tab_map.hovered_id, g_tab_map.hovered_type) end)
             end
         end
@@ -1087,6 +1092,41 @@ function render_map_facility_queue(x, y, w, h, tile)
     update_ui_pop_offset()
 end
 
+function get_node_tooltip_h(tooltip_w, id, type)
+    if type == g_link_types.tile then
+        local tile = update_get_tile_by_id(id)
+        local category_data = g_item_categories[tile:get_facility_category()]
+
+        if tile:get() then
+            local is_player_tile = tile:get_team_control() == update_get_screen_team_id()
+
+            if category_data.index ~= 0 then                
+                if is_player_tile == false then
+                    local unlocks = get_tile_blueprint_unlocks(tile)
+
+                    if #unlocks > 0 then
+                        local cx = 18
+                        local cy = 13
+
+                        for i = 1, #unlocks do
+                            cx = cx + 16
+
+                            if cx + 16 > tooltip_w - 5 then
+                                cx = 18
+                                cy = cy + 16
+                            end
+                        end
+
+                        return cy + 18
+                    end
+                end
+            end
+        end
+    end
+
+    return 23
+end
+
 function render_node_tooltip(w, h, id, type)
     local name, color = get_node_data(id, type)
 
@@ -1118,10 +1158,10 @@ function render_node_tooltip(w, h, id, type)
         local tile = update_get_tile_by_id(id)
         local category_data = g_item_categories[tile:get_facility_category()]
 
-        if category_data.index == 0 then
-            if tile:get() then
-                local is_player_tile = tile:get_team_control() == update_get_screen_team_id()
+        if tile:get() then
+            local is_player_tile = tile:get_team_control() == update_get_screen_team_id()
 
+            if category_data.index == 0 then
                 if is_player_tile then
                     update_ui_image(5, h / 2 - 4, category_data.icon, g_map_colors.factory, 0)
                     update_ui_text(18, h / 2 - 4, category_data.name, 200, 0, color_white, 0)
@@ -1130,24 +1170,16 @@ function render_node_tooltip(w, h, id, type)
                     update_ui_image(5, h / 2 - 4, category_data.icon, color_grey_dark, 0)
                     update_ui_text(18, h / 2 - 4, category_data.name, 200, 0, color_grey_dark, 0)
                 end
-            end
-        else
-            if tile:get() then
-                local is_player_tile = tile:get_team_control() == update_get_screen_team_id()
-                local cy = iff(is_player_tile, 3, h / 2 - 4)
-                
+            else
                 if is_player_tile then
+                    local cy = 3
+
                     update_ui_image(5, cy, category_data.icon, g_map_colors.factory, 0)
                     update_ui_text(18, cy, category_data.name, 200, 0, color_white, 0)
                     update_ui_image(w - 13, cy, atlas_icons.column_transit, color_highlight, 0)
-                else
-                    update_ui_image(5, cy, category_data.icon, color_grey_dark, 0)
-                    update_ui_text(18, cy, category_data.name, 200, 0, color_grey_dark, 0)
-                end
 
-                cy = cy + 10
+                    cy = cy + 10
 
-                if is_player_tile then
                     local production_factor = tile:get_facility_production_factor()
                     local queue_count = tile:get_facility_production_queue_count()
                     local pending_item_count = 0
@@ -1171,10 +1203,60 @@ function render_node_tooltip(w, h, id, type)
                     else
                         update_ui_image(w - 12, cy, atlas_icons.column_stock, color_grey_dark, 0)
                     end
+                else
+                    local unlocks = get_tile_blueprint_unlocks(tile)
+
+                    if #unlocks > 0 then
+                        local cy = 3
+                        update_ui_image(5, cy, category_data.icon, color_grey_dark, 0)
+                        update_ui_text(18, cy, category_data.name, 200, 0, color_grey_dark, 0)
+
+                        cy = cy + 10
+                        update_ui_image(8, cy + 4, atlas_icons.icon_tree_next, color_grey_dark, 0)
+
+                        local cx = 18
+
+                        for i = 1, #unlocks do
+                            if g_animation_time % 40 > 20 then
+                                update_ui_image(cx, cy, unlocks[i].icon, color_button_bg_inactive, 0)
+                                update_ui_image(cx + 4, cy + 3, atlas_icons.column_locked, color_status_bad, 0)
+                            else
+                                update_ui_image(cx, cy, unlocks[i].icon, color_grey_mid, 0)
+                            end
+
+                            cx = cx + 16
+
+                            if cx + 16 > w - 5 then
+                                cx = 18
+                                cy = cy + 16
+                            end
+                        end
+                    else
+                        local cy = h / 2 - 4
+                        update_ui_image(5, cy, category_data.icon, color_grey_dark, 0)
+                        update_ui_text(18, cy, category_data.name, 200, 0, color_grey_dark, 0)
+                    end
                 end
             end
         end
     end
+end
+
+function get_tile_blueprint_unlocks(tile)
+    local team = update_get_team(update_get_screen_team_id())
+    local blueprint_count = tile:get_blueprint_unlock_count()
+    local unlocks = {}
+
+    for i = 0, blueprint_count - 1 do
+        local item = tile:get_blueprint_unlock(i)
+        local item_data = g_item_data[item]
+
+        if item_data ~= nil and team:get() and update_get_resource_item_hidden_facility_production(item) == false and team:get_is_blueprint_unlocked(item) == false then
+            table.insert(unlocks, item_data)
+        end
+    end
+
+    return unlocks
 end
 
 function update_map_cursor_state(screen_w, screen_h)

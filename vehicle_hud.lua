@@ -1074,7 +1074,7 @@ function render_attachment_hud(screen_w, screen_h, map_data, tick_fraction, vehi
     or def == e_game_object_type.attachment_hardpoint_bomb_2
     or def == e_game_object_type.attachment_hardpoint_bomb_3
     then
-        is_render_center = render_attachment_hud_bomb(screen_w, screen_h, vehicle, attachment)
+        is_render_center = render_attachment_hud_bomb(screen_w, screen_h, map_data, vehicle, attachment)
     elseif def == e_game_object_type.attachment_hardpoint_torpedo
     or def == e_game_object_type.attachment_hardpoint_torpedo_noisemaker
     or def == e_game_object_type.attachment_hardpoint_torpedo_decoy
@@ -1128,7 +1128,7 @@ function render_attachment_hud_camera(screen_w, screen_h, map_data, vehicle, att
     return true
 end
 
-function render_attachment_hud_bomb(screen_w, screen_h, vehicle, attachment) 
+function render_attachment_hud_bomb(screen_w, screen_h, map_data, vehicle, attachment) 
     if attachment:get_control_mode() == "manual" then
         local linked_attachments = {}
         
@@ -1149,6 +1149,8 @@ function render_attachment_hud_bomb(screen_w, screen_h, vehicle, attachment)
             update_ui_image_rot(hit_pos_screen:x(), hit_pos_screen:y(), atlas_icons.hud_impact_marker, color8(0, 255, 0, 255), 0)
         end
     end
+
+    render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachment)
 
     return false
 end

@@ -1,5 +1,6 @@
 g_camera_pos_x = 0
 g_camera_pos_y = 0
+g_is_camera_pos_initialised = false
 g_camera_size = (32 * 1024)
 g_camera_size_max = 64 * 1024
 g_camera_size_min = 4 * 1024
@@ -13,29 +14,34 @@ g_is_deploy_carrier_triggered = false
 g_dock_state_prev = nil
 
 function parse()
-    g_camera_pos_x = parse_f32(g_camera_pos_x)
-    g_camera_pos_y = parse_f32(g_camera_pos_y)
-    g_camera_size = parse_f32(g_camera_size)
-    g_screen_index = parse_s32(g_screen_index)
-    g_map_render_mode = parse_s32(g_map_render_mode)
-    g_is_vehicle_team_colors = parse_bool(g_is_vehicle_team_colors)
-    g_is_island_team_colors = parse_bool(g_is_island_team_colors)
+    g_is_camera_pos_initialised = parse_bool("is_map_init", g_is_camera_pos_initialised)
+    g_camera_pos_x = parse_f32("map_x", g_camera_pos_x)
+    g_camera_pos_y = parse_f32("map_y", g_camera_pos_y)
+    g_camera_size = parse_f32("map_size", g_camera_size)
+    g_screen_index = parse_s32("", g_screen_index)
+    g_map_render_mode = parse_s32("mode", g_map_render_mode)
+    g_is_vehicle_team_colors = parse_bool("is_vehicle_team_colors", g_is_vehicle_team_colors)
+    g_is_island_team_colors = parse_bool("is_island_team_colors", g_is_island_team_colors)
 end
 
 function begin()
     begin_load()
 
-    local screen_name = begin_get_screen_name()
+    if g_is_camera_pos_initialised == false then
+        g_is_camera_pos_initialised = true
 
-    if screen_name == "screen_nav_l" then
-        g_map_render_mode = 2
-        g_camera_size = (4 * 1024)
-    elseif screen_name == "screen_nav_m" then
-        g_map_render_mode = 3
-        g_camera_size = (16 * 1024)
-    elseif screen_name == "screen_nav_r" then
-        g_map_render_mode = 4
-        g_camera_size = (64 * 1024)
+        local screen_name = begin_get_screen_name()
+
+        if screen_name == "screen_nav_l" then
+            g_map_render_mode = 2
+            g_camera_size = (4 * 1024)
+        elseif screen_name == "screen_nav_m" then
+            g_map_render_mode = 3
+            g_camera_size = (16 * 1024)
+        elseif screen_name == "screen_nav_r" then
+            g_map_render_mode = 4
+            g_camera_size = (64 * 1024)
+        end
     end
 
     g_ui = lib_imgui:create_ui()

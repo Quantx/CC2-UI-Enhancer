@@ -2,9 +2,6 @@ g_is_exit = false
 g_state_counter = 0
 g_vehicle_id = 0
 
-function parse()
-end
-
 function update(screen_w, screen_h, ticks) 
     if update_get_is_focus_local() then
         g_state_counter = g_state_counter + 1

@@ -68,10 +68,10 @@ function get_selected_vehicle_attachment_options(attachment_type)
 end
 
 function parse()
-    g_screen_index = parse_s32(g_screen_index)
-    g_selected_bay_index = parse_s32(g_selected_bay_index)
-    g_selected_attachment_index = parse_s32(g_selected_attachment_index)
-    g_selected_option_index = parse_s32(g_selected_option_index)
+    g_screen_index = parse_s32("", g_screen_index)
+    g_selected_bay_index = parse_s32("", g_selected_bay_index)
+    g_selected_attachment_index = parse_s32("", g_selected_attachment_index)
+    g_selected_option_index = parse_s32("", g_selected_option_index)
 end
 
 function begin()

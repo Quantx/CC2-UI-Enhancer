@@ -14,7 +14,7 @@ function begin()
 end
 
 function parse()
-    g_transmission_selected_index = parse_s32(g_transmission_selected_index)
+    g_transmission_selected_index = parse_s32("", g_transmission_selected_index)
 end
 
 function update(screen_w, screen_h, ticks)

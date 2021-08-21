@@ -5,9 +5,6 @@ g_cam_y = 0
 g_cam_z = 0
 g_cam_rot = 0
 
-function parse()
-end
-
 function begin()
     begin_load()
     g_region_icon = begin_get_ui_region_index("microprose")

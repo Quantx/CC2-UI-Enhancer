@@ -1,9 +1,6 @@
 g_animation_time = 0
 g_is_beep = false
 
-function parse()
-end
-
 function begin()
     begin_load()
 end

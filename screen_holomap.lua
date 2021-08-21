@@ -68,9 +68,10 @@ function parse()
     g_prev_size = g_next_size
     g_blend_tick = 0
     
-    g_next_pos_x = parse_f32(g_next_pos_x)
-    g_next_pos_y = parse_f32(g_next_pos_y)
-    g_next_size = parse_f32(g_next_size)
+    g_is_map_pos_initialised = parse_bool("is_map_init", g_is_map_pos_initialised)
+    g_next_pos_x = parse_f32("map_x", g_next_pos_x)
+    g_next_pos_y = parse_f32("map_y", g_next_pos_y)
+    g_next_size = parse_f32("map_size", g_next_size)
 end
 
 function begin()

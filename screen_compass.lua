@@ -1,5 +1,3 @@
-function parse()
-end
 
 function begin()
     begin_load()

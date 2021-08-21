@@ -4,9 +4,6 @@ g_animation_time = 0
 
 g_ui = nil
 
-function parse()
-end
-
 function begin()
     begin_load()
     g_ui = lib_imgui:create_ui()

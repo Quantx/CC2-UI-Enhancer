@@ -2,9 +2,6 @@ g_ui = nil
 g_last_read_index = 0
 g_page = 0
 
-function parse()
-end
-
 function begin()
     begin_load()
     begin_load_inventory_data()

@@ -5,7 +5,7 @@ g_camera_index = 0
 g_render_camera_index_prev = 0
 
 function parse()
-    g_camera_index = parse_s32(g_camera_index)
+    g_camera_index = parse_s32("camera_index", g_camera_index)
 end
 
 function begin()

@@ -1,9 +1,5 @@
 g_blink_timer = 0
 
-function parse()
-end
-
-
 function begin()
     begin_load()
 end
