@@ -141,6 +141,7 @@ function update(screen_w, screen_h, ticks)
 					local attack_target_type = vehicle:get_attack_target_type()
 					
 					local waypoint_count = vehicle:get_waypoint_count()
+					local waypoint = vehicle:get_waypoint(0)
 					
 					local vehicle_manual_flight_control = false
 					local attachment_control_camera = vehicle:get_attachment(0)
@@ -220,12 +221,23 @@ function update(screen_w, screen_h, ticks)
 						vehicle_state_string = "HPLT"
 						vehicle_state_color = color_grey_dark
 					
-					-- attack mode, the Petrel's airlift order is a type of attack, make sure to filter it
-					elseif attack_target_type ~= e_attack_type.none and attack_target_type ~= e_attack_type.airlift then
+					-- attack mode or the Petrel's airlift order which is a type of attack
+					elseif attack_target_type ~= e_attack_type.none then
 					
 						vehicle_state_string = "ATTK"
 						vehicle_state_color = color_status_warning
+						
+						if attack_target_type == e_attack_type.airlift then
+							vehicle_state_string = "LIFT"
+							vehicle_state_color = color8(255, 100, 0, 255)
+						end
 					
+					-- Petrel deploy order
+					elseif waypoint and waypoint:get_type() == e_waypoint_type.deploy then
+					
+						vehicle_state_string = "DPLY"
+						vehicle_state_color = color8(255, 100, 0, 255)
+
 					-- waypoint modes
 					elseif waypoint_count > 0 then
 					
@@ -235,7 +247,7 @@ function update(screen_w, screen_h, ticks)
 						--iterate through the waypoints and see if they loop on themselves
 						for w = 0, waypoint_count - 1, 1 do
 						
-							local waypoint = vehicle:get_waypoint(w)
+							waypoint = vehicle:get_waypoint(w)
 							
 							if waypoint:get_repeat_index(w) >= 0 then
 							
