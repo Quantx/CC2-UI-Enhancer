@@ -82,6 +82,8 @@ g_highlighted_waypoint_id = -1
 g_highlighted_vehicle_id = -1
 g_selection_vehicle_id = -1
 
+g_color_attack_order = color_status_dark_red
+g_color_airlift_order = color_status_ok
 g_color_waypoint = color8(0, 255, 255, 8)
 
 g_is_dismiss_pressed = false
@@ -429,76 +431,233 @@ function update(screen_w, screen_h, ticks)
 
 		for i = 0, vehicle_count - 1, 1 do
 			local vehicle = update_get_map_vehicle_by_index(i)
+			
+			local vehicle_pos_xz = vehicle:get_position_xz()
+			local screen_pos_x, screen_pos_y = get_holomap_from_world(vehicle_pos_xz:x(), vehicle_pos_xz:y(), screen_w, screen_h)
 
-			if vehicle:get() and vehicle:get_team() == screen_team then
-				local vehicle_definition_index = vehicle:get_definition_index()
+			local vehicle_team = vehicle:get_team()
+			local vehicle_attached_parent_id = vehicle:get_attached_parent_id()
+			local vehicle_support_id = vehicle:get_supporting_vehicle_id()
+			local vehicle_definition_index = vehicle:get_definition_index()
+			local is_render_vehicle_icon = vehicle_attached_parent_id == 0
 
-				if vehicle_definition_index ~= e_game_object_type.drydock and vehicle_definition_index ~= e_game_object_type.chassis_sea_barge then
-					local waypoint_count = vehicle:get_waypoint_count()
-					
-					local vehicle_pos = vehicle:get_position_xz()
-					local waypoint_prev_x, waypoint_prev_y = get_holomap_from_world(vehicle_pos:x(), vehicle_pos:y(), screen_w, screen_h)
-					local is_highlight = g_highlighted_vehicle_id == vehicle:get_id()
-					local waypoint_color = iff( is_highlight, color_white, g_color_waypoint )
-					local waypoint_remove = -1
-					
-					local vehicle_dock_state = vehicle:get_dock_state()
-					local vehicle_dock_queue_id = vehicle:get_dock_queue_vehicle_id()
-					
-					if (vehicle_dock_state == e_vehicle_dock_state.dock_queue or vehicle_dock_state == e_vehicle_dock_state.docking) and vehicle_dock_queue_id ~= 0 then
-						local parent_vehicle = update_get_map_vehicle_by_id(vehicle_dock_queue_id)
-				                
-						if parent_vehicle:get() then
-							local parent_pos_xz = parent_vehicle:get_position_xz()
-							local parent_screen_pos_x, parent_screen_pos_y = get_holomap_from_world(parent_pos_xz:x(), parent_pos_xz:y(), screen_w, screen_h)
+			local waypoint_count = vehicle:get_waypoint_count()
+                        
+			local waypoint_pos_x_prev = screen_pos_x
+			local waypoint_pos_y_prev = screen_pos_y
+						
+			if vehicle_team == screen_team and vehicle_definition_index ~= e_game_object_type.chassis_sea_barge and vehicle_definition_index ~= e_game_object_type.drydock then
+				local waypoint_remove = -1
+				local waypoint_color = g_color_waypoint
 
-							render_dashed_line(waypoint_prev_x, waypoint_prev_y, parent_screen_pos_x, parent_screen_pos_y, waypoint_color)
+				if g_highlighted_vehicle_id == vehicle:get_id() and g_highlighted_waypoint_id == -1 then
+					waypoint_color = color8(255, 255, 255, 255)
+				end
+
+				local vehicle_dock_state = vehicle:get_dock_state()
+				local vehicle_dock_queue_id = vehicle:get_dock_queue_vehicle_id()
+
+				if (vehicle_dock_state == e_vehicle_dock_state.dock_queue or vehicle_dock_state == e_vehicle_dock_state.docking) and vehicle_dock_queue_id ~= 0 and is_render_vehicle_icon then
+					local parent_vehicle = update_get_map_vehicle_by_id(vehicle_dock_queue_id)
+
+					if parent_vehicle:get() then
+						local parent_pos_xz = parent_vehicle:get_position_xz()
+						local parent_screen_pos_x, parent_screen_pos_y = get_holomap_from_world(parent_pos_xz:x(), parent_pos_xz:y(), screen_w, screen_h)
+
+						render_dashed_line(screen_pos_x, screen_pos_y, parent_screen_pos_x, parent_screen_pos_y, waypoint_color)
+					end
+				end
+
+				if vehicle_support_id ~= 0 then
+					local parent_vehicle = update_get_map_vehicle_by_id(vehicle_support_id)
+
+					if parent_vehicle:get() then
+						local parent_pos_xz = parent_vehicle:get_position_xz()
+						local parent_screen_pos_x, parent_screen_pos_y = get_holomap_from_world(parent_pos_xz:x(), parent_pos_xz:y(), screen_w, screen_h)
+
+						render_dashed_line(screen_pos_x, screen_pos_y, parent_screen_pos_x, parent_screen_pos_y, waypoint_color)
+					end
+				else
+					local waypoint_path = vehicle:get_waypoint_path()
+					local waypoint_start_index = 0
+
+					if #waypoint_path > 0 then
+						waypoint_start_index = 1
+
+						for i = 1, #waypoint_path do
+							get_holomap_from_world(waypoint_path[i]:x(), waypoint_path[i]:y(), screen_w, screen_h)
+
+							update_ui_line(waypoint_pos_x_prev, waypoint_pos_y_prev, waypoint_screen_pos_x, waypoint_screen_pos_y, waypoint_color)
+
+							update_ui_rectangle(waypoint_screen_pos_x - 1, waypoint_screen_pos_y - 1, 2, 2, waypoint_color)
+
+							waypoint_pos_x_prev = waypoint_screen_pos_x
+							waypoint_pos_y_prev = waypoint_screen_pos_y;
+						end
+
+						if waypoint_count > 0 then
+							local waypoint = vehicle:get_waypoint(0)
+							local waypoint_pos = waypoint:get_position_xz()
+							local path_end_x, path_end_y = get_holomap_from_world(waypoint_pos:x(), waypoint_pos:y(), screen_w, screen_h)
+
+							update_ui_line(waypoint_pos_x_prev, waypoint_pos_y_prev, path_end_x, path_end_y, waypoint_color)
 						end
 					end
-					
-					for i = 0, waypoint_count - 1, 1 do
-						local waypoint = vehicle:get_waypoint(i)
-						local waypoint_pos = waypoint:get_position_xz()
-						
-						local waypoint_distance = vec2_dist( vehicle_pos, waypoint_pos )
-						
-						if vehicle_definition_index == e_game_object_type.chassis_carrier and waypoint_distance < 500 then
-							waypoint_remove = i
+
+					waypoint_pos_x_prev = screen_pos_x
+					waypoint_pos_y_prev = screen_pos_y
+
+					if is_render_vehicle_icon == false then
+						if vehicle_attached_parent_id ~= 0 then
+							local parent_vehicle = update_get_map_vehicle_by_id(vehicle_attached_parent_id)
+
+							if parent_vehicle:get() then
+								local parent_vehicle_pos_xz = parent_vehicle:get_position_xz()
+								waypoint_pos_x_prev, waypoint_pos_y_prev = get_holomap_from_world(parent_vehicle_pos_xz:x(), parent_vehicle_pos_xz:y(), screen_w, screen_h)
+							end
 						end
-						
+					end
+
+					-- Draw waypoint lines
+					for j = 0, waypoint_count - 1, 1 do
+						local waypoint = vehicle:get_waypoint(j)
+						local waypoint_pos = waypoint:get_position_xz()
 						local waypoint_screen_pos_x, waypoint_screen_pos_y = get_holomap_from_world(waypoint_pos:x(), waypoint_pos:y(), screen_w, screen_h)
 
-						update_ui_line(waypoint_prev_x, waypoint_prev_y, waypoint_screen_pos_x, waypoint_screen_pos_y, waypoint_color)
-						update_ui_image(waypoint_screen_pos_x - 3, waypoint_screen_pos_y - 3, atlas_icons.map_icon_waypoint, waypoint_color, 0)
-						
-						if is_highlight and g_highlighted_waypoint_id >= 0 and g_highlighted_waypoint_id == waypoint:get_id() then
-							waypoint_color = g_color_waypoint
+						if j >= waypoint_start_index then
+							update_ui_line(waypoint_pos_x_prev, waypoint_pos_y_prev, waypoint_screen_pos_x, waypoint_screen_pos_y, waypoint_color)
 						end
+
+						waypoint_pos_x_prev = waypoint_screen_pos_x
+						waypoint_pos_y_prev = waypoint_screen_pos_y
+
+						local waypoint_repeat_index = waypoint:get_repeat_index(j)
+
+						if waypoint_repeat_index >= 0 then
+							local waypoint_repeat = vehicle:get_waypoint(waypoint_repeat_index)
+							local waypoint_repeat_pos = waypoint_repeat:get_position_xz()
+
+							local repeat_screen_pos_x, repeat_screen_pos_y = get_holomap_from_world(waypoint_repeat_pos:x(), waypoint_repeat_pos:y(), screen_w, screen_h)
+
+							update_ui_line(waypoint_screen_pos_x, waypoint_screen_pos_y, repeat_screen_pos_x, repeat_screen_pos_y, waypoint_color)
+							update_ui_image((waypoint_screen_pos_x + repeat_screen_pos_x) / 2 - 4, (waypoint_screen_pos_y + repeat_screen_pos_y) / 2 - 4, atlas_icons.map_icon_loop, waypoint_color, 0)
+						end
+
+						local attack_target_count = waypoint:get_attack_target_count()
+
+						for k = 0, attack_target_count - 1, 1 do
+							local is_valid = waypoint:get_attack_target_is_valid(k)
+
+							if is_valid then
+								local attack_target_pos = waypoint:get_attack_target_position_xz(k)
+								local attack_target_attack_type = waypoint:get_attack_target_attack_type(k)
+								local attack_target_icon = get_attack_type_icon(attack_target_attack_type)
+
+								local attack_target_screen_pos_x, attack_target_screen_pos_y = get_holomap_from_world(attack_target_pos:x(), attack_target_pos:y(), screen_w, screen_h)
+
+								local color = g_color_attack_order
+
+								if attack_target_attack_type == e_attack_type.airlift then
+									color = g_color_airlift_order
+								end
+
+								update_ui_line(waypoint_screen_pos_x, waypoint_screen_pos_y, attack_target_screen_pos_x, attack_target_screen_pos_y, color)
+								update_ui_image(attack_target_screen_pos_x - 8, attack_target_screen_pos_y - 8, atlas_icons.map_icon_attack, color, 0)
+								update_ui_image(attack_target_screen_pos_x - 4, attack_target_screen_pos_y - 4 - 8, attack_target_icon, color, 0)
+							end
+						end
+					end
+
+					-- Draw waypoint icons
+					for j = 0, waypoint_count - 1, 1 do
+						local waypoint = vehicle:get_waypoint(j)
+						local waypoint_pos = waypoint:get_position_xz()
+
+						local waypoint_distance = vec2_dist( vehicle_pos_xz, waypoint_pos )
 						
-						waypoint_prev_x = waypoint_screen_pos_x
-						waypoint_prev_y = waypoint_screen_pos_y
+						if vehicle_definition_index == e_game_object_type.chassis_carrier and waypoint_distance < 500 then
+							waypoint_remove = j
+						end
+
+						local waypoint_screen_pos_x, waypoint_screen_pos_y = get_holomap_from_world(waypoint_pos:x(), waypoint_pos:y(), screen_w, screen_h)
+
+						local waypoint_color = g_color_waypoint
+
+						local is_group_a = waypoint:get_is_wait_group(0)
+						local is_group_b = waypoint:get_is_wait_group(1)
+						local is_group_c = waypoint:get_is_wait_group(2)
+						local is_group_d = waypoint:get_is_wait_group(3)
+
+						local group_text = ""
+
+						if is_group_a then group_text = group_text..update_get_loc(e_loc.upp_acronym_alpha) end
+						if is_group_b then group_text = group_text..update_get_loc(e_loc.upp_acronym_beta) end
+						if is_group_c then group_text = group_text..update_get_loc(e_loc.upp_acronym_charlie) end
+						if is_group_d then group_text = group_text..update_get_loc(e_loc.upp_acronym_delta) end
+
+						local is_group = (is_group_a or is_group_b or is_group_c or is_group_d)
+						local is_deploy = waypoint:get_type() == e_waypoint_type.deploy
+
+						if g_highlighted_vehicle_id == vehicle:get_id() and g_highlighted_waypoint_id == -1 then
+							waypoint_color = color8(255, 255, 255, 255)
+						elseif g_highlighted_vehicle_id == vehicle:get_id() and g_highlighted_waypoint_id == waypoint:get_id() then
+							waypoint_color = color8(255, 255, 255, 255)
+						elseif is_deploy then
+							waypoint_color = g_color_airlift_order
+						elseif is_group then
+							waypoint_color = g_color_attack_order
+						end
+
+						update_ui_image(waypoint_screen_pos_x - 4, waypoint_screen_pos_y - 4, atlas_icons.map_icon_waypoint, waypoint_color, 0)
+
+						if is_deploy then
+							update_ui_image(waypoint_screen_pos_x - 4, waypoint_screen_pos_y - 11, atlas_icons.icon_deploy_vehicle, waypoint_color, 0)
+						elseif is_group then
+							update_ui_text(waypoint_screen_pos_x - 64, waypoint_screen_pos_y - 13, group_text, 128, 1, waypoint_color, 0)
+						end
+					end
+				end
+
+				local attack_target_type = vehicle:get_attack_target_type()
+
+				if attack_target_type ~= e_attack_type.none then
+					local attack_target_pos = vehicle:get_attack_target_position_xz()
+					local attack_target_attack_type = vehicle:get_attack_target_type()
+					local attack_target_icon = get_attack_type_icon(attack_target_attack_type)
+
+					local attack_target_screen_pos_x, attack_target_screen_pos_y = get_holomap_from_world(attack_target_pos:x(), attack_target_pos:y(), screen_w, screen_h)
+
+					local color = g_color_attack_order
+
+					if attack_target_attack_type == e_attack_type.airlift then
+						color = g_color_airlift_order
+					end
+
+					render_dashed_line(screen_pos_x, screen_pos_y, attack_target_screen_pos_x, attack_target_screen_pos_y, color)
+					update_ui_image(attack_target_screen_pos_x - 4, attack_target_screen_pos_y - 4, atlas_icons.map_icon_waypoint, color, 0)
+					update_ui_image(attack_target_screen_pos_x - 4, attack_target_screen_pos_y - 4 - 8, attack_target_icon, color, 0)
+					update_ui_text(attack_target_screen_pos_x - 4, attack_target_screen_pos_y - 4 - 8, attack_target_attack_type, 128, 0, color_black, 0)
+				end
+				
+				-- Waypoint cleanup for the carrier
+				if waypoint_remove > -1 then
+					local waypoint_path = {}
+					
+					for i = waypoint_remove + 1, waypoint_count - 1, 1 do
+						local waypoint = vehicle:get_waypoint(i)
+						
+						waypoint_path[#waypoint_path + 1] = waypoint:get_position_xz()
 					end
 					
-					-- Waypoint cleanup for the carrier
-					if waypoint_remove > -1 then
-						local waypoint_path = {}
-						
-						for i = waypoint_remove + 1, waypoint_count - 1, 1 do
-							local waypoint = vehicle:get_waypoint(i)
-							
-							waypoint_path[#waypoint_path + 1] = waypoint:get_position_xz()
-						end
-						
-						vehicle:clear_waypoints()
-						
-						for i = 1, #waypoint_path, 1 do
-							vehicle:add_waypoint(waypoint_path[i]:x(), waypoint_path[i]:y())
-						end
+					vehicle:clear_waypoints()
+					
+					for i = 1, #waypoint_path, 1 do
+						vehicle:add_waypoint(waypoint_path[i]:x(), waypoint_path[i]:y())
 					end
 				end
 			end
 		end
-		
+
 		if g_is_ruler then
 			if g_is_pointer_hovered then
 				g_ruler_end_x = world_x
