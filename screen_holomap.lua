@@ -154,6 +154,7 @@ function update(screen_w, screen_h, ticks)
 		end
 		
 		g_pointer_pos_x, g_pointer_pos_y = get_holomap_from_world( world_x, world_y, screen_w, screen_h )
+		g_is_pointer_hovered = (g_pointer_pos_x > 0 and g_pointer_pos_y > 0 and g_pointer_pos_x < screen_w and g_pointer_pos_y < screen_h)
 	end
 
     if g_focus_mode ~= 0 then
@@ -716,9 +717,11 @@ function update(screen_w, screen_h, ticks)
 			if g_highlighted_vehicle_id >= 0 then
 				local highlighted_vehicle = update_get_map_vehicle_by_id(g_highlighted_vehicle_id)
 				if highlighted_vehicle:get() then
+					local vehicle_definition_index = highlighted_vehicle:get_definition_index()
+					
 					if g_highlighted_waypoint_id >= 0 then
 						local highlighted_waypoint = highlighted_vehicle:get_waypoint_by_id(g_highlighted_waypoint_id)
-						local vehicle_definition_index = highlighted_vehicle:get_definition_index()
+						
 						if get_is_vehicle_air(vehicle_definition_index) then
 							local alt_str = string.format( "%.0f m", highlighted_waypoint:get_altitude() )
 							local alt_width = update_ui_get_text_size(alt_str, 10000, 0) + 4
@@ -728,6 +731,15 @@ function update(screen_w, screen_h, ticks)
 					else
 						local tool_height = iff( get_vehicle_has_robot_dogs(highlighted_vehicle), 31, 21 )
 						render_tooltip(10, 10, screen_w - 20, screen_h - 20, g_pointer_pos_x, g_pointer_pos_y, 128, tool_height, 10, function(w, h) render_vehicle_tooltip(w, h, highlighted_vehicle) end)
+						
+						if vehicle_definition_index ~= e_game_object_type.chassis_carrier then
+							local weapon_range = get_vehicle_weapon_range(highlighted_vehicle)
+							local vehicle_pos_xz = highlighted_vehicle:get_position_xz()
+
+							if weapon_range > 0 then
+								render_weapon_radius(vehicle_pos_xz:x(), vehicle_pos_xz:y(), weapon_range, screen_w, screen_h)
+							end
+						end
 					end
 				end
 			end
@@ -1206,6 +1218,21 @@ function get_vehicle_has_robot_dogs(vehicle)
     return false, nil
 end
 
+function get_vehicle_weapon_range(vehicle)
+    local attachment_count = vehicle:get_attachment_count()
+    local weapon_range = 0
+
+    for i = 0, attachment_count - 1 do
+        local attachment = vehicle:get_attachment(i)
+
+        if attachment:get() then
+            weapon_range = math.max(attachment:get_weapon_range(), weapon_range)
+        end
+    end
+
+    return weapon_range
+end
+
 function render_vehicle_tooltip(w, h, vehicle)
     local screen_vehicle = update_get_screen_vehicle()
     local vehicle_pos_xz = vehicle:get_position_xz()
@@ -1363,6 +1390,31 @@ function render_dashed_line(x0, y0, x1, y1, col)
 
         update_ui_line(x0 + normal:x() * cursor, y0 + normal:y() * cursor, x0 + normal:x() * (cursor + length), y0 + normal:y() * (cursor + length), col)
     end
+end
+
+function render_weapon_radius(world_pos_x, world_pos_y, radius, screen_w, screen_h)
+    local steps = 16
+    local step = math.pi * 2 / steps
+    local angle_prev = 0
+    local screen_pos_x, screen_pos_y = get_holomap_from_world(world_pos_x, world_pos_y, screen_w, screen_h)
+
+    update_ui_begin_triangles()
+
+    for i = 1, steps do
+        local angle = step * i
+        local x0, y0 = get_holomap_from_world(world_pos_x + math.cos(angle_prev) * radius, world_pos_y + math.sin(angle_prev) * radius, screen_w, screen_h)
+        local x1, y1 = get_holomap_from_world(world_pos_x + math.cos(angle) * radius, world_pos_y + math.sin(angle) * radius, screen_w, screen_h)
+        local color = color8(32, 8, 8, 64)
+
+        update_ui_line(x0, y0, x1, y1, color)
+
+        color = color8(32, 8, 8, math.floor(32 * (math.sin(g_animation_time * 0.15) * 0.5 + 0.5)))
+        update_ui_add_triangle(vec2(x0, y0), vec2(x1, y1), vec2(screen_pos_x, screen_pos_y), color)
+
+        angle_prev = angle
+    end
+
+    update_ui_end_triangles()
 end
 
 function holomap_override( screen_w, screen_h, ticks )
