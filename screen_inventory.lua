@@ -1550,7 +1550,7 @@ function tab_stock_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_
             g_tab_stock.is_overlay = true
             update_ui_rectangle(0, 0, w, h, color8(0, 0, 0, 200))
 
-            local window = ui:begin_window(item_data.name .. "##item", 30, 10, w - 60, h - 25, atlas_icons.column_stock, is_tab_active, 2)
+            local window = ui:begin_window(item_data.name .. "##item", 30, 5, w - 60, h - 15, atlas_icons.column_stock, is_tab_active, 2)
                 imgui_item_description(ui, screen_vehicle, item_data, true)
                 ui:header(update_get_loc(e_loc.upp_order))
                 
@@ -1558,20 +1558,31 @@ function tab_stock_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_
                 local order_amount = order_amount_prev
                 order_amount = ui:selector(update_get_loc(e_loc.quantity), order_amount, -99999, 99999, 1, "%+d")
 
-                local button_action = ui:button_group({ "X", "-100", "-10", "+10", "+100" }, true)
+                local button_action = ui:button_group({ "-10", "-5", "0", "+5", "+10" }, true)
 
                 if button_action == 0 then
+                    order_amount = order_amount - 10
+                elseif button_action == 1 then
+                    order_amount = order_amount - 5
+                elseif button_action == 2 then
                     order_amount = 0
+                elseif button_action == 3 then
+                    order_amount = order_amount + 5
+                elseif button_action == 4 then
+                    order_amount = order_amount + 10
+                end
+
+                button_action = ui:button_group({ "-1k", "-100", "+100", "+1k" }, true)
+
+                if button_action == 0 then
+                    order_amount = order_amount - 1000
                 elseif button_action == 1 then
                     order_amount = order_amount - 100
                 elseif button_action == 2 then
-                    order_amount = order_amount - 10
-                elseif button_action == 3 then
-                    order_amount = order_amount + 10
-                elseif button_action == 4 then
                     order_amount = order_amount + 100
+                elseif button_action == 3 then
+                    order_amount = order_amount + 1000
                 end
-
                 order_amount = clamp(order_amount, -99999, 99999)
 
                 if order_amount_prev ~= order_amount then
