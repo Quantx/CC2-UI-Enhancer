@@ -68,11 +68,11 @@ function update(screen_w, screen_h, ticks)
                 end
                 
                 if v.is_wing and render_on_holding then
-                    render_docking_vehicle_wing(this_vehicle, v.vehicle)
+                    render_docking_vehicle_wing(this_vehicle, v.vehicle, left_w - 1)
                 elseif v.is_rotor and render_on_holding then
                     
                     -- if you refactor this block into the list block, might as well pass the correct landing state or color through this call because proper landing checks are in the modded list block
-                    render_docking_vehicle_rotor(this_vehicle, v.vehicle)
+                    render_docking_vehicle_rotor(this_vehicle, v.vehicle, left_w - 1)
                 end
             end
         end
@@ -202,22 +202,12 @@ function update(screen_w, screen_h, ticks)
                         vehicle_state_string = "HOLD"
                         vehicle_state_color = g_colors.dock_queue
                         
-                        --TODO: had to add the landing check for helis here, because they are in the dock_queue state all the way down to the runway. this basically checks if the heli is inside a 3D box behind the carrier's runway
-                        if v.is_rotor then
-                        
-                            local vehicle_parent = update_get_screen_vehicle()
-                            local relative_position = update_get_map_vehicle_position_relate_to_parent_vehicle(vehicle_parent:get_id(), vehicle:get_id())
-                            local relative_position_z = relative_position:z()
-                            local relative_position_x = relative_position:x()
-                            local relative_position_y = relative_position:y()
-                            
-                            --TODO: rough 3D box size of the heli landing slope
-                            if relative_position_z > -230 and relative_position_z < 20 and relative_position_x > -100 and relative_position_x < 15 and relative_position_y < 150 then
-                                vehicle_state_string = "LAND"
-                                vehicle_state_color = g_colors.docking
-                            end
-                        end
-                    
+                        --TODO: had to add the landing check for helis here, because they are in the dock_queue state all the way down to the runway.
+                       	if v.is_rotor and rotor_landed_carrier(vehicle) then
+                       		vehicle_state_string = "LAND"
+							vehicle_state_color = g_colors.docking
+                       	end
+             
                     --TODO: launch mode. "undocking" is also active when the drone is on the crane and going up on the elevator, maybe add a "TAXI" state that is set while the drone is on them? couldn't find a way to check for that though
                     elseif vehicle_dock_state == e_vehicle_dock_state.undocking then
                     
@@ -350,7 +340,7 @@ function render_landing_pattern()
     update_ui_image(-22, -final_arc - 7, atlas_icons.holomap_icon_carrier, g_colors.carrier, 3)
 end
 
-function render_docking_vehicle_wing(vehicle_parent, vehicle)
+function render_docking_vehicle_wing(vehicle_parent, vehicle, right_bound)
     local run_length = g_landing_pattern.run_length
     local run_arc = g_landing_pattern.run_arc
     local final_arc = g_landing_pattern.final_arc
@@ -397,12 +387,14 @@ function render_docking_vehicle_wing(vehicle_parent, vehicle)
         col = color_white
     end
 
-    update_ui_image(p0x - 3, p0z - 3, atlas_icons.map_icon_air, col, 0)
+    if p0x + 3 < right_bound then
+	    update_ui_image(p0x - 3, p0z - 3, atlas_icons.map_icon_air, col, 0)
+	end
 end
 
 --TODO: this is the unchanged vanilla icon render function for helis on the holding pattern, it has two bugs at the moment, maybe fix this or just remove the pattern render for more drone-list-entry space
 -- 1) its relative range checks are not properly done at the moment so the icon will render at the wrong place or too early sometimes
-function render_docking_vehicle_rotor(vehicle_parent, vehicle)
+function render_docking_vehicle_rotor(vehicle_parent, vehicle, right_bound)
     local final_arc = g_landing_pattern.final_arc
     local vehicle_dock_state = vehicle:get_dock_state()
     local relative_position = update_get_map_vehicle_position_relate_to_parent_vehicle(vehicle_parent:get_id(), vehicle:get_id())
@@ -411,15 +403,15 @@ function render_docking_vehicle_rotor(vehicle_parent, vehicle)
     local p0z = -final_arc + math.min(p0x - 10, final_arc)
     
     if relative_position:z() < -120 then
-    
-        -- 2) the docking color is never set because helis skip the "docking" aka landing state and stay in "dock_queue" all the way down to the runway
-        local col = iff(vehicle_dock_state == e_vehicle_dock_state.dock_queue, g_colors.dock_queue, g_colors.docking)
+        local col = iff(rotor_landed_carrier(vehicle), g_colors.dock_queue, g_colors.docking)
 
         if g_hovered_vehicle_id == vehicle:get_id() then
             col = color_white
         end
         
-        update_ui_image(p0x - 3, p0z - 3, atlas_icons.map_icon_air, col, 0)
+        if p0x + 3 < right_bound then
+			update_ui_image(p0x - 3, p0z - 3, atlas_icons.map_icon_air, col, 0)
+		end
     end
 end
 
@@ -467,6 +459,18 @@ function get_all_air_ops_vehicles(vehicle_parent)
     end
 
     return all_air_ops_vehicles
+end
+
+-- This basically checks if the heli is inside a 3D box behind the carrier's runway
+function rotor_landed_carrier(vehicle)
+	local vehicle_parent = update_get_screen_vehicle()
+	local relative_position = update_get_map_vehicle_position_relate_to_parent_vehicle(vehicle_parent:get_id(), vehicle:get_id())
+	local relative_position_z = relative_position:z()
+	local relative_position_x = relative_position:x()
+	local relative_position_y = relative_position:y()
+
+    --TODO: rough 3D box size of the heli landing slope
+    return relative_position_z > -230 and relative_position_z < 20 and relative_position_x > -100 and relative_position_x < 15 and relative_position_y < 150
 end
 
 function arc_position(x, y, radius, angle)
