@@ -16,8 +16,10 @@ g_is_selection_map = false
 g_map_render_mode = 1
 g_is_drag_pan_map = false
 g_viewing_vehicle_id = 0
-g_is_vehicle_team_colors = false
+g_is_vehicle_team_colors = true
 g_is_island_team_colors = true
+g_is_carrier_waypoint = false
+g_is_pip_enable = true
 
 g_blend_tick = 0
 g_prev_pos_x = 0
@@ -56,6 +58,10 @@ g_cursor_pos_x = 0
 g_cursor_pos_y = 0
 
 g_ui = nil
+
+g_holomap_last_x = 0
+g_holomap_last_y = 0
+g_holomap_last_anim = 0
 
 -- tutorial controls
 g_tut_is_carrier_selected = false
@@ -312,9 +318,23 @@ function render_selection_waypoint(screen_w, screen_h)
                 if get_is_vehicle_air(vehicle_definition_index) then
                     ui:header(update_get_loc(e_loc.upp_air))
 
+                    local max_altitude = 20000
+
                     -- waypont altitude selector
-                    waypoint_altitude, is_modified = ui:selector(update_get_loc(e_loc.upp_altitude), waypoint_altitude, 50, 2000, 50)
+                    waypoint_altitude, is_modified = ui:selector(update_get_loc(e_loc.upp_altitude), waypoint_altitude, 10, max_altitude, 10)
                     if is_modified then selected_vehicle:set_waypoint_altitude(g_selection_waypoint_id, waypoint_altitude) end
+                    -- Additional increments
+                    local preset_increments = { -1000, -100, 100, 1000 }
+                    local button_increment = ui:button_group({ "-1000", "-100", "+100", "+1000" }, true)
+                    if button_increment >= 0 and button_increment < #preset_increments then
+                        selected_vehicle:set_waypoint_altitude(g_selection_waypoint_id, math.max( math.min( waypoint_altitude + preset_increments[button_increment + 1], max_altitude ), 0 ) )
+                    end
+                    -- Preset altitudes
+                    local preset_altitudes = { 100, 400, 1500, 2000, 4000 }
+                    local button_preset = ui:button_group({ "100", "400", "1500", "2000", "4000" }, true)
+                    if button_preset >= 0 and button_preset < #preset_altitudes then
+                        selected_vehicle:set_waypoint_altitude(g_selection_waypoint_id, preset_altitudes[button_preset + 1])
+                    end
                 end
             ui:end_window()
         else
@@ -449,6 +469,8 @@ function render_selection_map(screen_w, screen_h)
 
         g_is_vehicle_team_colors = ui:checkbox(update_get_loc(e_loc.upp_vehicle_team_colors), g_is_vehicle_team_colors)
         g_is_island_team_colors = ui:checkbox(update_get_loc(e_loc.upp_island_team_colors), g_is_island_team_colors)
+		g_is_carrier_waypoint = ui:checkbox("SHOW CARRIER WAYPOINTS", g_is_carrier_waypoint)
+		g_is_pip_enable = ui:checkbox("ENABLE CCTV FEED", g_is_pip_enable)
 
         ui:spacer(5)
 
@@ -705,7 +727,7 @@ function update(screen_w, screen_h, ticks)
                             end
                         end
 
-                        if vehicle_team == update_get_screen_team_id() then
+                        if vehicle_team == update_get_screen_team_id() and vehicle_definition_index ~= e_game_object_type.chassis_carrier then
                             local waypoint_count = vehicle:get_waypoint_count()
                             
                             if g_drag_vehicle_id == 0 or g_drag_vehicle_id == vehicle:get_id() then
@@ -867,7 +889,14 @@ function update(screen_w, screen_h, ticks)
                         local waypoint_pos_x_prev = screen_pos_x
                         local waypoint_pos_y_prev = screen_pos_y
                         
-                        if vehicle_team == update_get_screen_team_id() and vehicle:get_definition_index() ~= e_game_object_type.chassis_sea_barge then
+						local show_waypoints = true
+						if vehicle:get_definition_index() == e_game_object_type.chassis_sea_barge then
+							show_waypoints = false
+						elseif vehicle:get_definition_index() == e_game_object_type.chassis_carrier then
+							show_waypoints = g_is_carrier_waypoint
+						end
+						
+                        if vehicle_team == update_get_screen_team_id() and show_waypoints then
                             local waypoint_color = g_color_waypoint
 
                             if g_highlighted_vehicle_id == vehicle:get_id() and g_highlighted_waypoint_id == 0 then
@@ -1078,6 +1107,17 @@ function update(screen_w, screen_h, ticks)
                             end
 
                             update_ui_image(screen_pos_x - icon_offset, screen_pos_y - icon_offset, region_vehicle_icon, element_color, 0)
+							
+							if vehicle:get_definition_index() == e_game_object_type.chassis_carrier then
+								update_ui_image(screen_pos_x - 5, screen_pos_y - 5, atlas_icons.map_icon_circle_9, color_white, 0)
+
+								local vehicle_dir = vehicle:get_direction()
+								
+								local screen_icon_x = screen_pos_x - icon_offset
+								local screen_icon_y = screen_pos_y - icon_offset
+								
+								update_ui_line(screen_pos_x, screen_pos_y, screen_pos_x + (vehicle_dir:x() * 20), screen_pos_y + (vehicle_dir:y() * -20), color_white)
+							end
 
                             local damage_indicator_factor = vehicle:get_damage_indicator_factor()
                             local damage_factor = clamp(vehicle:get_hitpoints() / vehicle:get_total_hitpoints(), 0, 1)
@@ -1477,34 +1517,73 @@ function update(screen_w, screen_h, ticks)
             update_ui_pop_clip()
             update_ui_pop_offset()
         end
+		
+		local vehicle_count = update_get_map_vehicle_count()
+		for i = 0, vehicle_count - 1, 1 do
+			local vehicle = update_get_map_vehicle_by_index(i)
+			local waypoint_count = vehicle:get_waypoint_count()
 
+			if vehicle:get() and vehicle:get_definition_index() == e_game_object_type.drydock and vehicle:get_team() == update_get_screen_team_id() and waypoint_count > 0 then
+				local waypoint = vehicle:get_waypoint(0)
+				local waypoint_pos = waypoint:get_position_xz()
+
+				local waypoint_x = waypoint_pos:x()
+				local waypoint_y = waypoint_pos:y()
+
+				local cursor_x, cursor_y = get_screen_from_world( waypoint_x, waypoint_y, g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
+
+				if waypoint_x ~= g_holomap_last_x or waypoint_y ~= g_holomap_last_y then
+					g_holomap_last_x = waypoint_x
+					g_holomap_last_y = waypoint_y
+					g_holomap_last_anim = g_animation_time
+				end
+
+                                local fade = math.max( 255 - math.floor(g_animation_time - g_holomap_last_anim), 0 )
+			        update_ui_image_rot(cursor_x, cursor_y, atlas_icons.map_icon_crosshair, color8(255, 255, 255, fade), math.pi / 4)
+
+				break
+			end
+		end
     elseif g_screen_index == 1 then
         update_set_screen_background_type(0)
         local viewing_vehicle = update_get_map_vehicle_by_id(g_viewing_vehicle_id)
 
         if viewing_vehicle:get() then
-            g_camera_pos_x = viewing_vehicle:get_position_xz():x()
-            g_camera_pos_y = viewing_vehicle:get_position_xz():y()
+			if update_get_is_focus_local() or not g_is_pip_enable then
+				g_camera_pos_x = viewing_vehicle:get_position_xz():x()
+				g_camera_pos_y = viewing_vehicle:get_position_xz():y()
 
-            local connecting_text = update_get_loc(e_loc.connecting)
-            local dot_count = math.floor(g_animation_time / (30 / 4)) % 4
+				local connecting_text = update_get_loc(e_loc.connecting)
+				local dot_count = math.floor(g_animation_time / (30 / 4)) % 4
 
-            for i = 1, dot_count, 1 do
-                connecting_text = connecting_text .. "."
-            end
+				for i = 1, dot_count, 1 do
+					connecting_text = connecting_text .. "."
+				end
 
-            local cx = screen_w / 2 - 40
-            local cy = screen_h / 2 - 5
-            update_ui_text(cx, cy, connecting_text, 100, 0, color_white, 0)
+				local cx = screen_w / 2 - 40
+				local cy = screen_h / 2 - 5
+				update_ui_text(cx, cy, connecting_text, 100, 0, color_white, 0)
 
-            local anim = g_animation_time / 30.0
-            local bound_left = cx
-            local bound_right = bound_left + 75
-            local left = bound_left + (bound_right - bound_left) * math.abs(math.sin((anim - math.pi / 2) % (math.pi / 2))) ^ 4
-            local right = left + (bound_right - left) * math.abs(math.sin(anim % (math.pi / 2)))
+				local anim = g_animation_time / 30.0
+				local bound_left = cx
+				local bound_right = bound_left + 75
+				local left = bound_left + (bound_right - bound_left) * math.abs(math.sin((anim - math.pi / 2) % (math.pi / 2))) ^ 4
+				local right = left + (bound_right - left) * math.abs(math.sin(anim % (math.pi / 2)))
 
-            update_ui_rectangle(left, cy + 12, right - left, 1, color_status_ok)
-            update_ui_rectangle(bound_right + bound_left - right, cy - 3, right - left, 1, color_status_ok)
+				update_ui_rectangle(left, cy + 12, right - left, 1, color_status_ok)
+				update_ui_rectangle(bound_right + bound_left - right, cy - 3, right - left, 1, color_status_ok)
+			else
+				local is_render_vehicle = viewing_vehicle:get_definition_index() ~= e_game_object_type.chassis_sea_barge
+			
+				update_set_screen_background_type(9)
+				update_set_screen_camera_attach_vehicle(g_viewing_vehicle_id, 0)
+
+				update_set_screen_camera_cull_distance(5000)
+				update_set_screen_camera_lod_level(0)
+				update_set_screen_camera_is_render_map_vehicles(true)
+				update_set_screen_camera_render_attached_vehicle(is_render_vehicle)
+				update_set_screen_camera_is_render_ocean(true)
+			end
         else
             local cx = screen_w / 2 - 50
             local cy = screen_h / 2
@@ -1915,8 +1994,14 @@ function render_vehicle_tooltip(w, h, vehicle)
         update_ui_image(cx, 2, vehicle_definition_region, color8(255, 255, 255, 255), 0)
         cx = cx + 18
 
-        update_ui_text(cx, 6, vehicle_definition_name, 124, 0, color8(255, 255, 255, 255), 0)
-        cx = cx + update_ui_get_text_size(vehicle_definition_name, 10000, 0) + 2
+		local display_name = vehicle_definition_name
+
+		if vehicle_definition_index == e_game_object_type.chassis_sea_barge then
+			display_name = display_name .. " " .. tostring(vehicle:get_id())
+		end
+
+        update_ui_text(cx, 6, display_name, 124, 0, color8(255, 255, 255, 255), 0)
+        cx = cx + update_ui_get_text_size(display_name, 10000, 0) + 2
     else
         update_ui_image(cx, 2, atlas_icons.icon_chassis_16_wheel_small, color_inactive, 0)
         cx = cx + 18

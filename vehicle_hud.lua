@@ -1151,7 +1151,6 @@ function render_attachment_hud_bomb(screen_w, screen_h, map_data, vehicle, attac
     end
 
     render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachment)
-
     return false
 end
 
@@ -1405,6 +1404,38 @@ function render_attachment_hud_cannon(screen_w, screen_h, map_data, vehicle, att
             local step = step_amounts[math.floor(zoom_power) + 1]
 
             for i = step, 1000, step do
+                if i > 0 then
+                    local travel_time = math.max(1, i) / (projectile_speed / 30)
+                    local drop_position = update_get_camera_position()
+                    drop_position:x(drop_position:x() + projectile_velocity:x() * travel_time)
+                    drop_position:y(drop_position:y() + projectile_velocity:y() * travel_time - 0.5 * projectile_gravity * travel_time * travel_time)
+                    drop_position:z(drop_position:z() + projectile_velocity:z() * travel_time)
+
+                    local screen_pos = update_world_to_screen(drop_position)
+
+                    if screen_pos:y() < hud_pos:y() + 60 then
+                        update_ui_line(screen_w / 2 - 3, screen_pos:y(), screen_w / 2 + 2, screen_pos:y(), color8(0, 255, 0, 255))
+
+                        if (i / step) % 2 == 0 then
+                            update_ui_text(screen_w / 2 + 4, screen_pos:y() - 5, string.format("%d", i) .. update_get_loc(e_loc.acronym_meters), 64, 0, color8(0, 255, 0, 255), 0)
+                        end
+                    end
+                end
+            end
+        end
+		
+	if def == e_game_object_type.attachment_turret_heavy_cannon and display_zoom > 1 then
+            local projectile_gravity = 50 / 30
+            local projectile_speed = 600
+            local projectile_velocity = update_get_camera_forward()
+            projectile_velocity:x(projectile_velocity:x() * projectile_speed)
+            projectile_velocity:y(projectile_velocity:y() * projectile_speed)
+            projectile_velocity:z(projectile_velocity:z() * projectile_speed)
+
+            local step_amounts = { 800, 400, 200, 100 }
+            local step = step_amounts[math.floor(zoom_power) + 1]
+
+            for i = step, 1600, step do
                 if i > 0 then
                     local travel_time = math.max(1, i) / (projectile_speed / 30)
                     local drop_position = update_get_camera_position()
@@ -1927,6 +1958,7 @@ end
 
 function render_altitude_ticker(pos, altitude, col)
     update_ui_image(pos:x(), pos:y(), atlas_icons.hud_ticker_large, col, 0)
+	if altitude >= 10000 then altitude = math.floor( altitude / 10 ) end
     render_number_ticker(vec2(pos:x() + 6, pos:y() + 2), vec2(30, 13), altitude, 4, 2, col, false)
 end
 
@@ -2009,7 +2041,7 @@ function render_timeline(pos, size, num_incr, spacing, offset, text_align, col, 
             if callback == nil then
                 local char_h = 10
     
-                update_ui_text(x, y - char_h / 2, (num_incr * (i + math.floor(offset / spacing))), size:x(), text_align, col, 0)
+                update_ui_text(x, y - char_h / 2, val, size:x(), text_align, col, 0)
             else
                 callback(x, y)
             end
