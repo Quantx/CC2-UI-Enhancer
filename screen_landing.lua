@@ -59,13 +59,10 @@ function update(screen_w, screen_h, ticks)
             for _, v in pairs(all_air_ops_vehicles) do
             
                 --prevents the drones that are not in the holding or landing pattern to show up on the left side of the screen
-                local render_on_holding = false
                 local vehicle = v.vehicle
                 local vehicle_dock_state = vehicle:get_dock_state()
                 
-                if vehicle_dock_state == e_vehicle_dock_state.dock_queue or vehicle_dock_state == e_vehicle_dock_state.docking then
-                    render_on_holding = true
-                end
+                local render_on_holding = (vehicle_dock_state == e_vehicle_dock_state.dock_queue or vehicle_dock_state == e_vehicle_dock_state.docking)
                 
                 if v.is_wing and render_on_holding then
                     render_docking_vehicle_wing(this_vehicle, v.vehicle, left_w - 1)
