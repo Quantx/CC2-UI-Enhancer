@@ -712,15 +712,22 @@ function update(screen_w, screen_h, ticks)
 				update_ui_text(cx + 15, cy, string.format("%.0f deg", bearing), 100, 0, text_col, 0)
 				cy = cy + 10
 			end
-		else
-			if g_highlighted_vehicle_id >= 0 and g_highlighted_waypoint_id == -1 then
+		else				
+			if g_highlighted_vehicle_id >= 0 then
 				local highlighted_vehicle = update_get_map_vehicle_by_id(g_highlighted_vehicle_id)
-
 				if highlighted_vehicle:get() then
-					if get_vehicle_has_robot_dogs(highlighted_vehicle) then
-						render_tooltip(10, 10, screen_w - 20, screen_h - 20, g_pointer_pos_x, g_pointer_pos_y, 128, 31, 10, function(w, h) render_vehicle_tooltip(w, h, highlighted_vehicle) end)
+					if g_highlighted_waypoint_id >= 0 then
+						local highlighted_waypoint = highlighted_vehicle:get_waypoint_by_id(g_highlighted_waypoint_id)
+						local vehicle_definition_index = highlighted_vehicle:get_definition_index()
+						if get_is_vehicle_air(vehicle_definition_index) then
+							local alt_str = string.format( "%.0f m", highlighted_waypoint:get_altitude() )
+							local alt_width = update_ui_get_text_size(alt_str, 10000, 0) + 4
+							
+							render_tooltip(10, 10, screen_w - 20, screen_h - 20, g_pointer_pos_x, g_pointer_pos_y, alt_width, 14, 10, function(w, h) 	update_ui_text(2, 2, alt_str, w - 4, 0, color_white, 0) end)
+						end
 					else
-						render_tooltip(10, 10, screen_w - 20, screen_h - 20, g_pointer_pos_x, g_pointer_pos_y, 128, 21, 10, function(w, h) render_vehicle_tooltip(w, h, highlighted_vehicle) end)
+						local tool_height = iff( get_vehicle_has_robot_dogs(highlighted_vehicle), 31, 21 )
+						render_tooltip(10, 10, screen_w - 20, screen_h - 20, g_pointer_pos_x, g_pointer_pos_y, 128, tool_height, 10, function(w, h) render_vehicle_tooltip(w, h, highlighted_vehicle) end)
 					end
 				end
 			end
