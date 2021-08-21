@@ -481,18 +481,19 @@ function update(screen_w, screen_h, ticks)
 					local waypoint_path = vehicle:get_waypoint_path()
 					local waypoint_start_index = 0
 
+					-- Computed path to next waypoint
 					if #waypoint_path > 0 then
 						waypoint_start_index = 1
 
 						for i = 1, #waypoint_path do
-							get_holomap_from_world(waypoint_path[i]:x(), waypoint_path[i]:y(), screen_w, screen_h)
+							local waypoint_screen_pos_x, waypoint_screen_pos_y = get_holomap_from_world(waypoint_path[i]:x(), waypoint_path[i]:y(), screen_w, screen_h)
 
 							update_ui_line(waypoint_pos_x_prev, waypoint_pos_y_prev, waypoint_screen_pos_x, waypoint_screen_pos_y, waypoint_color)
 
 							update_ui_rectangle(waypoint_screen_pos_x - 1, waypoint_screen_pos_y - 1, 2, 2, waypoint_color)
 
 							waypoint_pos_x_prev = waypoint_screen_pos_x
-							waypoint_pos_y_prev = waypoint_screen_pos_y;
+							waypoint_pos_y_prev = waypoint_screen_pos_y
 						end
 
 						if waypoint_count > 0 then
