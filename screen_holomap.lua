@@ -233,6 +233,7 @@ function update(screen_w, screen_h, ticks)
 	update_set_screen_background_type(g_button_mode + 1)
 	update_set_screen_background_is_render_islands(false)
 	update_set_screen_map_position_scale(g_map_x + g_map_x_offset, g_map_z + g_map_z_offset, g_map_size + g_map_size_offset)
+	g_is_render_holomap = true
 	g_is_render_holomap_tiles = true
 	g_is_render_holomap_vehicles = true
 	g_is_render_holomap_missiles = true
@@ -1421,6 +1422,7 @@ function holomap_override( screen_w, screen_h, ticks )
 	g_override = false
 
 	if update_self_destruct_override(screen_w, screen_h) then
+		g_is_render_holomap = false
 		g_override = true
 	elseif holomap_override_startup ( screen_w, screen_h, ticks ) then
 		g_override = true
@@ -1431,6 +1433,7 @@ function holomap_override( screen_w, screen_h, ticks )
 	if g_override then
 		update_set_screen_background_type(0)
 		update_set_screen_map_position_scale(g_override_x, g_override_z, g_override_zoom)
+		g_is_render_holomap_grids = false
 	end
 	
 	return g_override
@@ -1452,6 +1455,8 @@ function holomap_override_startup( screen_w, screen_h, ticks )
 		local target_desired, target_allocated = veh:get_power_system_state(4) -- Radar
 		if target_desired == 0 then	g_startup_phase_anim = g_startup_phase_anim + ticks	end
 	end
+
+	g_is_render_holomap = g_startup_phase >= holomap_startup_phases.sys
 
 	if g_startup_phase == holomap_startup_phases.memchk then
 		render_startup_memchk( screen_w, screen_h )
