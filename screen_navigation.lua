@@ -10,12 +10,15 @@ g_screen_index = 2
 g_map_render_mode = 1
 g_ui = nil
 g_is_pointer_hovered = false
+g_pointer_pos_x = 0
+g_pointer_pos_y = 0
 g_is_vehicle_team_colors = true
 g_is_island_team_colors = true
 g_is_island_names = true
 g_is_deploy_carrier_triggered = false
 g_dock_state_prev = nil
 g_color_waypoint = color8(127, 255, 255, 127)
+g_animation_time = 0
 
 function parse()
     g_is_camera_pos_initialised = parse_bool("is_map_init", g_is_camera_pos_initialised)
@@ -51,7 +54,8 @@ function begin()
     g_ui = lib_imgui:create_ui()
 end
 
-function update(screen_w, screen_h, ticks) 
+function update(screen_w, screen_h, ticks)
+	g_animation_time = g_animation_time + ticks
     local this_vehicle = update_get_screen_vehicle()
     update_set_screen_background_type(0)
 
@@ -68,6 +72,8 @@ function update(screen_w, screen_h, ticks)
     g_dock_state_prev = this_vehicle:get_dock_state()
 
     if update_screen_overrides(screen_w, screen_h, ticks)  then return end
+
+	local is_local = update_get_is_focus_local()
 
     local ui = g_ui
     ui:begin_ui()
@@ -152,6 +158,12 @@ function update(screen_w, screen_h, ticks)
                     end
                 end
             end
+            
+            -- render carrier direction indicator
+			update_ui_image(64 - 5, 64 - 5, atlas_icons.map_icon_circle_9, color_white, 0)
+
+            local this_vehicle_dir = this_vehicle:get_direction()
+            update_ui_line(64, 64, 64 + (this_vehicle_dir:x() * 20), 64 + (this_vehicle_dir:y() * -20), color_white)
 
 			-- render carrier waypoints
 			local waypoint_count = this_vehicle:get_waypoint_count()
@@ -172,12 +184,81 @@ function update(screen_w, screen_h, ticks)
 				waypoint_prev_y = waypoint_screen_pos_y
 			end
 
-            update_ui_image(64 - 5, 64 - 5, atlas_icons.map_icon_circle_9, color_white, 0)
+			local missile_count = update_get_missile_count()
 
-            local this_vehicle_dir = this_vehicle:get_direction()
-            update_ui_line(64, 64, 64 + (this_vehicle_dir:x() * 20), 64 + (this_vehicle_dir:y() * -20), color_white)
+		    for i = 0, missile_count - 1 do
+		        local missile = update_get_missile_by_index(i)
+		        local def = missile:get_definition_index()
+		        
+		        local position_xz = missile:get_position_xz()
+		        local screen_pos_x, screen_pos_y = get_screen_from_world(position_xz:x(), position_xz:y(), g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
 
-            update_ui_text(10, screen_h - 13, string.format("X:%-6.0f ", g_camera_pos_x) .. string.format("Y:%-6.0f", g_camera_pos_y), screen_w - 10, 0, color_grey_dark, 0)
+		        if missile:get_is_visible() and (def == e_game_object_type.torpedo or def == e_game_object_type.torpedo_decoy or def == e_game_object_type.torpedo_noisemaker) then
+	                local missile_trail_count = missile:get_trail_count()
+	                local trail_prev_x = screen_pos_x
+	                local trail_prev_y = screen_pos_y
+	                for missile_trail_index = 0, missile_trail_count - 1 do
+	                    local trail_xz = missile:get_trail_position(missile_trail_index)
+	                    local trail_next_x, trail_next_y = get_screen_from_world(trail_xz:x(), trail_xz:y(), g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)        
+	                    update_ui_line(trail_prev_x, trail_prev_y, trail_next_x, trail_next_y, color8(255, 255, 255, 16 - math.floor(missile_trail_index / 4)))
+	                    trail_prev_x = trail_next_x
+	                    trail_prev_y = trail_next_y
+	                end
+
+	                local is_timer_running = missile:get_timer() > 0
+	                local is_own_team = missile:get_team() == update_get_local_team_id()
+
+	                local color_missile = color_white
+
+	                local icon_image = atlas_icons.map_icon_torpedo
+	                if def == e_game_object_type.torpedo_decoy or def == e_game_object_type.torpedo_noisemaker then
+	                    icon_image = atlas_icons.map_icon_torpedo_decoy
+
+	                    if is_own_team then
+	                        if is_timer_running then
+	                            if g_animation_time % 10 < 5 then
+	                                color_missile = color8(64, 64, 255, 255)
+	                            else
+	                                color_missile = color_white
+	                            end
+	                        end
+	                    end
+	                else
+	                    icon_image = atlas_icons.map_icon_torpedo
+
+	                    if is_own_team then
+	                        if is_timer_running then
+	                            color_missile = color_white
+	                        else
+	                            if g_animation_time % 10 < 5 then
+	                                color_missile = color8(255, 64, 64, 255)
+	                            else
+	                                color_missile = color_white
+	                            end
+	                        end
+	                    end
+	                end
+
+	                update_ui_image(screen_pos_x - 3, screen_pos_y - 3, icon_image, color_missile, 0)
+	                
+	                if is_local and g_is_pointer_hovered then
+			            local missile_distance_to_cursor = math.abs(screen_pos_x - g_pointer_pos_x) + math.abs(screen_pos_y - g_pointer_pos_y)
+
+			            if is_own_team and missile_distance_to_cursor < 8 and is_timer_running then
+			                update_ui_text(screen_pos_x - 16, screen_pos_y - 12, tostring(math.floor(missile:get_timer() / 30) + 1), 32, 1, color_missile, 0)
+			            end
+			        end
+		        end
+		    end
+
+			local world_x = g_camera_pos_x
+			local world_y = g_camera_pos_y
+
+			if is_local and g_is_pointer_hovered then
+				world_x, world_y = get_world_from_screen(g_pointer_pos_x, g_pointer_pos_y, g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
+			end
+			
+            update_ui_text(10, screen_h - 13, string.format("X:%-6.0f ", world_x) .. string.format("Y:%-6.0f", world_y), screen_w - 10, 0, color_grey_dark, 0)
         end
     elseif g_screen_index == 1 then
         update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_ud)
@@ -283,6 +364,8 @@ end
 function input_pointer(is_hovered, x, y)
     g_ui:input_pointer(is_hovered, x, y)
     g_is_pointer_hovered = is_hovered
+    g_pointer_pos_x = x
+    g_pointer_pos_y = y
 end
 
 function input_scroll(dy)
