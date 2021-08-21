@@ -201,6 +201,11 @@ function update(screen_w, screen_h, ticks)
         end
     end
 
+    if g_is_map_pos_initialised == false then
+        g_is_map_pos_initialised = true
+        focus_world()
+    end
+
     update_add_ui_interaction_special(update_get_loc(e_loc.interaction_pan), e_ui_interaction_special.map_pan)
     update_add_ui_interaction_special(update_get_loc(e_loc.interaction_zoom), e_ui_interaction_special.map_zoom)
 
@@ -1478,7 +1483,6 @@ function holomap_override_startup( screen_w, screen_h, ticks )
 	end
 	
 	if g_startup_phase == holomap_startup_phases.finish then
-		focus_carrier()
 		return false
 	end
 	
