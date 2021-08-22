@@ -292,10 +292,15 @@ function render_vehicle_list( win_list, is_air )
 	            vehicle_state_color = color_grey_dark
 	        
 	        -- attack mode, the Petrel's airlift order is a type of attack, make sure to filter it
-	        elseif attack_target_type ~= e_attack_type.none and attack_target_type ~= e_attack_type.airlift then
+	        elseif attack_target_type ~= e_attack_type.none then
 	        
 	            vehicle_state_string = "ATTK"
 	            vehicle_state_color = color_status_warning
+	        
+	        	if attack_target_type == e_attack_type.airlift then
+	        		vehicle_state_string = "LIFT"
+	            	vehicle_state_color = color8(255, 100, 0, 255)
+	        	end
 	        
 	        -- waypoint modes
 	        elseif waypoint_count > 0 then
@@ -305,16 +310,21 @@ function render_vehicle_list( win_list, is_air )
 	            
 	            local waypoint = vehicle:get_waypoint(0)
     	        
-				if waypoint:get_is_wait_group(0) then
+    	        local waypoint_dist = vec2_dist( vehicle:get_position_xz(), waypoint:get_position_xz() ) < iff( v.is_wing, 350, 20 )
+    	        
+    	        if waypoint:get_type() == e_waypoint_type.deploy then
+					vehicle_state_string = "DPLY"
+					vehicle_state_color = color8(255, 100, 0, 255)       
+				elseif waypoint:get_is_wait_group(0) and waypoint_dist then
 					vehicle_state_string = "WG A"
 			        vehicle_state_color = color_status_warning
-				elseif waypoint:get_is_wait_group(1) then
+				elseif waypoint:get_is_wait_group(1) and waypoint_dist then
 					vehicle_state_string = "WG B"
 			        vehicle_state_color = color_status_warning
-				elseif waypoint:get_is_wait_group(2) then
+				elseif waypoint:get_is_wait_group(2) and waypoint_dist then
 					vehicle_state_string = "WG C"
 			        vehicle_state_color = color_status_warning
-				elseif waypoint:get_is_wait_group(3) then
+				elseif waypoint:get_is_wait_group(3) and waypoint_dist then
 					vehicle_state_string = "WG D"
 			        vehicle_state_color = color_status_warning
 	            else
