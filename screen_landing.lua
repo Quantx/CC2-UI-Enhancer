@@ -196,11 +196,11 @@ function render_vehicle_list( win_list, is_air )
 	        local full_name, vehicle_icon, vehicle_handle = get_chassis_data_by_definition_index(vehicle:get_definition_index())
 	        local name_color = color_status_ok
 	        
-	        if damage_color == color_status_warning or fuel_col == color_status_warning then
+	        if damage_color == color_status_warning or fuel_col == color_status_warning or ammo_color == color_status_warning then
 	            name_color = color_status_warning
 	        end
 	        
-	        if damage_color == color_status_bad or fuel_col == color_status_bad then
+	        if damage_color == color_status_bad or fuel_col == color_status_bad or ammo_color == color_status_bad then
 	            name_color = color_status_bad
 	        end
 	        

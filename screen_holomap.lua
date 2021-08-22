@@ -203,7 +203,9 @@ function update(screen_w, screen_h, ticks)
 
     if g_is_map_pos_initialised == false then
         g_is_map_pos_initialised = true
-        focus_world()
+        if screen_vehicle:get() and screen_vehicle:get_dock_state() ~= e_vehicle_dock_state.docked then
+	        focus_world()
+	    end
     end
 
     update_add_ui_interaction_special(update_get_loc(e_loc.interaction_pan), e_ui_interaction_special.map_pan)
