@@ -16,8 +16,10 @@ g_colors = {
 
 g_hovered_vehicle_id = 0
 g_hovered_lmr = 1
+g_locked_lmr = 1
 
-g_is_hovered = false
+g_is_pointer_pressed = false
+g_is_pointer_hovered = false
 g_pointer_pos_x = 0
 g_pointer_pos_y = 0
 
@@ -34,7 +36,7 @@ function update(screen_w, screen_h, ticks)
 	local is_local = update_get_is_focus_local()
     local this_vehicle = update_get_screen_vehicle()
 
-	if not (is_local and g_is_hovered) then g_hovered_lmr = 1 end
+	if not (is_local and g_is_pointer_hovered) then g_hovered_lmr = g_locked_lmr end
     g_hovered_vehicle_id = 0
 
 	local title = ""
@@ -52,8 +54,8 @@ function update(screen_w, screen_h, ticks)
         local left_w = 125
         local right_w = region_w - left_w
 
-	    if is_local and g_is_hovered then
-	    	g_hovered_lmr = iff( g_pointer_pos_x < right_w, 0, 2 )
+	    if is_local and g_is_pointer_hovered and g_locked_lmr == 1 then
+	    	g_hovered_lmr = iff( g_pointer_pos_x < left_w, 0, 2 )
 	    end
 
        	if g_hovered_lmr ~= 2 then
@@ -70,9 +72,11 @@ function update(screen_w, screen_h, ticks)
 
         if this_vehicle:get() then
         	if g_hovered_lmr == 0 then
+        		local dmc = iff( g_hovered_lmr == g_locked_lmr, color_status_warning, color_grey_dark )
+        	
         		update_ui_push_offset(right_w + (left_w - 100) / 2, region_h - 22)
-				update_ui_rectangle_outline(0, 0, 100, 16, color_grey_dark)
-				update_ui_text(0, 4, "DOCKING QUEUE", 100, 1, color_grey_dark, 0)
+				update_ui_rectangle_outline(0, 0, 100, 16, dmc)
+				update_ui_text(0, 4, "DOCKING QUEUE", 100, 1, dmc, 0)
 				update_ui_pop_offset()
 
 				update_ui_push_offset(right_w + 20, region_h / 2 - 8)
@@ -91,9 +95,11 @@ function update(screen_w, screen_h, ticks)
 		        
                 update_ui_pop_offset()
 			elseif g_hovered_lmr == 2 then
+				local dmc = iff( g_hovered_lmr == g_locked_lmr, color_status_warning, color_grey_dark )
+			
 				update_ui_push_offset((left_w - 100) / 2, region_h - 22)
-				update_ui_rectangle_outline(0, 0, 100, 16, color_grey_dark)
-				update_ui_text(0, 4, update_get_loc(e_loc.upp_holding_pattern), 100, 1, color_grey_dark, 0)
+				update_ui_rectangle_outline(0, 0, 100, 16, dmc)
+				update_ui_text(0, 4, update_get_loc(e_loc.upp_holding_pattern), 100, 1, dmc, 0)
 				update_ui_pop_offset()
 
 				update_ui_push_offset(left_w / 2, region_h / 2 - 8)
@@ -127,9 +133,13 @@ end
 function input_event(event, action)
     g_ui:input_event(event, action)
 
-    if action == e_input_action.release then
-        if event == e_input.back then
-            update_set_screen_state_exit()
+    if action == e_input_action.release and event == e_input.back then
+        update_set_screen_state_exit()
+    elseif event == e_input.pointer_1 then
+        g_is_pointer_pressed = action == e_input_action.press
+        
+        if g_is_pointer_hovered and action == e_input_action.press then
+        	g_locked_lmr = iff( g_locked_lmr == g_hovered_lmr, 1, g_hovered_lmr )
         end
     end
 end
@@ -137,7 +147,7 @@ end
 function input_pointer(is_hovered, x, y)
     g_ui:input_pointer(is_hovered, x, y)
     
-    g_is_hovered = is_hovered
+    g_is_pointer_hovered = is_hovered
     g_pointer_pos_x = x
 	g_pointer_pos_y = y
 end
