@@ -39,7 +39,7 @@ function update(screen_w, screen_h, ticks)
     	if g_animation_time > g_beep_next then
 	    	g_beep_next = g_animation_time + 10
 	        g_is_beep = false
-    	    update_play_sound(7)
+    	    update_play_sound(e_audio_effect_type.telemetry_5)
    		end
     else
     	g_beep_next = g_animation_time

@@ -158,7 +158,7 @@ function update(screen_w, screen_h, ticks)
             g_is_warning_on = not g_is_warning_on
 
             if g_is_warning_on then
-                update_play_sound(9)
+                update_play_sound(e_audio_effect_type.telemetry_7)
             end
         end
 
