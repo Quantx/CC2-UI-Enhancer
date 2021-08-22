@@ -306,16 +306,16 @@ function render_vehicle_list( win_list, is_air )
 	            local waypoint = vehicle:get_waypoint(0)
     	        
 				if waypoint:get_is_wait_group(0) then
-					vehicle_state_string = "GC A"
+					vehicle_state_string = "WG A"
 			        vehicle_state_color = color_status_warning
 				elseif waypoint:get_is_wait_group(1) then
-					vehicle_state_string = "GC B"
+					vehicle_state_string = "WG B"
 			        vehicle_state_color = color_status_warning
 				elseif waypoint:get_is_wait_group(2) then
-					vehicle_state_string = "GC C"
+					vehicle_state_string = "WG C"
 			        vehicle_state_color = color_status_warning
 				elseif waypoint:get_is_wait_group(3) then
-					vehicle_state_string = "GC D"
+					vehicle_state_string = "WG D"
 			        vehicle_state_color = color_status_warning
 	            else
 			        --iterate through the waypoints and see if they loop on themselves
