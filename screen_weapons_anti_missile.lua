@@ -1,5 +1,6 @@
 g_animation_time = 0
-g_is_beep = true
+g_is_beep = false
+g_beep_next = 0
 
 function begin()
     begin_load()
@@ -37,8 +38,13 @@ function update(screen_w, screen_h, ticks)
     end
     
     if g_is_beep then
-        g_is_beep = false
-        update_play_sound(7)
+    	if g_animation_time > g_beep_next then
+	    	g_beep_next = g_animation_time + 10
+	        g_is_beep = false
+    	    update_play_sound(7)
+   		end
+    else
+    	g_beep_next = g_animation_time
     end
 end
 
@@ -111,9 +117,7 @@ function render_attachment_info(x, y, w, h, attachment, vehicle, zone_name)
 			if target_id ~= 0 then
 				render_status_label(2, h - 15, w - 4, 13, update_get_loc(e_loc.upp_tracking), color_status_bad, is_blink_on(5))
 
-				if is_blink_on(5, true) then
-					g_is_beep = true
-				end
+				g_is_beep = true
 			else
 				render_status_label(2, h - 15, w - 4, 13, update_get_loc(e_loc.upp_armed), color_status_ok, true)
 			end
