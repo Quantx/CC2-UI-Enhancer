@@ -256,6 +256,36 @@ function update(screen_w, screen_h, ticks)
 
 			if is_local and g_is_pointer_hovered then
 				world_x, world_y = get_world_from_screen(g_pointer_pos_x, g_pointer_pos_y, g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
+
+		        local label_x = 5
+		        local label_y = 5
+		        local label_w = screen_w - 2 * label_x
+		        local label_h = 10
+
+		        update_ui_push_offset(label_x, label_y)
+
+		        if g_map_render_mode > 1 then
+		        	if g_map_render_mode == 3 then label_h = label_h * 2 end
+		            update_ui_rectangle(0, 0, label_w, label_h, color_black)
+		        end
+
+		        if g_map_render_mode == 2 then
+		            update_ui_text(1, 1, string.format(update_get_loc(e_loc.upp_wind)..": %.2f", update_get_weather_wind_velocity(world_x, world_y)), label_w, 0, color_white, 0)
+		        elseif g_map_render_mode == 3 then
+		            update_ui_text(1, 1, string.format(update_get_loc(e_loc.upp_precipitation)..": %.0f%%", update_get_weather_precipitation_factor(world_x, world_y) * 100), label_w, 0, color_white, 0)
+
+		            update_ui_image(1, 10, atlas_icons.column_power, color_white, 0)
+		            update_ui_text(1, 10, string.format(": %.0f%%", update_get_weather_lightning_factor(world_x, world_y) * 100), label_w, 0, color_white, 0)
+		        elseif g_map_render_mode == 4 then
+		            update_ui_text(1, 1, string.format(update_get_loc(e_loc.upp_visibility)..": %.0f%%", update_get_weather_fog_factor(world_x, world_y) * 100), label_w, 0, color_white, 0)
+		        elseif g_map_render_mode == 5 then
+		            update_ui_text(1, 1, string.format(update_get_loc(e_loc.upp_ocean_current)..": %.2f", update_get_ocean_current_velocity(world_x, world_y)), label_w, 0, color_white, 0)
+		        elseif g_map_render_mode == 6 then
+		            update_ui_text(1, 1, string.format(update_get_loc(e_loc.upp_ocean_depth)..": %.2f", update_get_ocean_depth_factor(world_x, world_y)), label_w, 0, color_white, 0)
+		        end
+
+		        update_ui_pop_offset()
+				
 			end
 			
             update_ui_text(10, screen_h - 13, string.format("X:%-6.0f ", world_x) .. string.format("Y:%-6.0f", world_y), screen_w - 10, 0, color_grey_dark, 0)
