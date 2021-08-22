@@ -185,12 +185,12 @@ function render_vehicle_list( win_list, is_air )
 	        -- damage tab
 	        local damage_factor = clamp(vehicle:get_hitpoints() / vehicle:get_total_hitpoints(), 0, 1)
 	        local damage_color = iff(damage_factor < 0.25, color_status_bad, iff(damage_factor < 0.5, color_status_warning, color_status_ok))
-	        local damage_string = iff( damage_factor < 1, string.format("%.0f", damage_factor * 100), "" )
+	        local damage_string = iff( damage_factor <= 0.99, string.format("%.0f", damage_factor * 100), "" )
 	        
 			-- ammo tab
 			local ammo_factor = clamp(vehicle:get_ammo_factor(), 0, 1)
 	        local ammo_color = iff(ammo_factor < 0.25, color_status_bad, iff(ammo_factor < 0.5, color_status_warning, color_status_ok))
-	        local ammo_string = iff( ammo_factor < 1, string.format("%.0f", ammo_factor * 100), "" )
+	        local ammo_string = iff( ammo_factor <= 0.99, string.format("%.0f", ammo_factor * 100), "" )
 	        
 	        -- drone name tab, this has to be after fuel and damage because it takes those into account
 	        local full_name, vehicle_icon, vehicle_handle = get_chassis_data_by_definition_index(vehicle:get_definition_index())
