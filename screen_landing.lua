@@ -534,7 +534,7 @@ function get_all_surface_vehicles()
 
         if vehicle:get() and vehicle:get_team() == screen_team and vehicle:get_dock_state() ~= e_vehicle_dock_state.docked then
             local def_index = vehicle:get_definition_index()
-            if def_index == e_game_object_type.chassis_land_wheel_light or def_index == e_game_object_type.chassis_land_wheel_medium or def_index == chassis_land_wheel_heavy then
+            if def_index == e_game_object_type.chassis_land_wheel_light or def_index == e_game_object_type.chassis_land_wheel_medium or def_index == e_game_object_type.chassis_land_wheel_heavy then
                 table.insert(vehicle_list, {
                     vehicle = vehicle,  
                     is_wing = false,
