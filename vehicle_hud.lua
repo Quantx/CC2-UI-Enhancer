@@ -1184,6 +1184,9 @@ function render_attachment_hud_missile(screen_w, screen_h, map_data, vehicle, at
     local col = color8(0, 255, 0, 255)
     
     render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachment)
+	if attachment:get_definition_index() == e_game_object_type.attachment_turret_missile then
+	    render_turret_vehicle_direction(screen_w, screen_h, vehicle, attachment, col)
+	end
 
     update_ui_image_rot(hud_pos:x() + 1, hud_pos:y() + 1, atlas_icons.hud_horizon_cursor, col, 0)
     render_atachment_projectile_cooldown(hud_pos, attachment, true, color8(0, 255, 0, 255))
@@ -1299,6 +1302,7 @@ function render_attachment_hud_ciws(screen_w, screen_h, map_data, vehicle, attac
 
     render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachment)
     render_attachment_range(hud_pos, attachment)
+    render_turret_vehicle_direction(screen_w, screen_h, vehicle, attachment, col)
 
     if g_selected_target_type == 1 and g_selected_target_id ~= 0 then
         local selected_target = update_get_vehicle_by_id(g_selected_target_id)
@@ -1380,6 +1384,7 @@ function render_attachment_hud_cannon(screen_w, screen_h, map_data, vehicle, att
 
     render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachment)
     render_attachment_range(hud_pos, attachment)
+    render_turret_vehicle_direction(screen_w, screen_h, vehicle, attachment, col)
 
     update_ui_image_rot(hud_pos:x() + 1, hud_pos:y() + 1, atlas_icons.hud_horizon_cursor, col, 0)
 
@@ -2606,6 +2611,31 @@ function render_vision_target_missile_outline(pos, is_clamped, col)
     local x = math.floor(pos:x() + 1); local y = math.floor(pos:y() + 1)
 
     update_ui_image_rot(x, y, iff(is_clamped, atlas_icons.hud_target_offscreen, atlas_icons.hud_target_missile), col, 0)
+end
+
+function render_turret_vehicle_direction(screen_w, screen_h, vehicle, turret, col)
+	local chassis_image = get_chassis_image_by_definition_index(vehicle:get_definition_index())
+	
+	-- Nothing to be done for these
+	if chassis_image == atlas_icons.icon_chassis_unknown or chassis_image == atlas_icons.icon_chassis_turret then return end
+
+	local attachment_icon_region, attachment_16_icon_region = get_attachment_icons(turret:get_definition_index())
+--	local icon_w, icon_h = update_ui_get_image_size(attachment_icon_region)
+
+	local hud_size = vec2(230, 140)	
+    local hud_min = vec2((screen_w - hud_size:x()) / 2, (screen_h - hud_size:y()) / 2)
+    local hud_pos = vec2(hud_min:x() + hud_size:x() / 2, hud_min:y() + hud_size:y() / 2)
+
+	local pos_x = hud_min:x() + hud_size:x() - 6
+	local pos_y = hud_pos:y() - 30
+	
+	local turret_ang = update_get_camera_heading()
+
+	local vehicle_dir = vehicle:get_forward()
+    local vehicle_ang = math.atan( vehicle_dir:x(), vehicle_dir:z() )
+	
+	update_ui_image_rot( pos_x, pos_y, chassis_image, col, -(turret_ang - vehicle_ang) )
+	update_ui_image_rot( pos_x, pos_y, attachment_icon_region, col, 0 )
 end
 
 -- toggle between no target and a specific target
