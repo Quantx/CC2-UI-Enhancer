@@ -274,7 +274,7 @@ function render_vehicle_list( win_list, is_air )
 			        end
 		        else
 			        vehicle_state_string = "DOCK"
-		            vehicle_state_color = g_colors.dockings
+		            vehicle_state_color = g_colors.docking
 		        end
 	        
 	        -- holding mode and helicopter landing mode
@@ -458,8 +458,9 @@ function render_docking_vehicle_wing(vehicle_parent, vehicle, right_bound)
         col = color_white
     end
 
-    if p0x + 3 < right_bound then
-	    update_ui_image(p0x - 3, p0z - 3, atlas_icons.map_icon_air, col, 0)
+  	local vehicle_icon, icon_offset = get_icon_data_by_definition_index(vehicle:get_definition_index())
+    if p0x + icon_offset < right_bound then
+	    update_ui_image(p0x - icon_offset, p0z - icon_offset, vehicle_icon, col, 0)
 	end
 end
 
@@ -480,8 +481,9 @@ function render_docking_vehicle_rotor(vehicle_parent, vehicle, right_bound)
             col = color_white
         end
         
-        if p0x + 3 < right_bound then
-			update_ui_image(p0x - 3, p0z - 3, atlas_icons.map_icon_air, col, 0)
+        local vehicle_icon, icon_offset = get_icon_data_by_definition_index(vehicle:get_definition_index())
+		if p0x + icon_offset < right_bound then
+			update_ui_image(p0x - icon_offset, p0z - icon_offset, vehicle_icon, col, 0)
 		end
     end
 end
@@ -499,9 +501,10 @@ function render_docking_vehicle_surface(vehicle_parent, vehicle, left_bound)
     if g_hovered_vehicle_id == vehicle:get_id() then
         col = color_white
     end
-        
-    if p0x - 3 > left_bound then
-		update_ui_image(p0x - 3, p0z - 3, atlas_icons.map_icon_air, col, 0)
+    
+    local vehicle_icon, icon_offset = get_icon_data_by_definition_index(vehicle:get_definition_index())
+    if p0x - icon_offset > left_bound then
+	    update_ui_image(p0x - icon_offset, p0z - icon_offset, vehicle_icon, col, 0)
 	end
 end
 
