@@ -194,7 +194,7 @@ function render_vehicle_list( win_list, is_air )
 	        
 	        -- drone name tab, this has to be after fuel and damage because it takes those into account
 	        local full_name, vehicle_icon, vehicle_handle = get_chassis_data_by_definition_index(vehicle:get_definition_index())
-	        local name_color = color_white
+	        local name_color = color_status_ok
 	        
 	        if damage_color == color_status_warning or fuel_col == color_status_warning then
 	            name_color = color_status_warning
@@ -314,7 +314,7 @@ function render_vehicle_list( win_list, is_air )
     	        
     	        if waypoint:get_type() == e_waypoint_type.deploy then
 					vehicle_state_string = "DPLY"
-					vehicle_state_color = color8(255, 100, 0, 255)       
+					vehicle_state_color = color8(255, 100, 0, 255)
 				elseif waypoint:get_is_wait_group(0) and waypoint_dist then
 					vehicle_state_string = "WG A"
 			        vehicle_state_color = color_status_warning
