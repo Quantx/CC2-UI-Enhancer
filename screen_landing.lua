@@ -262,7 +262,7 @@ function render_vehicle_list( win_list, is_air )
 	        
 	        --TODO: plane landing mode. helis don't get the "docking" aka landing state even though the final approach is not cancelable
 	        --TODO: had to add the landing check for helis here, because they are in the dock_queue state all the way down to the runway.
-	        elseif vehicle_dock_state == e_vehicle_dock_state.docking or (v.is_rotor and rotor_landed_carrier(vehicle)) then
+	        elseif vehicle_dock_state == e_vehicle_dock_state.docking or (v.is_rotor and vehicle_dock_state == e_vehicle_dock_state.dock_queue and rotor_landed_carrier(vehicle)) then
 	        
 	        	if is_air then
 		            vehicle_state_string = "LAND"
