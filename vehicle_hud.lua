@@ -2351,7 +2351,8 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
     local laser_id, laser_idx = attachment:get_weapon_target_consuming_id()
 
     local filter_target = function(v)
-        if v:get_id() ~= vehicle_id then
+        -- Ignore self and docked vehicles
+        if v:get_id() ~= vehicle_id and not v:get_is_docked() then
             if (get_is_vision_render_land(attachment_def) and get_is_vehicle_land(v:get_definition_index()))
             or (get_is_vision_render_air(attachment_def) and get_is_vehicle_air(v:get_definition_index()))
             or (get_is_vision_render_sea(attachment_def) and get_is_vehicle_sea(v:get_definition_index())) then
