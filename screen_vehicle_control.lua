@@ -686,13 +686,14 @@ function update(screen_w, screen_h, ticks)
                         local vehicle_team = vehicle:get_team()
                         local vehicle_attached_parent_id = vehicle:get_attached_parent_id()
 
+                        if vehicle:get_definition_index() == 0 and vehicle_team == update_get_screen_team_id() then -- carrier
+                            local vehicle_pos_xz = vehicle:get_position_xz()
+                            g_team_carrier_pos:x(vehicle_pos_xz:x())
+                            g_team_carrier_pos:z(vehicle_pos_xz:y())
+                        end
+
                         if vehicle_attached_parent_id == 0 and vehicle:get_is_visible() and vehicle:get_is_observation_revealed() then
                             local vehicle_pos_xz = vehicle:get_position_xz()
-
-                            if vehicle:get_definition_index() == 0 then -- carrier
-                                g_team_carrier_pos:x(vehicle_pos_xz:x())
-                                g_team_carrier_pos:z(vehicle_pos_xz:y())
-                            end
 
                             local screen_pos_x, screen_pos_y = get_screen_from_world(vehicle_pos_xz:x(), vehicle_pos_xz:y(), g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
 

@@ -2660,15 +2660,15 @@ function get_is_vision_target_lock_behaviour(attachment_def)
 end
 
 function get_is_vision_render_land(attachment_def)
-    return attachment_def ~= e_game_object_type.attachment_radar_awacs
+    return (attachment_def ~= e_game_object_type.attachment_radar_awacs) and (attachment_def ~= e_game_object_type.attachment_hardpoint_missile_aa)
 end
 
 function get_is_vision_render_air(attachment_def)
-    return true
+    return (attachment_def ~= e_game_object_type.attachment_hardpoint_missile_ir)
 end
 
 function get_is_vision_render_sea(attachment_def)
-    return true
+    return (attachment_def ~= e_game_object_type.attachment_hardpoint_missile_aa)
 end
 
 function get_is_vision_render_own_team(attachment_def)

@@ -345,8 +345,11 @@ function input_axis(x, y, z, w)
     g_input_axis.y = y
     g_input_axis.z = z
     g_input_axis.w = w
+    
+    if update_get_is_vr() then
+        input_scroll(w)
+    end
 end
-
 
 --------------------------------------------------------------------------------
 --
@@ -388,7 +391,8 @@ function tab_barges_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen
         update_add_ui_interaction(update_get_loc(e_loc.interaction_back), e_game_input.back)
         update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_ud)
 
-        local window = ui:begin_window(update_get_loc(e_loc.upp_barge_id).. " " .. selected_barge:get_id() .. "##selectedbarge", 60, 5, w - 120, h - 20, atlas_icons.column_distance, is_tab_active, 2)
+        local display_id = selected_barge:get_id() % 1000
+        local window = ui:begin_window(update_get_loc(e_loc.upp_barge_id).. " " .. display_id .. "##selectedbarge", 60, 5, w - 120, h - 20, atlas_icons.column_distance, is_tab_active, 2)
             local inventory_capacity = selected_barge:get_inventory_capacity()
             local inventory_weight = selected_barge:get_inventory_weight()
 
@@ -532,7 +536,7 @@ function imgui_barge_table(ui, barges)
         end
 
         local columns = { 
-            { w=column_widths[1], margin=column_margins[1], value=tostring(barge:get_id()) },
+            { w=column_widths[1], margin=column_margins[1], value=tostring(barge:get_id() % 1000) },
             { w=column_widths[2], margin=column_margins[2], value=text_action },
             { w=column_widths[3], margin=column_margins[3], value=text_destination, col=col_destination },
             { w=column_widths[4], margin=column_margins[4], value=text_dist }
@@ -753,7 +757,8 @@ function render_map_ui(screen_w, screen_h, x, y, w, h, screen_vehicle, is_tab_ac
             local selected_barge = update_get_map_vehicle_by_id(g_tab_map.selected_barge_id)
 
             if selected_barge:get() and selected_barge:get_team() == screen_vehicle:get_team() then
-                ui:begin_window(update_get_loc(e_loc.upp_barge_id).." " .. g_tab_map.selected_barge_id .. "##barge", x + 15, y + 5, w - 30, h - 15, atlas_icons.column_stock, is_tab_active, 2)
+                local display_id = g_tab_map.selected_barge_id % 1000
+                ui:begin_window(update_get_loc(e_loc.upp_barge_id).." " .. display_id .. "##barge", x + 15, y + 5, w - 30, h - 15, atlas_icons.column_stock, is_tab_active, 2)
                     local region_w, region_h = ui:get_region()
                     render_barge_inventory_status(0, 0, region_w, 22, selected_barge)
                     
