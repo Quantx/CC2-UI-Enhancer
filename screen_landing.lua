@@ -174,7 +174,7 @@ function render_vehicle_list( win_list, is_air )
 	local column_widths = { act_w, name_w, num_w, num_w, num_w, -1 }
 	local column_margins = { 3, 3, 3, 3, 3, 3 }
 
-	local blink = 20
+	local blink = 30
 	
 	local column_name = iff( g_animation_time % (blink * 2) > blink, "ID", "NAME" ) 
 
