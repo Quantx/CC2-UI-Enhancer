@@ -2614,11 +2614,6 @@ function render_vision_target_missile_outline(pos, is_clamped, col)
 end
 
 function render_turret_vehicle_direction(screen_w, screen_h, vehicle, turret, col)
-	local chassis_image = get_chassis_image_by_definition_index(vehicle:get_definition_index())
-	
-	-- Nothing to be done for these
-	if chassis_image == atlas_icons.icon_chassis_unknown or chassis_image == atlas_icons.icon_chassis_turret then return end
-
 	local attachment_icon_region, attachment_16_icon_region = get_attachment_icons(turret:get_definition_index())
 --	local icon_w, icon_h = update_ui_get_image_size(attachment_icon_region)
 
@@ -2634,8 +2629,8 @@ function render_turret_vehicle_direction(screen_w, screen_h, vehicle, turret, co
 	local vehicle_dir = vehicle:get_forward()
     local vehicle_ang = math.atan( vehicle_dir:x(), vehicle_dir:z() )
 	
-	update_ui_image_rot( pos_x, pos_y, chassis_image, col, -(turret_ang - vehicle_ang) )
-	update_ui_image_rot( pos_x, pos_y, attachment_icon_region, col, 0 )
+	update_ui_image_rot( pos_x, pos_y, atlas_icons.hud_ticker_small, col, (turret_ang - vehicle_ang) - (math.pi / 2) )
+	update_ui_image_rot( pos_x, pos_y - 4, attachment_icon_region, col, 0 )
 end
 
 -- toggle between no target and a specific target
