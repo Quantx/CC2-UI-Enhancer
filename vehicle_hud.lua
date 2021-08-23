@@ -2629,7 +2629,7 @@ function render_turret_vehicle_direction(screen_w, screen_h, vehicle, turret, co
 	local vehicle_dir = vehicle:get_forward()
     local vehicle_ang = math.atan( vehicle_dir:x(), vehicle_dir:z() )
 	
-	update_ui_image_rot( pos_x, pos_y, atlas_icons.hud_ticker_small, col, (turret_ang - vehicle_ang) - (math.pi / 2) )
+	update_ui_image_rot( pos_x, pos_y, atlas_icons.hud_ticker_small, col, -(turret_ang - vehicle_ang) - (math.pi / 2) )
 	update_ui_image_rot( pos_x, pos_y - 4, attachment_icon_region, col, 0 )
 end
 
