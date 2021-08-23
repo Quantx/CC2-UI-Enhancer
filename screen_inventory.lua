@@ -1133,8 +1133,11 @@ function render_node_tooltip(w, h, id, type)
     local name, color = get_node_data(id, type)
 
     if type == g_link_types.carrier then
+    	local vehicle = update_get_map_vehicle_by_id(id)
+    	local vessel = string.upper( e_vessel_names[vehicle:get_team() + 1] )
+    
         update_ui_image(2, h / 2 - 8, atlas_icons.icon_chassis_16_carrier, color, 0)
-        update_ui_text(18, h / 2 - 4, name, 200, 0, color_white, 0)
+        update_ui_text(18, h / 2 - 4, vessel .. " " .. name, 200, 0, color_white, 0)
     elseif type == g_link_types.barge then
         local barge = update_get_map_vehicle_by_id(id)
 

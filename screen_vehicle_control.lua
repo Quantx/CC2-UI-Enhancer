@@ -212,6 +212,9 @@ function render_selection_vehicle(screen_w, screen_h, vehicle)
                 imgui_vehicle_chassis_loadout(ui, vehicle, selected_bay_index)
             ui:end_window()
 
+			local vehicle_definition_index = vehicle:get_definition_index()
+			local vehicle_definition_name, vehicle_definition_region = get_chassis_data_by_definition_index(vehicle_definition_index)
+
             local hitpoints = vehicle:get_hitpoints()
             local hitpoints_total = vehicle:get_total_hitpoints()
             local damage_factor = clamp(hitpoints / hitpoints_total, 0, 1)
@@ -221,7 +224,9 @@ function render_selection_vehicle(screen_w, screen_h, vehicle)
             local color_mid = color8(255, 255, 0, 255)
             local color_high = color_status_ok
 
-            ui:begin_window(update_get_loc(e_loc.upp_status), 10, 10, left_w, 100, atlas_icons.column_pending, true, 2)
+			local title = vehicle_definition_name .. string.format( " ID %.0f", vehicle:get_id() )
+
+            ui:begin_window(title, 10, 10, left_w, 100, atlas_icons.column_pending, true, 2)
                 ui:stat(update_get_loc(e_loc.hp), hitpoints .. "/" .. hitpoints_total, iff(damage_factor < 0.2, color_low, color_high))
 
                 if vehicle:get_definition_index() == e_game_object_type.chassis_land_turret then
@@ -1994,10 +1999,12 @@ function render_vehicle_tooltip(w, h, vehicle)
         update_ui_image(cx, 2, vehicle_definition_region, color8(255, 255, 255, 255), 0)
         cx = cx + 18
 
-		local display_name = vehicle_definition_name
-
-		if vehicle_definition_index == e_game_object_type.chassis_sea_barge then
-			display_name = display_name .. " " .. tostring(vehicle:get_id())
+		local display_name = nil
+		if vehicle_definition_index == e_game_object_type.chassis_carrier then
+			local team_id = vehicle:get_team() + 1
+			display_name = string.upper( e_vessel_names[team_id] ) .. " " .. vehicle_definition_name
+		else
+			display_name = vehicle_definition_name .. string.format( " %.0f", vehicle:get_id() )
 		end
 
         update_ui_text(cx, 6, display_name, 124, 0, color8(255, 255, 255, 255), 0)
@@ -2006,7 +2013,7 @@ function render_vehicle_tooltip(w, h, vehicle)
         update_ui_image(cx, 2, atlas_icons.icon_chassis_16_wheel_small, color_inactive, 0)
         cx = cx + 18
 
-        local display_name = "***"
+        local display_name = string.format( "ID:%.0f", vehicle:get_id() )
         update_ui_text(cx, 6, display_name, 124, 0, color_inactive, 0)
         cx = cx + update_ui_get_text_size(display_name, 10000, 0) + 2
     end

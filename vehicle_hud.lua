@@ -2447,6 +2447,8 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
         else
             local cursor_y = pos:y() - 4
 
+            update_ui_text(pos:x() + 9, cursor_y - 10, string.format( "ID %.0f", data.id), 200, 0, col, 0 )
+
             if data.team == vehicle_team then
                 local name, icon, handle = get_chassis_data_by_definition_index(data.vehicle:get_definition_index())
                 update_ui_text(pos:x() + 9, cursor_y, handle, 200, 0, col, 0)

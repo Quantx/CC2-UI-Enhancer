@@ -14,6 +14,8 @@ g_colors = {
     path = color_grey_dark,
 }
 
+g_animation_time = 0
+
 g_hovered_vehicle_id = 0
 g_hovered_lmr = 1
 g_locked_lmr = 1
@@ -29,6 +31,7 @@ function begin()
 end
 
 function update(screen_w, screen_h, ticks) 
+    g_animation_time = g_animation_time + ticks
     if update_screen_overrides(screen_w, screen_h, ticks)  then return end
 
     local ui = g_ui
@@ -165,15 +168,19 @@ function render_vehicle_list( win_list, is_air )
 	local list_region_w, list_region_h = ui:get_region()
 
 	local act_w	 = update_ui_get_text_size("AAAA", 10000, 0) + 4
-	local name_w = update_ui_get_text_size("AAA",  10000, 0) + 4
+	local name_w = update_ui_get_text_size("AAAA", 10000, 0) + 4
 	local num_w  = update_ui_get_text_size("00",   10000, 0) + 4
 	
 	local column_widths = { act_w, name_w, num_w, num_w, num_w, -1 }
 	local column_margins = { 3, 3, 3, 3, 3, 3 }
 
+	local blink = 20
+	
+	local column_name = iff( g_animation_time % (blink * 2) > blink, "ID", "NAME" ) 
+
 	imgui_table_header(ui, {
 	    { w=column_widths[1], margin=column_margins[1], value=atlas_icons.column_transit },
-	    { w=column_widths[2], margin=column_margins[2], value=atlas_icons.column_stock },
+	    { w=column_widths[2], margin=column_margins[2], value=column_name },
 	    { w=column_widths[3], margin=column_margins[3], value=atlas_icons.column_fuel },
 	    { w=column_widths[4], margin=column_margins[4], value=atlas_icons.column_repair },
 	    { w=column_widths[5], margin=column_margins[5], value=atlas_icons.column_ammo },
@@ -205,6 +212,10 @@ function render_vehicle_list( win_list, is_air )
 	        -- drone name tab, this has to be after fuel and damage because it takes those into account
 	        local full_name, vehicle_icon, vehicle_handle = get_chassis_data_by_definition_index(vehicle:get_definition_index())
 	        local name_color = color_status_ok
+	        
+	        if g_animation_time % (blink * 2) > blink then
+	        	vehicle_handle = tostring(id)
+	        end
 	        
 	        if damage_color == color_status_warning or fuel_col == color_status_warning or ammo_color == color_status_warning then
 	            name_color = color_status_warning
