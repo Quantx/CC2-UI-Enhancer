@@ -631,6 +631,12 @@ function render_attachment_info(info_pos, map_data, vehicle, attachment, alpha, 
     
     local attachment_def = attachment:get_definition_index()
 
+    -- render vehicle id
+    if vehicle:get_definition_index() ~= e_game_object_type.chassis_carrier then
+        update_ui_text(pos:x(), pos:y(), update_get_loc(e_loc.upp_id) .. " " .. tostring(vehicle:get_id()), 200, 0, colors.green, 0)
+        pos:y(pos:y() + 10)
+    end
+
     if attachment_def ~= e_game_object_type.attachment_camera_vehicle_control then
         if get_is_attachment_observation_camera_controlled(attachment_def) then
             update_ui_image(pos:x(), pos:y(), atlas_icons.column_laser, colors.green, 0)
@@ -2342,7 +2348,7 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
     local nearest_screen_dist_sq = -1
     local target_hover_world_radius = 4
 
-    local is_render_own_team = get_is_vision_render_own_team(attachment_def)
+    local is_render_own_team = true --get_is_vision_render_own_team(attachment_def)
     local is_target_lock_behaviour = get_is_vision_target_lock_behaviour(attachment_def)
     local is_target_observation_behaviour = get_is_vision_target_observation_behaviour(attachment_def)
     local is_vision_reveal_targets = get_is_vision_reveal_targets(attachment_def)
