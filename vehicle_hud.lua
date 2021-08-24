@@ -1124,10 +1124,12 @@ function render_attachment_hud_camera(screen_w, screen_h, map_data, vehicle, att
         update_ui_text(hud_pos:x() + math.cos(math.pi * 0.75) * outer_radius - 200, hud_pos:y() + math.sin(math.pi * 0.75) * outer_radius, string.format("%.2fx", display_zoom), 200, 2, col, 0)
     end
 
-    local hit_pos = attachment:get_hitscan_position()
-    local dist = vec3_dist(update_get_camera_position(), hit_pos)
-    update_ui_text(hud_pos:x() + math.cos(math.pi * 0.25) * outer_radius, hud_pos:y() + math.sin(math.pi * 0.25) * outer_radius, string.format("%.0f", dist) .. update_get_loc(e_loc.acronym_meters), 200, 0, col, 0)
+    --local hit_pos = attachment:get_hitscan_position()
+    --local dist = vec3_dist(update_get_camera_position(), hit_pos)
+    --update_ui_text(hud_pos:x() + math.cos(math.pi * 0.25) * outer_radius, hud_pos:y() + math.sin(math.pi * 0.25) * outer_radius, string.format("%.0f", dist) .. update_get_loc(e_loc.acronym_meters), 200, 0, col, 0)
     
+    local range_pos = vec2( (hud_pos:x() + math.cos(math.pi * 0.25) * outer_radius) - 40, (hud_pos:y() + math.sin(math.pi * 0.25) * outer_radius) - 50 )
+    render_attachment_range(range_pos, attachment, true)
     render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachment)
     render_camera_forward_axis(screen_w, screen_h, vehicle)
 
@@ -1775,9 +1777,9 @@ end
 --
 --------------------------------------------------------------------------------
 
-function render_attachment_range(hud_pos, attachment)
-    local hit_dist = attachment:get_hitscan_distance()
-    local is_in_range = attachment:get_is_hitscan_in_range()
+function render_attachment_range(hud_pos, attachment, is_camera)
+    local hit_dist = iff( is_camera, vec3_dist(update_get_camera_position(), attachment:get_hitscan_position()), attachment:get_hitscan_distance() )
+    local is_in_range = iff( is_camera, hit_dist <= 9999, attachment:get_is_hitscan_in_range() )
     local col = color8(0, 255, 0, 255)
     local col_red = color8(255, 0, 0, 255)
 
