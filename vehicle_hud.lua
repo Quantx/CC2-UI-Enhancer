@@ -1185,6 +1185,9 @@ function render_attachment_hud_missile(screen_w, screen_h, map_data, vehicle, at
     local col = color8(0, 255, 0, 255)
     
     render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachment)
+	if attachment:get_definition_index() == e_game_object_type.attachment_turret_missile then
+	    render_turret_vehicle_direction(screen_w, screen_h, vehicle, attachment, col)
+	end
 
     update_ui_image_rot(hud_pos:x() + 1, hud_pos:y() + 1, atlas_icons.hud_horizon_cursor, col, 0)
     render_atachment_projectile_cooldown(hud_pos, attachment, true, color8(0, 255, 0, 255))
@@ -1300,6 +1303,7 @@ function render_attachment_hud_ciws(screen_w, screen_h, map_data, vehicle, attac
 
     render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachment)
     render_attachment_range(hud_pos, attachment)
+    render_turret_vehicle_direction(screen_w, screen_h, vehicle, attachment, col)
 
     if g_selected_target_type == 1 and g_selected_target_id ~= 0 then
         local selected_target = update_get_vehicle_by_id(g_selected_target_id)
@@ -1381,6 +1385,7 @@ function render_attachment_hud_cannon(screen_w, screen_h, map_data, vehicle, att
 
     render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachment)
     render_attachment_range(hud_pos, attachment)
+    render_turret_vehicle_direction(screen_w, screen_h, vehicle, attachment, col)
 
     update_ui_image_rot(hud_pos:x() + 1, hud_pos:y() + 1, atlas_icons.hud_horizon_cursor, col, 0)
 
@@ -1405,6 +1410,38 @@ function render_attachment_hud_cannon(screen_w, screen_h, map_data, vehicle, att
             local step = step_amounts[math.floor(zoom_power) + 1]
 
             for i = step, 1000, step do
+                if i > 0 then
+                    local travel_time = math.max(1, i) / (projectile_speed / 30)
+                    local drop_position = update_get_camera_position()
+                    drop_position:x(drop_position:x() + projectile_velocity:x() * travel_time)
+                    drop_position:y(drop_position:y() + projectile_velocity:y() * travel_time - 0.5 * projectile_gravity * travel_time * travel_time)
+                    drop_position:z(drop_position:z() + projectile_velocity:z() * travel_time)
+
+                    local screen_pos = update_world_to_screen(drop_position)
+
+                    if screen_pos:y() < hud_pos:y() + 60 then
+                        update_ui_line(screen_w / 2 - 3, screen_pos:y(), screen_w / 2 + 2, screen_pos:y(), color8(0, 255, 0, 255))
+
+                        if (i / step) % 2 == 0 then
+                            update_ui_text(screen_w / 2 + 4, screen_pos:y() - 5, string.format("%d", i) .. update_get_loc(e_loc.acronym_meters), 64, 0, color8(0, 255, 0, 255), 0)
+                        end
+                    end
+                end
+            end
+        end
+		
+		if def == e_game_object_type.attachment_turret_heavy_cannon and display_zoom > 1 then
+            local projectile_gravity = 50 / 30
+            local projectile_speed = 600
+            local projectile_velocity = update_get_camera_forward()
+            projectile_velocity:x(projectile_velocity:x() * projectile_speed)
+            projectile_velocity:y(projectile_velocity:y() * projectile_speed)
+            projectile_velocity:z(projectile_velocity:z() * projectile_speed)
+
+            local step_amounts = { 800, 400, 200, 100 }
+            local step = step_amounts[math.floor(zoom_power) + 1]
+
+            for i = step, 1600, step do
                 if i > 0 then
                     local travel_time = math.max(1, i) / (projectile_speed / 30)
                     local drop_position = update_get_camera_position()
@@ -1927,6 +1964,7 @@ end
 
 function render_altitude_ticker(pos, altitude, col)
     update_ui_image(pos:x(), pos:y(), atlas_icons.hud_ticker_large, col, 0)
+	if altitude >= 10000 then altitude = math.floor( altitude / 10 ) end
     render_number_ticker(vec2(pos:x() + 6, pos:y() + 2), vec2(30, 13), altitude, 4, 2, col, false)
 end
 
@@ -2009,7 +2047,7 @@ function render_timeline(pos, size, num_incr, spacing, offset, text_align, col, 
             if callback == nil then
                 local char_h = 10
     
-                update_ui_text(x, y - char_h / 2, (num_incr * (i + math.floor(offset / spacing))), size:x(), text_align, col, 0)
+                update_ui_text(x, y - char_h / 2, val, size:x(), text_align, col, 0)
             else
                 callback(x, y)
             end
@@ -2314,7 +2352,8 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
     local laser_id, laser_idx = attachment:get_weapon_target_consuming_id()
 
     local filter_target = function(v)
-        if v:get_id() ~= vehicle_id then
+        -- Ignore self and docked vehicles
+        if v:get_id() ~= vehicle_id and not v:get_is_docked() then
             if (get_is_vision_render_land(attachment_def) and get_is_vehicle_land(v:get_definition_index()))
             or (get_is_vision_render_air(attachment_def) and get_is_vehicle_air(v:get_definition_index()))
             or (get_is_vision_render_sea(attachment_def) and get_is_vehicle_sea(v:get_definition_index())) then
@@ -2408,6 +2447,8 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
             -- don't render info
         else
             local cursor_y = pos:y() - 4
+
+            update_ui_text(pos:x() + 9, cursor_y - 10, string.format( "ID %.0f", data.id), 200, 0, col, 0 )
 
             if data.team == vehicle_team then
                 local name, icon, handle = get_chassis_data_by_definition_index(data.vehicle:get_definition_index())
@@ -2574,6 +2615,26 @@ function render_vision_target_missile_outline(pos, is_clamped, col)
     local x = math.floor(pos:x() + 1); local y = math.floor(pos:y() + 1)
 
     update_ui_image_rot(x, y, iff(is_clamped, atlas_icons.hud_target_offscreen, atlas_icons.hud_target_missile), col, 0)
+end
+
+function render_turret_vehicle_direction(screen_w, screen_h, vehicle, turret, col)
+	local attachment_icon_region, attachment_16_icon_region = get_attachment_icons(turret:get_definition_index())
+--	local icon_w, icon_h = update_ui_get_image_size(attachment_icon_region)
+
+	local hud_size = vec2(230, 140)	
+    local hud_min = vec2((screen_w - hud_size:x()) / 2, (screen_h - hud_size:y()) / 2)
+    local hud_pos = vec2(hud_min:x() + hud_size:x() / 2, hud_min:y() + hud_size:y() / 2)
+
+	local pos_x = hud_min:x() + hud_size:x() - 6
+	local pos_y = hud_pos:y() - 30
+	
+	local turret_ang = update_get_camera_heading()
+
+	local vehicle_dir = vehicle:get_forward()
+    local vehicle_ang = math.atan( vehicle_dir:x(), vehicle_dir:z() )
+	
+	update_ui_image_rot( pos_x, pos_y, atlas_icons.hud_ticker_small, col, -(turret_ang - vehicle_ang) - (math.pi / 2) )
+	update_ui_image_rot( pos_x, pos_y - 4, attachment_icon_region, col, 0 )
 end
 
 -- toggle between no target and a specific target

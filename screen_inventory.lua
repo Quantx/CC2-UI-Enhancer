@@ -391,8 +391,7 @@ function tab_barges_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen
         update_add_ui_interaction(update_get_loc(e_loc.interaction_back), e_game_input.back)
         update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_ud)
 
-        local display_id = selected_barge:get_id() % 1000
-        local window = ui:begin_window(update_get_loc(e_loc.upp_barge_id).. " " .. display_id .. "##selectedbarge", 60, 5, w - 120, h - 20, atlas_icons.column_distance, is_tab_active, 2)
+        local window = ui:begin_window(update_get_loc(e_loc.upp_barge_id).. " " .. selected_barge:get_id() .. "##selectedbarge", 60, 5, w - 120, h - 20, atlas_icons.column_distance, is_tab_active, 2)
             local inventory_capacity = selected_barge:get_inventory_capacity()
             local inventory_weight = selected_barge:get_inventory_weight()
 
@@ -478,7 +477,9 @@ function imgui_barge_table(ui, barges)
     local w, h = ui:get_region()
     local selected_item = -1
 
-    local column_widths = { 30, 94, 60, 40 }
+	local id_w = update_ui_get_text_size("0000", 10000, 0) + 4
+
+    local column_widths = { id_w, 94, 60, 40 }
     local column_margins = { 5, 2, 2, 2 }
 
     local header_columns = {
@@ -536,7 +537,7 @@ function imgui_barge_table(ui, barges)
         end
 
         local columns = { 
-            { w=column_widths[1], margin=column_margins[1], value=tostring(barge:get_id() % 1000) },
+            { w=column_widths[1], margin=column_margins[1], value=tostring(barge:get_id()) },
             { w=column_widths[2], margin=column_margins[2], value=text_action },
             { w=column_widths[3], margin=column_margins[3], value=text_destination, col=col_destination },
             { w=column_widths[4], margin=column_margins[4], value=text_dist }
@@ -606,25 +607,27 @@ function render_map_details(screen_vehicle, screen_w, screen_h, is_tab_active)
     update_set_screen_background_is_render_islands(is_render_islands)
 
     for _, vehicle in iter_vehicles(vehicle_filter) do
-        local waypoint_count = vehicle:get_waypoint_count()
+		if vehicle:get_definition_index() ~= e_game_object_type.chassis_carrier then
+			local waypoint_count = vehicle:get_waypoint_count()
 
-        local pos_prev = vehicle:get_position_xz()
+			local pos_prev = vehicle:get_position_xz()
 
-        for i = 0, waypoint_count do
-            local waypoint_data = vehicle:get_waypoint(i)
+			for i = 0, waypoint_count do
+				local waypoint_data = vehicle:get_waypoint(i)
 
-            if waypoint_data:get() then
-                local waypoint_pos = waypoint_data:get_position_xz()
+				if waypoint_data:get() then
+					local waypoint_pos = waypoint_data:get_position_xz()
 
-                local s0x, s0y = get_screen_from_world(pos_prev:x(), pos_prev:y(), g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
-                
-                local s1x, s1y = get_screen_from_world(waypoint_pos:x(), waypoint_pos:y(), g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
+					local s0x, s0y = get_screen_from_world(pos_prev:x(), pos_prev:y(), g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
+					
+					local s1x, s1y = get_screen_from_world(waypoint_pos:x(), waypoint_pos:y(), g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
 
-                update_ui_line(s0x, s0y, s1x, s1y, color_grey_dark)
+					update_ui_line(s0x, s0y, s1x, s1y, color_grey_dark)
 
-                pos_prev = waypoint_pos
-            end
-        end
+					pos_prev = waypoint_pos
+				end
+			end
+		end
     end
 
     for _, link in iter_resource_links() do
@@ -757,8 +760,7 @@ function render_map_ui(screen_w, screen_h, x, y, w, h, screen_vehicle, is_tab_ac
             local selected_barge = update_get_map_vehicle_by_id(g_tab_map.selected_barge_id)
 
             if selected_barge:get() and selected_barge:get_team() == screen_vehicle:get_team() then
-                local display_id = g_tab_map.selected_barge_id % 1000
-                ui:begin_window(update_get_loc(e_loc.upp_barge_id).." " .. display_id .. "##barge", x + 15, y + 5, w - 30, h - 15, atlas_icons.column_stock, is_tab_active, 2)
+                ui:begin_window(update_get_loc(e_loc.upp_barge_id).." " .. g_tab_map.selected_barge_id .. "##barge", x + 15, y + 5, w - 30, h - 15, atlas_icons.column_stock, is_tab_active, 2)
                     local region_w, region_h = ui:get_region()
                     render_barge_inventory_status(0, 0, region_w, 22, selected_barge)
                     
@@ -1136,15 +1138,18 @@ function render_node_tooltip(w, h, id, type)
     local name, color = get_node_data(id, type)
 
     if type == g_link_types.carrier then
+    	local vehicle = update_get_map_vehicle_by_id(id)
+    	local vessel = string.upper( e_vessel_names[vehicle:get_team() + 1] )
+    
         update_ui_image(2, h / 2 - 8, atlas_icons.icon_chassis_16_carrier, color, 0)
-        update_ui_text(18, h / 2 - 4, name, 200, 0, color_white, 0)
+        update_ui_text(18, h / 2 - 4, vessel .. " " .. name, 200, 0, color_white, 0)
     elseif type == g_link_types.barge then
         local barge = update_get_map_vehicle_by_id(id)
 
         if barge:get() then
             local cy = 3
             update_ui_image(2, h / 2 - 8, atlas_icons.icon_chassis_16_barge, color, 0)
-            update_ui_text(18, cy, name, 200, 0, color_white, 0)
+            update_ui_text(18, cy, name .. " " .. tostring(id), 200, 0, color_white, 0)
             update_ui_image(w - 13, cy, atlas_icons.column_transit, color_highlight, 0)
 
             cy = cy + 10
