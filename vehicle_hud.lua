@@ -2352,7 +2352,7 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
     local is_target_lock_behaviour = get_is_vision_target_lock_behaviour(attachment_def)
     local is_target_observation_behaviour = get_is_vision_target_observation_behaviour(attachment_def)
     local is_vision_reveal_targets = get_is_vision_reveal_targets(attachment_def)
-    local is_show_target_distance = get_is_vision_show_target_distance(attachment_def)
+    local is_show_target_distance = true --get_is_vision_show_target_distance(attachment_def)
 
     local laser_consuming_type = attachment:get_weapon_target_consuming_type()
     local laser_id, laser_idx = attachment:get_weapon_target_consuming_id()
@@ -2452,9 +2452,8 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
         if data.is_laser_target then
             -- don't render info
         else
+            -- render right side of marker
             local cursor_y = pos:y() - 4
-
-            update_ui_text(pos:x() + 9, cursor_y - 10, string.format( "ID %.0f", data.id), 200, 0, col, 0 )
 
             if data.team == vehicle_team then
                 local name, icon, handle = get_chassis_data_by_definition_index(data.vehicle:get_definition_index())
@@ -2481,10 +2480,28 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
                     update_ui_text(pos:x() + 9, cursor_y, string.format("%.0f%%", factor * 100), 200, 0, col, 0)
                 end
             end
-           
+
+            -- render left side of marker
+            cursor_y = pos:y() - 4
+
+            local id_str = string.format( "ID %.0f", data.id)
+            local id_w = update_ui_get_text_size(id_str, 10000, 1) + 7
+            update_ui_text(pos:x() - id_w, cursor_y, id_str, 128, 0, col, 0 )
+            cursor_y = cursor_y + 10
+
             if is_show_target_distance and data.is_observed then
                 local dist = math.sqrt(data.dist_sq)
-                update_ui_text(pos:x() - 57, pos:y() - 4, string.format("%.0f", dist) .. update_get_loc(e_loc.acronym_meters), 50, 2, col, 0)
+                local dist_str = ""
+
+                if dist < 10000 then
+                    dist_str = string.format("%.0f", dist) .. update_get_loc(e_loc.acronym_meters)
+                else
+                    dist_str = string.format("%.0f", dist / 1000) .. update_get_loc(e_loc.acronym_kilometers)
+                end
+
+                local dist_w = update_ui_get_text_size(dist_str, 10000, 1) + 7
+
+                update_ui_text(pos:x() - dist_w, cursor_y, dist_str, 128, 0, col, 0)
             end
         end
     end
