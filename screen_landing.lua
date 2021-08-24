@@ -84,7 +84,7 @@ function update(screen_w, screen_h, ticks)
                     local fuel_col = iff(fuel_factor < 0.25, color_status_bad, iff(fuel_factor < 0.5, color_status_warning, color_status_ok))
 
                     imgui_table_entry(ui, {
-                        { w=column_widths[1], margin=column_margins[1], value=tostring(id) },
+                        { w=column_widths[1], margin=column_margins[1], value=tostring(id % 1000) },
                         { w=column_widths[2], margin=column_margins[2], value=vehicle_name },
                         { w=column_widths[3], margin=column_margins[3], value=string.format("%.0f%%", fuel_factor * 100), col=fuel_col },
                     }, false)

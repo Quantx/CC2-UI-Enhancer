@@ -6,6 +6,7 @@ g_is_pointer_hovered = false
 
 g_beep_counter = 0
 g_is_warning_on = false
+g_scroll_input_prev = 0
 
 function parse()
     g_zoom_level = parse_s32("zoom", g_zoom_level)
@@ -183,6 +184,17 @@ function input_event(event, action)
 end
 
 function input_axis(x, y, z, w)
+    local scroll_input = 0
+    if w >  0.5 then scroll_input =  1 end
+    if w < -0.5 then scroll_input = -1 end
+    if scroll_input ~= g_scroll_input_prev then
+        if scroll_input > 0 then
+            g_zoom_level = math.max(g_zoom_level - 1, 1)
+        elseif scroll_input < 0 then
+            g_zoom_level = math.min(g_zoom_level + 1, #g_ranges)
+        end
+    end
+    g_scroll_input_prev = scroll_input
 end
 
 function input_pointer(is_hovered, x, y)
