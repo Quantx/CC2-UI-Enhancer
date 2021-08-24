@@ -477,7 +477,7 @@ function imgui_barge_table(ui, barges)
     local w, h = ui:get_region()
     local selected_item = -1
 
-	local id_w = update_ui_get_text_size("0000", 10000, 0) + 4
+	local id_w = update_ui_get_text_size("0000", 10000, 0) + 8
 
     local column_widths = { id_w, 94, 60, 40 }
     local column_margins = { 5, 2, 2, 2 }

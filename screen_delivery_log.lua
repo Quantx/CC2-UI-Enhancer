@@ -20,7 +20,7 @@ function update(screen_w, screen_h, ticks)
     local window = ui:begin_window(update_get_loc(e_loc.upp_barge_delivery_log), 10, 10, screen_w - 20, screen_h - 35, atlas_icons.column_pending, true, 0, false)
         local region_w, region_h = ui:get_region()
         
-        local id_w = update_ui_get_text_size("0000", 10000, 0) + 4
+        local id_w = update_ui_get_text_size("0000", 10000, 0) + 8
         
         local column_widths = { 55, id_w, 112, -1 }
         local column_margins = { 5, 5, 5, 5 }
