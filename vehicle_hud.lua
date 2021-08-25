@@ -2456,16 +2456,18 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
         if data.is_laser_target then
             -- don't render info
         else
+            local def = data.vehicle:get_definition_index()
+
             -- render right side of marker
             local cursor_y = pos:y() - 4
 
             if data.team == vehicle_team then
-                local name, icon, handle = get_chassis_data_by_definition_index(data.vehicle:get_definition_index())
+                local name, icon, handle = get_chassis_data_by_definition_index(def)
                 update_ui_text(pos:x() + 9, cursor_y, handle, 200, 0, col, 0)
                 update_ui_image(pos:x() + 26, cursor_y - 3, icon, col, 0)
             else
                 if data.vehicle:get_is_observation_type_revealed() then
-                    local name, icon, handle = get_chassis_data_by_definition_index(data.vehicle:get_definition_index())
+                    local name, icon, handle = get_chassis_data_by_definition_index(def)
                     update_ui_text(pos:x() + 9, cursor_y, handle, 200, 0, col, 0)
                     update_ui_image(pos:x() + 26, cursor_y - 3, icon, col, 0)
                     cursor_y = cursor_y + 10
@@ -2489,6 +2491,11 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
             cursor_y = pos:y() - 4
 
             local id_str = string.format( "ID %.0f", data.id)
+
+            if def == e_game_object_type.chassis_carrier then
+                id_str = string.upper( e_vessel_names[data.team + 1] )
+            end
+
             local id_w = update_ui_get_text_size(id_str, 10000, 1) + 7
             update_ui_text(pos:x() - id_w, cursor_y, id_str, 128, 0, col, 0 )
             cursor_y = cursor_y + 10
@@ -2530,7 +2537,8 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
     for _, data in pairs(target_data) do
         if target_selected == nil or target_selected == data then
             local is_target_locked = is_target_lock_behaviour and g_selected_target_id == data.id and g_selected_target_type == data.type
-            local col = iff(is_target_locked, colors.red, colors.green)
+            local is_friendly = data.team == vehicle_team
+            local col = iff(is_target_locked, colors.red, iff(is_friendly, color_friendly, colors.green))
             local is_hovered = data == target_hovered
             local is_render_health = (data == target_selected or (target_selected == nil and data == target_hovered)) and data.is_observed
 
@@ -2554,7 +2562,7 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
                 end
             elseif (data.is_observed and is_target_observation_behaviour == false) or is_hovered or data.is_laser_target then
                 if data.type == 1 then
-                    render_vision_target_vehicle_outline(data.screen_pos, data.vehicle, data.is_clamped, is_target_locked or data.is_laser_target, data.team == vehicle_team, is_render_health, col)
+                    render_vision_target_vehicle_outline(data.screen_pos, data.vehicle, data.is_clamped, is_target_locked or data.is_laser_target, is_friendly, is_render_health, col)
                 elseif data.type == 2 then
                     render_vision_target_missile_outline(data.screen_pos, data.is_clamped, col)
                 end
@@ -2567,7 +2575,7 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
                     end
                 end
             elseif data.type == 1 and data.is_observed and is_target_observation_behaviour and is_hovered == false then
-                render_vision_target_vehicle_outline(data.screen_pos, data.vehicle, data.is_clamped, is_target_locked or data.is_laser_target, data.team == vehicle_team, is_render_health, col)
+                render_vision_target_vehicle_outline(data.screen_pos, data.vehicle, data.is_clamped, is_target_locked or data.is_laser_target, is_friendly, is_render_health, col)
             end
         end
     end
