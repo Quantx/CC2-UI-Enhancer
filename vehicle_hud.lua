@@ -2600,7 +2600,7 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
 
     if is_target_lock_behaviour then
         update_add_ui_interaction(iff(g_selected_target_id == 0, update_get_loc(e_loc.interaction_lock_target), update_get_loc(e_loc.interaction_clear_target)), e_game_input.cycle_target)
-        toggle_vision_target(target_hovered)
+        toggle_vision_target(target_hovered, vehicle_team)
     end
 end
 
@@ -2677,8 +2677,8 @@ function render_turret_vehicle_direction(screen_w, screen_h, vehicle, turret, co
 end
 
 -- toggle between no target and a specific target
-function toggle_vision_target(nearest_target)
-    if g_selected_target_id == 0 and nearest_target and nearest_target.is_observed then
+function toggle_vision_target(nearest_target, vehicle_team)
+    if g_selected_target_id == 0 and nearest_target and nearest_target.is_observed and nearest_target.team ~= vehicle_team then
         if g_is_input_cycle_target_next or g_is_input_cycle_target_prev then
             g_selected_target_id = nearest_target.id
             g_selected_target_type = 1
