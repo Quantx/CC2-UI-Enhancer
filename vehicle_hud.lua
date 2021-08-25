@@ -2541,6 +2541,8 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
     --     end
     -- end
 
+    local vehicle_info_data = nil
+
     for _, data in pairs(target_data) do
         if target_selected == nil or target_selected == data then
             local is_target_locked = is_target_lock_behaviour and g_selected_target_id == data.id and g_selected_target_type == data.type
@@ -2576,15 +2578,20 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
     
                 if data.is_clamped == false and (data == target_hovered or data.is_laser_target) then
                     if data.type == 1 then
-                        render_target_vehicle_info(data.screen_pos, data, col)
+                        vehicle_info_data = data
                     elseif data.type == 2 then
-                        render_target_vehicle_info(data.screen_pos, data, col)
+                        vehicle_info_data = data
                     end
                 end
             elseif data.type == 1 and data.is_observed and is_target_observation_behaviour and is_hovered == false then
                 render_vision_target_vehicle_outline(data.screen_pos, data.vehicle, data.is_clamped, is_target_locked or data.is_laser_target, is_friendly, is_render_health, col)
             end
         end
+    end
+
+    -- Always draw info on top
+    if vehicle_info_data ~= nil then
+        render_target_vehicle_info(vehicle_info_data.screen_pos, vehicle_info_data, colors.green)
     end
 
     if is_vision_reveal_targets and target_hovered ~= nil and target_hovered.type == 1 and target_hovered.vehicle:get_is_observation_fully_revealed() == false then
