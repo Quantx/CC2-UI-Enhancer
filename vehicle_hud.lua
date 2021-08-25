@@ -2351,7 +2351,7 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
     local target_hover_world_radius = 4
 
     local is_render_own_team = true --get_is_vision_render_own_team(attachment_def)
-    local is_target_lock_behaviour = get_is_vision_target_lock_behaviour(attachment_def)
+    local is_target_lock_behaviour = true --get_is_vision_target_lock_behaviour(attachment_def)
     local is_target_observation_behaviour = get_is_vision_target_observation_behaviour(attachment_def)
     local is_vision_reveal_targets = get_is_vision_reveal_targets(attachment_def)
     local is_show_target_distance = true --get_is_vision_show_target_distance(attachment_def)
@@ -2586,6 +2586,7 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
     end
 
     if is_target_lock_behaviour then
+        update_add_ui_interaction(iff(g_selected_target_id == 0, update_get_loc(e_loc.interaction_lock_target), update_get_loc(e_loc.interaction_clear_target)), e_game_input.cycle_target)
         toggle_vision_target(target_hovered)
     end
 end
@@ -2670,7 +2671,6 @@ function toggle_vision_target(nearest_target)
             g_selected_target_type = 1
         end
         
-        update_add_ui_interaction(iff(g_selected_target_id == 0, update_get_loc(e_loc.interaction_lock_target), update_get_loc(e_loc.interaction_clear_target)), e_game_input.cycle_target)
     elseif g_selected_target_id ~= 0 then
         if g_is_input_cycle_target_next or g_is_input_cycle_target_prev then
             g_selected_target_id = 0
