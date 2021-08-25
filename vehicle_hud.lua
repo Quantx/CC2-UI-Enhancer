@@ -1282,7 +1282,8 @@ function render_attachment_hud_chaingun(screen_w, screen_h, map_data, tick_fract
     -- update_gun_funnel(tick_fraction, vehicle, gun_funnel_side_dist, gun_funnel_forward_dist)
     -- render_gun_funnel(tick_fraction, vehicle, gun_funnel_side_dist, gun_funnel_forward_dist, color8(0, 255, 0, 255))
 
-    if g_selected_target_type == 1 and g_selected_target_id ~= 0 then
+    -- This is completely broken
+    if g_selected_target_type == 1 and g_selected_target_id ~= 0 and false then
         local selected_target = update_get_vehicle_by_id(g_selected_target_id)
 
         if selected_target:get() then
@@ -1313,7 +1314,8 @@ function render_attachment_hud_ciws(screen_w, screen_h, map_data, vehicle, attac
     render_attachment_range(hud_pos, attachment)
     render_turret_vehicle_direction(screen_w, screen_h, vehicle, attachment, col)
 
-    if g_selected_target_type == 1 and g_selected_target_id ~= 0 then
+    -- This is completely broken
+    if g_selected_target_type == 1 and g_selected_target_id ~= 0 and false then
         local selected_target = update_get_vehicle_by_id(g_selected_target_id)
 
         if selected_target:get() then
