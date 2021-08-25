@@ -1105,6 +1105,8 @@ function render_attachment_hud_camera(screen_w, screen_h, map_data, vehicle, att
     local hud_pos = vec2(screen_w / 2, screen_h / 2)
     local col = color8(0, 255, 0, 255)
 
+    render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachment)
+
     local outer_radius = 72
     local inner_radius = outer_radius - 5
     render_circle(hud_pos, inner_radius, 16, col)
@@ -1130,7 +1132,6 @@ function render_attachment_hud_camera(screen_w, screen_h, map_data, vehicle, att
     
     local range_pos = vec2( (hud_pos:x() + math.cos(math.pi * 0.25) * outer_radius) - 40, (hud_pos:y() + math.sin(math.pi * 0.25) * outer_radius) - 50 )
     render_attachment_range(range_pos, attachment, true)
-    render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachment)
     render_camera_forward_axis(screen_w, screen_h, vehicle)
 
     return true
@@ -2367,7 +2368,10 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
             if (get_is_vision_render_land(attachment_def) and get_is_vehicle_land(v:get_definition_index()))
             or (get_is_vision_render_air(attachment_def) and get_is_vehicle_air(v:get_definition_index()))
             or (get_is_vision_render_sea(attachment_def) and get_is_vehicle_sea(v:get_definition_index())) then
-                if is_render_own_team then
+                local def = v:get_definition_index()
+                if def == e_game_object_type.chassis_land_robot_dog then
+                    return false
+                elseif is_render_own_team then
                     return true
                 elseif v:get_team_id() ~= vehicle_team then
                     return true
@@ -2541,7 +2545,7 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
         if target_selected == nil or target_selected == data then
             local is_target_locked = is_target_lock_behaviour and g_selected_target_id == data.id and g_selected_target_type == data.type
             local is_friendly = data.team == vehicle_team
-            local col = iff(is_target_locked, colors.red, iff(is_friendly, color_friendly, colors.green))
+            local col = iff(is_target_locked, colors.green, iff(is_friendly, color_friendly, colors.red))
             local is_hovered = data == target_hovered
             local is_render_health = (data == target_selected or (target_selected == nil and data == target_hovered)) and data.is_observed
 
