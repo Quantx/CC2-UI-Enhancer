@@ -2580,7 +2580,8 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
                     if data.type == 1 then
                         vehicle_info_data = data
                     elseif data.type == 2 then
-                        vehicle_info_data = data
+                        -- render missile info not used yet, but keep it anyway
+                        render_target_vehicle_info(data.screen_pos, data, colors.green)
                     end
                 end
             elseif data.type == 1 and data.is_observed and is_target_observation_behaviour and is_hovered == false then
