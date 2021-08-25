@@ -2465,6 +2465,9 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
                 local name, icon, handle = get_chassis_data_by_definition_index(def)
                 update_ui_text(pos:x() + 9, cursor_y, handle, 200, 0, col, 0)
                 update_ui_image(pos:x() + 26, cursor_y - 3, icon, col, 0)
+                cursor_y = cursor_y + 10
+
+                update_ui_text(pos:x() + 9, cursor_y, get_vehicle_capability(data.vehicle), 200, 0, col, 0)
             else
                 if data.vehicle:get_is_observation_type_revealed() then
                     local name, icon, handle = get_chassis_data_by_definition_index(def)
