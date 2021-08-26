@@ -1704,7 +1704,7 @@ function render_flight_hud(screen_w, screen_h, is_render_center, vehicle)
 
     local warning_y = hud_min:y() - 10
     local is_missile_tracking = vehicle:get_is_missile_tracking()
-    local is_stall = vehicle:get_position():y() > 1050
+    local is_stall = vehicle:get_position():y() > 2050
 
     if get_is_damage_warning(vehicle) then
         render_warning_text(hud_pos:x(), warning_y, update_get_loc(e_loc.upp_dmg_critical), col_red)

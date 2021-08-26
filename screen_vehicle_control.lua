@@ -327,7 +327,7 @@ function render_selection_waypoint(screen_w, screen_h)
                     ui:header(update_get_loc(e_loc.upp_air))
 
                     -- waypont altitude selector
-                    waypoint_altitude, is_modified = ui:selector(update_get_loc(e_loc.upp_altitude), waypoint_altitude, 50, 1000, 50)
+                    waypoint_altitude, is_modified = ui:selector(update_get_loc(e_loc.upp_altitude), waypoint_altitude, 50, 2000, 50)
                     if is_modified then selected_vehicle:set_waypoint_altitude(g_selection_waypoint_id, waypoint_altitude) end
                 end
             ui:end_window()
