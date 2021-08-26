@@ -425,37 +425,40 @@ end
 function get_vehicle_capability(vehicle)
     local attachment_count = vehicle:get_attachment_count()
 
-    local has_missiles = false
-    local has_ciws = false
-    local has_cannon = false
-
+    local capabilities = {}
+    
     for i = 0, attachment_count - 1 do
         local attachment = vehicle:get_attachment(i)
 
         if attachment:get() then
             local attachment_def = attachment:get_definition_index()
 
-            if attachment_def == e_game_object_type.attachment_turret_15mm
-            or attachment_def == e_game_object_type.attachment_turret_30mm
-            or attachment_def == e_game_object_type.attachment_turret_40mm
-            or attachment_def == e_game_object_type.attachment_turret_heavy_cannon
-            or attachment_def == e_game_object_type.attachment_turret_artillery
-            or attachment_def == e_game_object_type.attachment_turret_battle_cannon
-            then
-                has_cannon = true
+            if attachment_def == e_game_object_type.attachment_turret_15mm then
+                table.insert(capabilities, "15MM")
+            
+            elseif attachment_def == e_game_object_type.attachment_turret_30mm then
+                table.insert(capabilities, "30MM")
+            
+            elseif attachment_def == e_game_object_type.attachment_turret_40mm then
+                table.insert(capabilities, "40MM")
+            
+            elseif attachment_def == e_game_object_type.attachment_turret_heavy_cannon then
+                table.insert(capabilities, "HCAN")
+            
+            elseif attachment_def == e_game_object_type.attachment_turret_artillery then
+                table.insert(capabilities, "ARTY")
+            
+            elseif attachment_def == e_game_object_type.attachment_turret_battle_cannon then
+                table.insert(capabilities, "BCAN")
+            
             elseif attachment_def == e_game_object_type.attachment_turret_missile then
-                has_missiles = true
+                table.insert(capabilities, "MSL")
+            
             elseif attachment_def == e_game_object_type.attachment_turret_ciws then
-                has_ciws = true
+                table.insert(capabilities, "CIWS")
             end
         end
     end
-
-    local capabilities = {}
-
-    if has_missiles then table.insert(capabilities, update_get_loc(e_loc.upp_msl)) end
-    if has_ciws then table.insert(capabilities, update_get_loc(e_loc.upp_aa)) end
-    if has_cannon then table.insert(capabilities, update_get_loc(e_loc.upp_gun)) end
     
     return join_strings(capabilities, "/")
 end
