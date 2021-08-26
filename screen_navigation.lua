@@ -326,7 +326,7 @@ function update(screen_w, screen_h, ticks)
             local fuel_factor = this_vehicle:get_fuel_factor()
             local hitpoints = this_vehicle:get_hitpoints()
             local total_hitpoints = this_vehicle:get_total_hitpoints()
-            local inventory_factor = this_vehicle:get_inventory_weight() / this_vehicle:get_inventory_capacity()
+            local inventory_capacity = this_vehicle:get_inventory_capacity()
 
             local function get_factor_color(factor)
                 if factor < 0.25 then
@@ -340,7 +340,10 @@ function update(screen_w, screen_h, ticks)
 
             ui:stat(atlas_icons.column_fuel, string.format("%.0f%%", fuel_factor * 100), get_factor_color(fuel_factor))
             ui:stat(atlas_icons.icon_health, string.format("%.0f/%.0f", hitpoints, total_hitpoints), get_factor_color(hitpoints / total_hitpoints))
-            ui:stat(atlas_icons.column_weight, string.format("%.0f%%", inventory_factor * 100), iff(inventory_factor < 1, color_status_ok, color_status_bad))
+            if inventory_capacity > 0 then
+                local inventory_factor = this_vehicle:get_inventory_weight() / inventory_capacity
+                ui:stat(atlas_icons.column_weight, string.format("%.0f%%", inventory_factor * 100), iff(inventory_factor < 1, color_status_ok, color_status_bad))
+            end
 
             ui:header(update_get_loc(e_loc.upp_operation))
 
