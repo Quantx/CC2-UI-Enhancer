@@ -2233,8 +2233,8 @@ end
 
 function render_camera_forward_axis(screen_w, screen_h, vehicle)
     local col = color8(0, 255, 0, 255)
-    local x = screen_w / 2 - 30
-    local y = screen_h / 2 - 0
+    local x = screen_w / 2 - 0
+    local y = screen_h / 3 - 0
 
     project = function(pos)
         return vec2(math.ceil(pos:x() + x), math.ceil(-pos:y() + y))
