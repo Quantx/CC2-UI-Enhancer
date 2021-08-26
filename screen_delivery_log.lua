@@ -19,7 +19,10 @@ function update(screen_w, screen_h, ticks)
 
     local window = ui:begin_window(update_get_loc(e_loc.upp_barge_delivery_log), 10, 10, screen_w - 20, screen_h - 35, atlas_icons.column_pending, true, 0, false)
         local region_w, region_h = ui:get_region()
-        local column_widths = { 55, 24, 112, -1 }
+        
+        local id_w = update_ui_get_text_size("0000", 10000, 0) + 8
+        
+        local column_widths = { 55, id_w, 112, -1 }
         local column_margins = { 5, 5, 5, 5 }
         local max_logs = 15
         local page_count = math.ceil(log_count / max_logs)
@@ -65,7 +68,7 @@ function update(screen_w, screen_h, ticks)
                     if log_type == e_map_notification_type.barge_delivery then
                         local columns = { 
                             { w=column_widths[1], margin=column_margins[1], value=format_time(log:get_time()), col=color_grey_dark },
-                            { w=column_widths[2], margin=column_margins[2], value=tostring(barge_id % 1000), col=color_grey_dark },
+                            { w=column_widths[2], margin=column_margins[2], value=tostring(barge_id), col=color_grey_dark },
                             { w=column_widths[3], margin=column_margins[3], value=item_name, col=color_grey_dark },
                             { w=column_widths[4], margin=column_margins[4], value="+" .. delivery_amount, col=color_status_ok },
                         }

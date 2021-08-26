@@ -98,7 +98,8 @@ function update(screen_w, screen_h, ticks)
     local warning_blink_rate = iff(min_distance < 50, 10, 30)
     local is_pulse_warning = g_tick % warning_blink_rate == math.floor(warning_blink_rate / 2)
     local is_blink_warning = g_tick % warning_blink_rate > math.floor(warning_blink_rate / 2)
-    local warning_sound = 7
+
+    local warning_sound = e_audio_effect_type.telemetry_5
 
     if min_distance < 50 then
         if is_blink_warning then

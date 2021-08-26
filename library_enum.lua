@@ -1773,3 +1773,25 @@ e_network_connect_type = {
     steam_id = 0,
     token = 1,
 }
+
+e_vessel_names = {
+    "Mu",
+
+    "Epsilon",
+    "Omega",
+
+    "Upsilon",
+    "Omicron",
+    "Sigma",
+    "Lambda",
+
+    "Alpha",
+    "Beta",
+    "Gamma",
+    "Delta",
+    "Zeta",
+    "Eta",
+    "Theta",
+    "Iota",
+    "Kappa"
+}

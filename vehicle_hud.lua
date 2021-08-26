@@ -631,6 +631,12 @@ function render_attachment_info(info_pos, map_data, vehicle, attachment, alpha, 
     
     local attachment_def = attachment:get_definition_index()
 
+    -- render vehicle id
+    if vehicle:get_definition_index() ~= e_game_object_type.chassis_carrier then
+        update_ui_text(pos:x(), pos:y(), update_get_loc(e_loc.upp_id) .. " " .. tostring(vehicle:get_id()), 200, 0, colors.green, 0)
+        pos:y(pos:y() + 10)
+    end
+
     if attachment_def ~= e_game_object_type.attachment_camera_vehicle_control then
         if get_is_attachment_observation_camera_controlled(attachment_def) then
             update_ui_image(pos:x(), pos:y(), atlas_icons.column_laser, colors.green, 0)
@@ -1099,6 +1105,8 @@ function render_attachment_hud_camera(screen_w, screen_h, map_data, vehicle, att
     local hud_pos = vec2(screen_w / 2, screen_h / 2)
     local col = color8(0, 255, 0, 255)
 
+    render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachment)
+
     local outer_radius = 72
     local inner_radius = outer_radius - 5
     render_circle(hud_pos, inner_radius, 16, col)
@@ -1118,11 +1126,12 @@ function render_attachment_hud_camera(screen_w, screen_h, map_data, vehicle, att
         update_ui_text(hud_pos:x() + math.cos(math.pi * 0.75) * outer_radius - 200, hud_pos:y() + math.sin(math.pi * 0.75) * outer_radius, string.format("%.2fx", display_zoom), 200, 2, col, 0)
     end
 
-    local hit_pos = attachment:get_hitscan_position()
-    local dist = vec3_dist(update_get_camera_position(), hit_pos)
-    update_ui_text(hud_pos:x() + math.cos(math.pi * 0.25) * outer_radius, hud_pos:y() + math.sin(math.pi * 0.25) * outer_radius, string.format("%.0f", dist) .. update_get_loc(e_loc.acronym_meters), 200, 0, col, 0)
+    --local hit_pos = attachment:get_hitscan_position()
+    --local dist = vec3_dist(update_get_camera_position(), hit_pos)
+    --update_ui_text(hud_pos:x() + math.cos(math.pi * 0.25) * outer_radius, hud_pos:y() + math.sin(math.pi * 0.25) * outer_radius, string.format("%.0f", dist) .. update_get_loc(e_loc.acronym_meters), 200, 0, col, 0)
     
-    render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachment)
+    local range_pos = vec2( (hud_pos:x() + math.cos(math.pi * 0.25) * outer_radius) - 40, (hud_pos:y() + math.sin(math.pi * 0.25) * outer_radius) - 50 )
+    render_attachment_range(range_pos, attachment, true)
     render_camera_forward_axis(screen_w, screen_h, vehicle)
 
     return true
@@ -1185,6 +1194,9 @@ function render_attachment_hud_missile(screen_w, screen_h, map_data, vehicle, at
     local col = color8(0, 255, 0, 255)
     
     render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachment)
+    if attachment:get_definition_index() == e_game_object_type.attachment_turret_missile then
+        render_turret_vehicle_direction(screen_w, screen_h, vehicle, attachment, col)
+    end
 
     update_ui_image_rot(hud_pos:x() + 1, hud_pos:y() + 1, atlas_icons.hud_horizon_cursor, col, 0)
     render_atachment_projectile_cooldown(hud_pos, attachment, true, color8(0, 255, 0, 255))
@@ -1271,7 +1283,8 @@ function render_attachment_hud_chaingun(screen_w, screen_h, map_data, tick_fract
     -- update_gun_funnel(tick_fraction, vehicle, gun_funnel_side_dist, gun_funnel_forward_dist)
     -- render_gun_funnel(tick_fraction, vehicle, gun_funnel_side_dist, gun_funnel_forward_dist, color8(0, 255, 0, 255))
 
-    if g_selected_target_type == 1 and g_selected_target_id ~= 0 then
+    -- This is completely broken
+    if g_selected_target_type == 1 and g_selected_target_id ~= 0 and false then
         local selected_target = update_get_vehicle_by_id(g_selected_target_id)
 
         if selected_target:get() then
@@ -1300,8 +1313,10 @@ function render_attachment_hud_ciws(screen_w, screen_h, map_data, vehicle, attac
 
     render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachment)
     render_attachment_range(hud_pos, attachment)
+    render_turret_vehicle_direction(screen_w, screen_h, vehicle, attachment, col)
 
-    if g_selected_target_type == 1 and g_selected_target_id ~= 0 then
+    -- This is completely broken
+    if g_selected_target_type == 1 and g_selected_target_id ~= 0 and false then
         local selected_target = update_get_vehicle_by_id(g_selected_target_id)
 
         if selected_target:get() then
@@ -1381,6 +1396,7 @@ function render_attachment_hud_cannon(screen_w, screen_h, map_data, vehicle, att
 
     render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachment)
     render_attachment_range(hud_pos, attachment)
+    render_turret_vehicle_direction(screen_w, screen_h, vehicle, attachment, col)
 
     update_ui_image_rot(hud_pos:x() + 1, hud_pos:y() + 1, atlas_icons.hud_horizon_cursor, col, 0)
 
@@ -1405,6 +1421,38 @@ function render_attachment_hud_cannon(screen_w, screen_h, map_data, vehicle, att
             local step = step_amounts[math.floor(zoom_power) + 1]
 
             for i = step, 1000, step do
+                if i > 0 then
+                    local travel_time = math.max(1, i) / (projectile_speed / 30)
+                    local drop_position = update_get_camera_position()
+                    drop_position:x(drop_position:x() + projectile_velocity:x() * travel_time)
+                    drop_position:y(drop_position:y() + projectile_velocity:y() * travel_time - 0.5 * projectile_gravity * travel_time * travel_time)
+                    drop_position:z(drop_position:z() + projectile_velocity:z() * travel_time)
+
+                    local screen_pos = update_world_to_screen(drop_position)
+
+                    if screen_pos:y() < hud_pos:y() + 60 then
+                        update_ui_line(screen_w / 2 - 3, screen_pos:y(), screen_w / 2 + 2, screen_pos:y(), color8(0, 255, 0, 255))
+
+                        if (i / step) % 2 == 0 then
+                            update_ui_text(screen_w / 2 + 4, screen_pos:y() - 5, string.format("%d", i) .. update_get_loc(e_loc.acronym_meters), 64, 0, color8(0, 255, 0, 255), 0)
+                        end
+                    end
+                end
+            end
+        end
+        
+        if def == e_game_object_type.attachment_turret_heavy_cannon and display_zoom > 1 then
+            local projectile_gravity = 50 / 30
+            local projectile_speed = 600
+            local projectile_velocity = update_get_camera_forward()
+            projectile_velocity:x(projectile_velocity:x() * projectile_speed)
+            projectile_velocity:y(projectile_velocity:y() * projectile_speed)
+            projectile_velocity:z(projectile_velocity:z() * projectile_speed)
+
+            local step_amounts = { 800, 400, 200, 100 }
+            local step = step_amounts[math.floor(zoom_power) + 1]
+
+            for i = step, 1600, step do
                 if i > 0 then
                     local travel_time = math.max(1, i) / (projectile_speed / 30)
                     local drop_position = update_get_camera_position()
@@ -1738,9 +1786,9 @@ end
 --
 --------------------------------------------------------------------------------
 
-function render_attachment_range(hud_pos, attachment)
-    local hit_dist = attachment:get_hitscan_distance()
-    local is_in_range = attachment:get_is_hitscan_in_range()
+function render_attachment_range(hud_pos, attachment, is_camera)
+    local hit_dist = iff( is_camera, vec3_dist(update_get_camera_position(), attachment:get_hitscan_position()), attachment:get_hitscan_distance() )
+    local is_in_range = iff( is_camera, hit_dist <= 9999, attachment:get_is_hitscan_in_range() )
     local col = color8(0, 255, 0, 255)
     local col_red = color8(255, 0, 0, 255)
 
@@ -2015,7 +2063,7 @@ function render_timeline(pos, size, num_incr, spacing, offset, text_align, col, 
             if callback == nil then
                 local char_h = 10
     
-                update_ui_text(x, y - char_h / 2, (num_incr * (i + math.floor(offset / spacing))), size:x(), text_align, col, 0)
+                update_ui_text(x, y - char_h / 2, val, size:x(), text_align, col, 0)
             else
                 callback(x, y)
             end
@@ -2310,21 +2358,25 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
     local nearest_screen_dist_sq = -1
     local target_hover_world_radius = 4
 
-    local is_render_own_team = get_is_vision_render_own_team(attachment_def)
-    local is_target_lock_behaviour = get_is_vision_target_lock_behaviour(attachment_def)
+    local is_render_own_team = true --get_is_vision_render_own_team(attachment_def)
+    local is_target_lock_behaviour = true --get_is_vision_target_lock_behaviour(attachment_def)
     local is_target_observation_behaviour = get_is_vision_target_observation_behaviour(attachment_def)
     local is_vision_reveal_targets = get_is_vision_reveal_targets(attachment_def)
-    local is_show_target_distance = get_is_vision_show_target_distance(attachment_def)
+    local is_show_target_distance = true --get_is_vision_show_target_distance(attachment_def)
 
     local laser_consuming_type = attachment:get_weapon_target_consuming_type()
     local laser_id, laser_idx = attachment:get_weapon_target_consuming_id()
 
     local filter_target = function(v)
-        if v:get_id() ~= vehicle_id then
+        -- Ignore self and docked vehicles
+        if v:get_id() ~= vehicle_id and not v:get_is_docked() then
             if (get_is_vision_render_land(attachment_def) and get_is_vehicle_land(v:get_definition_index()))
             or (get_is_vision_render_air(attachment_def) and get_is_vehicle_air(v:get_definition_index()))
             or (get_is_vision_render_sea(attachment_def) and get_is_vehicle_sea(v:get_definition_index())) then
-                if is_render_own_team then
+                local def = v:get_definition_index()
+                if def == e_game_object_type.chassis_land_robot_dog then
+                    return false
+                elseif is_render_own_team then
                     return true
                 elseif v:get_team_id() ~= vehicle_team then
                     return true
@@ -2413,15 +2465,21 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
         if data.is_laser_target then
             -- don't render info
         else
+            local def = data.vehicle:get_definition_index()
+
+            -- render right side of marker
             local cursor_y = pos:y() - 4
 
             if data.team == vehicle_team then
-                local name, icon, handle = get_chassis_data_by_definition_index(data.vehicle:get_definition_index())
+                local name, icon, handle = get_chassis_data_by_definition_index(def)
                 update_ui_text(pos:x() + 9, cursor_y, handle, 200, 0, col, 0)
                 update_ui_image(pos:x() + 26, cursor_y - 3, icon, col, 0)
+                cursor_y = cursor_y + 10
+
+                update_ui_text(pos:x() + 9, cursor_y, get_vehicle_capability(data.vehicle), 200, 0, col, 0)
             else
                 if data.vehicle:get_is_observation_type_revealed() then
-                    local name, icon, handle = get_chassis_data_by_definition_index(data.vehicle:get_definition_index())
+                    local name, icon, handle = get_chassis_data_by_definition_index(def)
                     update_ui_text(pos:x() + 9, cursor_y, handle, 200, 0, col, 0)
                     update_ui_image(pos:x() + 26, cursor_y - 3, icon, col, 0)
                     cursor_y = cursor_y + 10
@@ -2440,10 +2498,33 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
                     update_ui_text(pos:x() + 9, cursor_y, string.format("%.0f%%", factor * 100), 200, 0, col, 0)
                 end
             end
-           
+
+            -- render left side of marker
+            cursor_y = pos:y() - 4
+
+            local id_str = string.format( "ID %.0f", data.id)
+
+            if def == e_game_object_type.chassis_carrier then
+                id_str = string.upper( e_vessel_names[data.team + 1] )
+            end
+
+            local id_w = update_ui_get_text_size(id_str, 10000, 1) + 7
+            update_ui_text(pos:x() - id_w, cursor_y, id_str, 128, 0, col, 0 )
+            cursor_y = cursor_y + 10
+
             if is_show_target_distance and data.is_observed then
                 local dist = math.sqrt(data.dist_sq)
-                update_ui_text(pos:x() - 57, pos:y() - 4, string.format("%.0f", dist) .. update_get_loc(e_loc.acronym_meters), 50, 2, col, 0)
+                local dist_str = ""
+
+                if dist < 10000 then
+                    dist_str = string.format("%.0f", dist) .. update_get_loc(e_loc.acronym_meters)
+                else
+                    dist_str = string.format("%.0f", dist / 1000) .. update_get_loc(e_loc.acronym_kilometers)
+                end
+
+                local dist_w = update_ui_get_text_size(dist_str, 10000, 1) + 7
+
+                update_ui_text(pos:x() - dist_w, cursor_y, dist_str, 128, 0, col, 0)
             end
         end
     end
@@ -2465,10 +2546,13 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
     --     end
     -- end
 
+    local vehicle_info_data = nil
+
     for _, data in pairs(target_data) do
         if target_selected == nil or target_selected == data then
             local is_target_locked = is_target_lock_behaviour and g_selected_target_id == data.id and g_selected_target_type == data.type
-            local col = iff(is_target_locked, colors.red, colors.green)
+            local is_friendly = data.team == vehicle_team
+            local col = iff(is_target_locked, colors.green, iff(is_friendly, color_friendly, colors.red))
             local is_hovered = data == target_hovered
             local is_render_health = (data == target_selected or (target_selected == nil and data == target_hovered)) and data.is_observed
 
@@ -2492,22 +2576,28 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
                 end
             elseif (data.is_observed and is_target_observation_behaviour == false) or is_hovered or data.is_laser_target then
                 if data.type == 1 then
-                    render_vision_target_vehicle_outline(data.screen_pos, data.vehicle, data.is_clamped, is_target_locked or data.is_laser_target, data.team == vehicle_team, is_render_health, col)
+                    render_vision_target_vehicle_outline(data.screen_pos, data.vehicle, data.is_clamped, is_target_locked or data.is_laser_target, is_friendly, is_render_health, col)
                 elseif data.type == 2 then
                     render_vision_target_missile_outline(data.screen_pos, data.is_clamped, col)
                 end
     
                 if data.is_clamped == false and (data == target_hovered or data.is_laser_target) then
                     if data.type == 1 then
-                        render_target_vehicle_info(data.screen_pos, data, col)
+                        vehicle_info_data = data
                     elseif data.type == 2 then
-                        render_target_vehicle_info(data.screen_pos, data, col)
+                        -- render missile info not used yet, but keep it anyway
+                        render_target_vehicle_info(data.screen_pos, data, colors.green)
                     end
                 end
             elseif data.type == 1 and data.is_observed and is_target_observation_behaviour and is_hovered == false then
-                render_vision_target_vehicle_outline(data.screen_pos, data.vehicle, data.is_clamped, is_target_locked or data.is_laser_target, data.team == vehicle_team, is_render_health, col)
+                render_vision_target_vehicle_outline(data.screen_pos, data.vehicle, data.is_clamped, is_target_locked or data.is_laser_target, is_friendly, is_render_health, col)
             end
         end
+    end
+
+    -- Always draw info on top
+    if vehicle_info_data ~= nil then
+        render_target_vehicle_info(vehicle_info_data.screen_pos, vehicle_info_data, colors.green)
     end
 
     if is_vision_reveal_targets and target_hovered ~= nil and target_hovered.type == 1 and target_hovered.vehicle:get_is_observation_fully_revealed() == false then
@@ -2526,7 +2616,8 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
     end
 
     if is_target_lock_behaviour then
-        toggle_vision_target(target_hovered)
+        update_add_ui_interaction(iff(g_selected_target_id == 0, update_get_loc(e_loc.interaction_lock_target), update_get_loc(e_loc.interaction_clear_target)), e_game_input.cycle_target)
+        toggle_vision_target(target_hovered, vehicle_team)
     end
 end
 
@@ -2582,15 +2673,33 @@ function render_vision_target_missile_outline(pos, is_clamped, col)
     update_ui_image_rot(x, y, iff(is_clamped, atlas_icons.hud_target_offscreen, atlas_icons.hud_target_missile), col, 0)
 end
 
+function render_turret_vehicle_direction(screen_w, screen_h, vehicle, turret, col)
+    local attachment_icon_region, attachment_16_icon_region = get_attachment_icons(turret:get_definition_index())
+--  local icon_w, icon_h = update_ui_get_image_size(attachment_icon_region)
+
+    local hud_size = vec2(230, 140) 
+    local hud_min = vec2((screen_w - hud_size:x()) / 2, (screen_h - hud_size:y()) / 2)
+    local hud_pos = vec2(hud_min:x() + hud_size:x() / 2, hud_min:y() + hud_size:y() / 2)
+
+    local pos_x = hud_min:x() + hud_size:x() - 6
+    local pos_y = hud_pos:y() - 30
+    
+    local turret_ang = update_get_camera_heading()
+
+    local vehicle_dir = vehicle:get_forward()
+    local vehicle_ang = math.atan( vehicle_dir:x(), vehicle_dir:z() )
+    
+    update_ui_image_rot( pos_x, pos_y, atlas_icons.hud_ticker_small, col, -(turret_ang - vehicle_ang) - (math.pi / 2) )
+    update_ui_image_rot( pos_x, pos_y - 4, attachment_icon_region, col, 0 )
+end
+
 -- toggle between no target and a specific target
-function toggle_vision_target(nearest_target)
-    if g_selected_target_id == 0 and nearest_target and nearest_target.is_observed then
+function toggle_vision_target(nearest_target, vehicle_team)
+    if g_selected_target_id == 0 and nearest_target and nearest_target.is_observed and nearest_target.team ~= vehicle_team then
         if g_is_input_cycle_target_next or g_is_input_cycle_target_prev then
             g_selected_target_id = nearest_target.id
             g_selected_target_type = 1
         end
-        
-        update_add_ui_interaction(iff(g_selected_target_id == 0, update_get_loc(e_loc.interaction_lock_target), update_get_loc(e_loc.interaction_clear_target)), e_game_input.cycle_target)
     elseif g_selected_target_id ~= 0 then
         if g_is_input_cycle_target_next or g_is_input_cycle_target_prev then
             g_selected_target_id = 0
