@@ -2022,7 +2022,7 @@ function render_vehicle_tooltip(w, h, vehicle)
                         local icon, icon_16 = get_attachment_icons(attachment:get_definition_index())
 
                         if icon_16 ~= nil then
-                            update_ui_image(cx, cy, icon_16, color_white, 0)
+                            update_ui_text(cx, 6, ":" .. get_vehicle_capability(vehicle), 124, 0, color_white, 0)
                             break
                         end
                     end
