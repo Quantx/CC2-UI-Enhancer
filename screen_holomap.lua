@@ -66,11 +66,11 @@ g_startup_phase = 0
 g_startup_phase_anim = 0
 
 holomap_startup_phases = {
-	memchk = 0,
-	bios = 1,
-	sys = 2,
-	manual = 3,
-	finish = 4
+    memchk = 0,
+    bios = 1,
+    sys = 2,
+    manual = 3,
+    finish = 4
 }
 
 g_is_ruler = false
@@ -127,43 +127,43 @@ function update(screen_w, screen_h, ticks)
     local screen_vehicle = update_get_screen_vehicle()
 
     local screen_team = update_get_screen_team_id()
-	local is_local = update_get_is_focus_local()
-	
-	local world_x = 0
-	local world_y = 0
+    local is_local = update_get_is_focus_local()
+    
+    local world_x = 0
+    local world_y = 0
 
-	local drydock, waypoint_mouse, waypoint_options = get_team_drydock()
-	
-	if is_local and g_is_pointer_hovered then
-		world_x, world_y = get_world_from_holomap( g_pointer_pos_x, g_pointer_pos_y, screen_w, screen_h )
-		
-		if drydock ~= nil then
-			drydock:clear_waypoints()
-			drydock:add_waypoint(world_x, world_y)
-			drydock:add_waypoint(g_selection_vehicle_id, iff(g_is_ruler, 1, 0))
+    local drydock, waypoint_mouse, waypoint_options = get_team_drydock()
+    
+    if is_local and g_is_pointer_hovered then
+        world_x, world_y = get_world_from_holomap( g_pointer_pos_x, g_pointer_pos_y, screen_w, screen_h )
+        
+        if drydock ~= nil then
+            drydock:clear_waypoints()
+            drydock:add_waypoint(world_x, world_y)
+            drydock:add_waypoint(g_selection_vehicle_id, iff(g_is_ruler, 1, 0))
 
-			waypoint_mouse = nil
-			waypoint_options = nil
-		end
-	elseif waypoint_mouse ~= nil then
-		local waypoint_pos = waypoint_mouse:get_position_xz()
-					
-		world_x = waypoint_pos:x()
-		world_y = waypoint_pos:y()
-		
-		if waypoint_options ~= nil then
-			local opts = waypoint_options:get_position_xz()
-			
-			g_selection_vehicle_id = opts:x()
-			g_is_ruler = opts:y() > 0
-		else
-			g_selection_vehicle_id = -1
-			g_is_ruler = false
-		end
-		
-		g_pointer_pos_x, g_pointer_pos_y = get_holomap_from_world( world_x, world_y, screen_w, screen_h )
-		g_is_pointer_hovered = (g_pointer_pos_x > 0 and g_pointer_pos_y > 0 and g_pointer_pos_x < screen_w and g_pointer_pos_y < screen_h)
-	end
+            waypoint_mouse = nil
+            waypoint_options = nil
+        end
+    elseif waypoint_mouse ~= nil then
+        local waypoint_pos = waypoint_mouse:get_position_xz()
+                    
+        world_x = waypoint_pos:x()
+        world_y = waypoint_pos:y()
+        
+        if waypoint_options ~= nil then
+            local opts = waypoint_options:get_position_xz()
+            
+            g_selection_vehicle_id = opts:x()
+            g_is_ruler = opts:y() > 0
+        else
+            g_selection_vehicle_id = -1
+            g_is_ruler = false
+        end
+        
+        g_pointer_pos_x, g_pointer_pos_y = get_holomap_from_world( world_x, world_y, screen_w, screen_h )
+        g_is_pointer_hovered = (g_pointer_pos_x > 0 and g_pointer_pos_y > 0 and g_pointer_pos_x < screen_w and g_pointer_pos_y < screen_h)
+    end
 
     if g_focus_mode ~= 0 then
         if g_focus_mode == 1 then
@@ -172,14 +172,14 @@ function update(screen_w, screen_h, ticks)
             focus_world()
         end
 
-		g_startup_phase = holomap_startup_phases.finish
+        g_startup_phase = holomap_startup_phases.finish
         g_focus_mode = 0
     end
-	
-	if holomap_override(screen_w, screen_h, ticks) then
-		render_cursor(world_x, world_y, screen_w, screen_h)
-		return
-	end
+    
+    if holomap_override(screen_w, screen_h, ticks) then
+        render_cursor(world_x, world_y, screen_w, screen_h)
+        return
+    end
 
     local function step(a, b, c)
         return a + clamp(b - a, -c, c)
@@ -204,25 +204,25 @@ function update(screen_w, screen_h, ticks)
     if g_is_map_pos_initialised == false then
         g_is_map_pos_initialised = true
         if screen_vehicle:get() and screen_vehicle:get_dock_state() == e_vehicle_dock_state.docked then
-	        focus_world()
-	    end
+            focus_world()
+        end
     end
 
     update_add_ui_interaction_special(update_get_loc(e_loc.interaction_pan), e_ui_interaction_special.map_pan)
     update_add_ui_interaction_special(update_get_loc(e_loc.interaction_zoom), e_ui_interaction_special.map_zoom)
 
-	update_add_ui_interaction("map tool", e_game_input.interact_a)
-	if screen_vehicle:get() and screen_vehicle:get_dock_state() ~= e_vehicle_dock_state.docked then
-		if g_highlighted_vehicle_id == screen_vehicle:get_id() then
-			if g_highlighted_waypoint_id >= 0 then
-				update_add_ui_interaction("remove carrier waypoint", e_game_input.interact_b)
-			else
-				update_add_ui_interaction("remove all carrier waypoints", e_game_input.interact_b)
-			end
-		else
-			update_add_ui_interaction("set carrier waypoint", e_game_input.interact_b)
-		end
-	end
+    update_add_ui_interaction("map tool", e_game_input.interact_a)
+    if screen_vehicle:get() and screen_vehicle:get_dock_state() ~= e_vehicle_dock_state.docked then
+        if g_highlighted_vehicle_id == screen_vehicle:get_id() then
+            if g_highlighted_waypoint_id >= 0 then
+                update_add_ui_interaction("remove carrier waypoint", e_game_input.interact_b)
+            else
+                update_add_ui_interaction("remove all carrier waypoints", e_game_input.interact_b)
+            end
+        else
+            update_add_ui_interaction("set carrier waypoint", e_game_input.interact_b)
+        end
+    end
 
     if is_local then
         g_next_pos_x = g_map_x
@@ -246,31 +246,31 @@ function update(screen_w, screen_h, ticks)
         end
     end
 
-	update_set_screen_background_type(g_button_mode + 1)
-	update_set_screen_background_is_render_islands(false)
-	update_set_screen_map_position_scale(g_map_x + g_map_x_offset, g_map_z + g_map_z_offset, g_map_size + g_map_size_offset)
-	g_is_render_holomap = true
-	g_is_render_holomap_tiles = true
-	g_is_render_holomap_vehicles = true
-	g_is_render_holomap_missiles = true
-	g_is_render_holomap_grids = true
-	g_is_render_holomap_backlight = true
-	g_is_render_team_capture = true
-	g_is_override_holomap_island_color = false
-	g_holomap_override_island_color_low = g_colors.island_low_default
-	g_holomap_override_island_color_high = g_colors.island_high_default
-	g_holomap_override_base_layer_color = g_colors.base_layer_default
-	g_holomap_backlight_color = g_colors.backlight_default
-	g_holomap_glow_color = g_colors.glow_default
-	g_holomap_grid_1_color = g_colors.grid_1_default
-	g_holomap_grid_2_color = g_colors.grid_2_default
+    update_set_screen_background_type(g_button_mode + 1)
+    update_set_screen_background_is_render_islands(false)
+    update_set_screen_map_position_scale(g_map_x + g_map_x_offset, g_map_z + g_map_z_offset, g_map_size + g_map_size_offset)
+    g_is_render_holomap = true
+    g_is_render_holomap_tiles = true
+    g_is_render_holomap_vehicles = true
+    g_is_render_holomap_missiles = true
+    g_is_render_holomap_grids = true
+    g_is_render_holomap_backlight = true
+    g_is_render_team_capture = true
+    g_is_override_holomap_island_color = false
+    g_holomap_override_island_color_low = g_colors.island_low_default
+    g_holomap_override_island_color_high = g_colors.island_high_default
+    g_holomap_override_base_layer_color = g_colors.base_layer_default
+    g_holomap_backlight_color = g_colors.backlight_default
+    g_holomap_glow_color = g_colors.glow_default
+    g_holomap_grid_1_color = g_colors.grid_1_default
+    g_holomap_grid_2_color = g_colors.grid_2_default
 
-	update_ui_rectangle(0, 0, screen_w, screen_h, color8(0, 0, 0, 220))
+    update_ui_rectangle(0, 0, screen_w, screen_h, color8(0, 0, 0, 220))
 
-	g_ui:begin_ui()
+    g_ui:begin_ui()
 
     if update_get_is_notification_holomap_set() then
-	g_notification_time = g_notification_time + ticks
+    g_notification_time = g_notification_time + ticks
 
         update_set_screen_background_type(0)
         update_set_screen_background_is_render_islands(false)
@@ -329,588 +329,588 @@ function update(screen_w, screen_h, ticks)
             update_map_dismiss_notification()
         end
     else
-		local vehicle_count = update_get_map_vehicle_count()
-		local map_zoom = g_map_size + g_map_size_offset
+        local vehicle_count = update_get_map_vehicle_count()
+        local map_zoom = g_map_size + g_map_size_offset
 
-		if map_zoom < 70000 then
-			local island_count = update_get_tile_count()
-			for i = 0, island_count - 1, 1 do
-				local island = update_get_tile_by_index(i)
+        if map_zoom < 70000 then
+            local island_count = update_get_tile_count()
+            for i = 0, island_count - 1, 1 do
+                local island = update_get_tile_by_index(i)
 
-				if island ~= nil and island:get() then
-					local island_color = update_get_team_color(island:get_team_control())
-					local island_pos = island:get_position_xz()
-					local island_size = island:get_size()
+                if island ~= nil and island:get() then
+                    local island_color = update_get_team_color(island:get_team_control())
+                    local island_pos = island:get_position_xz()
+                    local island_size = island:get_size()
 
-					local screen_pos_x = 0
-					local screen_pos_y = 0
-					
-					if map_zoom < 16000 then
-						screen_pos_x, screen_pos_y = get_holomap_from_world(island_pos:x(), island_pos:y() + (island_size:y() / 2), screen_w, screen_h)
-					else
-						screen_pos_x, screen_pos_y = get_holomap_from_world(island_pos:x(), island_pos:y(), screen_w, screen_h)
-						screen_pos_y = screen_pos_y - 27
-					end
+                    local screen_pos_x = 0
+                    local screen_pos_y = 0
+                    
+                    if map_zoom < 16000 then
+                        screen_pos_x, screen_pos_y = get_holomap_from_world(island_pos:x(), island_pos:y() + (island_size:y() / 2), screen_w, screen_h)
+                    else
+                        screen_pos_x, screen_pos_y = get_holomap_from_world(island_pos:x(), island_pos:y(), screen_w, screen_h)
+                        screen_pos_y = screen_pos_y - 27
+                    end
 
-					local command_center_count = island:get_command_center_count()
-					if command_center_count > 0 then
-						--local command_center_position = island:get_command_center_position(0)
-						--local cmd_pos_x, cmd_pos_y = get_holomap_from_world(command_center_position:x(), command_center_position:y(), screen_w, screen_h)
+                    local command_center_count = island:get_command_center_count()
+                    if command_center_count > 0 then
+                        --local command_center_position = island:get_command_center_position(0)
+                        --local cmd_pos_x, cmd_pos_y = get_holomap_from_world(command_center_position:x(), command_center_position:y(), screen_w, screen_h)
 
-						local island_capture = island:get_team_capture()
-						local island_team = island:get_team_control()
-						local island_capture_progress = island:get_team_capture_progress()
-						local team_color = update_get_team_color(island_capture)
+                        local island_capture = island:get_team_capture()
+                        local island_team = island:get_team_control()
+                        local island_capture_progress = island:get_team_capture_progress()
+                        local team_color = update_get_team_color(island_capture)
 
-						if island_capture ~= island_team and island_capture ~= -1 and island_capture_progress > 0 then
-							update_ui_rectangle(screen_pos_x - 13, screen_pos_y - 16, 26, 5, color_black)
-							update_ui_rectangle(screen_pos_x - 12, screen_pos_y - 15, 24 * island_capture_progress, 3, team_color)
-						end
-					end
+                        if island_capture ~= island_team and island_capture ~= -1 and island_capture_progress > 0 then
+                            update_ui_rectangle(screen_pos_x - 13, screen_pos_y - 16, 26, 5, color_black)
+                            update_ui_rectangle(screen_pos_x - 12, screen_pos_y - 15, 24 * island_capture_progress, 3, team_color)
+                        end
+                    end
 
-					update_ui_text(screen_pos_x - 64, screen_pos_y - 10, island:get_name(), 128, 1, island_color, 0)
-					
-					local category_data = g_item_categories[island:get_facility_category()]
-					
-					update_ui_image(screen_pos_x - 4, screen_pos_y, category_data.icon, island_color, 0)
-					
-					if island:get_team_control() ~= screen_team then
-						local difficulty_level = island:get_difficulty_level()
-						local icon_w = 6
-						local icon_spacing = 2
-						local total_w = icon_w * difficulty_level + icon_spacing * (difficulty_level - 1)
+                    update_ui_text(screen_pos_x - 64, screen_pos_y - 10, island:get_name(), 128, 1, island_color, 0)
+                    
+                    local category_data = g_item_categories[island:get_facility_category()]
+                    
+                    update_ui_image(screen_pos_x - 4, screen_pos_y, category_data.icon, island_color, 0)
+                    
+                    if island:get_team_control() ~= screen_team then
+                        local difficulty_level = island:get_difficulty_level()
+                        local icon_w = 6
+                        local icon_spacing = 2
+                        local total_w = icon_w * difficulty_level + icon_spacing * (difficulty_level - 1)
 
-						for i = 0, difficulty_level - 1 do
-							update_ui_image(screen_pos_x - total_w / 2 + (icon_w + icon_spacing) * i, screen_pos_y + 9, atlas_icons.column_difficulty, island_color, 0)
-						end
-					end
-				end
-			end
-		end
-		
-		if g_is_pointer_pressed and g_highlighted_vehicle_id >= 0 and g_highlighted_waypoint_id == -1 then
-			local vehicle = update_get_map_vehicle_by_id(g_highlighted_vehicle_id)
-		
-			if vehicle:get() and vehicle:get_team() == screen_team then
-				g_selection_vehicle_id = g_highlighted_vehicle_id
-			end
-		elseif g_is_pointer_hovered then
-			g_highlighted_vehicle_id = -1
-			g_highlighted_waypoint_id = -1
-			local highlighted_distance_best = 4 * math.max( 1, 2000 / map_zoom )
+                        for i = 0, difficulty_level - 1 do
+                            update_ui_image(screen_pos_x - total_w / 2 + (icon_w + icon_spacing) * i, screen_pos_y + 9, atlas_icons.column_difficulty, island_color, 0)
+                        end
+                    end
+                end
+            end
+        end
+        
+        if g_is_pointer_pressed and g_highlighted_vehicle_id >= 0 and g_highlighted_waypoint_id == -1 then
+            local vehicle = update_get_map_vehicle_by_id(g_highlighted_vehicle_id)
+        
+            if vehicle:get() and vehicle:get_team() == screen_team then
+                g_selection_vehicle_id = g_highlighted_vehicle_id
+            end
+        elseif g_is_pointer_hovered then
+            g_highlighted_vehicle_id = -1
+            g_highlighted_waypoint_id = -1
+            local highlighted_distance_best = 4 * math.max( 1, 2000 / map_zoom )
 
-			for i = 0, vehicle_count - 1, 1 do
-				local vehicle = update_get_map_vehicle_by_index(i)
+            for i = 0, vehicle_count - 1, 1 do
+                local vehicle = update_get_map_vehicle_by_index(i)
 
-				if vehicle:get() then
-					local vehicle_definition_index = vehicle:get_definition_index()
+                if vehicle:get() then
+                    local vehicle_definition_index = vehicle:get_definition_index()
 
-					if vehicle_definition_index ~= e_game_object_type.chassis_spaceship and vehicle_definition_index ~= e_game_object_type.drydock then
-						local vehicle_team = vehicle:get_team()
-						local vehicle_attached_parent_id = vehicle:get_attached_parent_id()
+                    if vehicle_definition_index ~= e_game_object_type.chassis_spaceship and vehicle_definition_index ~= e_game_object_type.drydock then
+                        local vehicle_team = vehicle:get_team()
+                        local vehicle_attached_parent_id = vehicle:get_attached_parent_id()
 
-						if vehicle_attached_parent_id == 0 and vehicle:get_is_visible() and vehicle:get_is_observation_revealed() then
-							local vehicle_pos_xz = vehicle:get_position_xz()
-							local screen_pos_x, screen_pos_y = get_holomap_from_world(vehicle_pos_xz:x(), vehicle_pos_xz:y(), screen_w, screen_h)
+                        if vehicle_attached_parent_id == 0 and vehicle:get_is_visible() and vehicle:get_is_observation_revealed() then
+                            local vehicle_pos_xz = vehicle:get_position_xz()
+                            local screen_pos_x, screen_pos_y = get_holomap_from_world(vehicle_pos_xz:x(), vehicle_pos_xz:y(), screen_w, screen_h)
 
-							local vehicle_distance_to_cursor = vec2_dist( vec2( screen_pos_x, screen_pos_y ), vec2( g_pointer_pos_x, g_pointer_pos_y ) )
+                            local vehicle_distance_to_cursor = vec2_dist( vec2( screen_pos_x, screen_pos_y ), vec2( g_pointer_pos_x, g_pointer_pos_y ) )
 
-							if vehicle_distance_to_cursor < highlighted_distance_best then
-								g_highlighted_vehicle_id = vehicle:get_id()
-								g_highlighted_waypoint_id = -1
-								highlighted_distance_best = vehicle_distance_to_cursor
-							end
-						end
+                            if vehicle_distance_to_cursor < highlighted_distance_best then
+                                g_highlighted_vehicle_id = vehicle:get_id()
+                                g_highlighted_waypoint_id = -1
+                                highlighted_distance_best = vehicle_distance_to_cursor
+                            end
+                        end
 
-						if vehicle_team == screen_team then
-							local waypoint_count = vehicle:get_waypoint_count()
+                        if vehicle_team == screen_team then
+                            local waypoint_count = vehicle:get_waypoint_count()
 
-							for j = 0, waypoint_count - 1, 1 do
-								local waypoint = vehicle:get_waypoint(j)
-								local waypoint_type = waypoint:get_type()
+                            for j = 0, waypoint_count - 1, 1 do
+                                local waypoint = vehicle:get_waypoint(j)
+                                local waypoint_type = waypoint:get_type()
 
-								if waypoint_type == e_waypoint_type.move or waypoint_type == e_waypoint_type.deploy then
-									local waypoint_pos = waypoint:get_position_xz(j)
-									local waypoint_screen_pos_x, waypoint_screen_pos_y = get_holomap_from_world(waypoint_pos:x(), waypoint_pos:y(), screen_w, screen_h)
-									local waypoint_distance_to_cursor = vec2_dist( vec2( waypoint_screen_pos_x, waypoint_screen_pos_y ), vec2( g_pointer_pos_x, g_pointer_pos_y ) )
+                                if waypoint_type == e_waypoint_type.move or waypoint_type == e_waypoint_type.deploy then
+                                    local waypoint_pos = waypoint:get_position_xz(j)
+                                    local waypoint_screen_pos_x, waypoint_screen_pos_y = get_holomap_from_world(waypoint_pos:x(), waypoint_pos:y(), screen_w, screen_h)
+                                    local waypoint_distance_to_cursor = vec2_dist( vec2( waypoint_screen_pos_x, waypoint_screen_pos_y ), vec2( g_pointer_pos_x, g_pointer_pos_y ) )
 
-									if waypoint_distance_to_cursor < highlighted_distance_best then
-										g_highlighted_vehicle_id = vehicle:get_id()
-										g_highlighted_waypoint_id = waypoint:get_id()
-										highlighted_distance_best = waypoint_distance_to_cursor
-									end
-								end
-							end
-						end
-					end
-				end
-			end
-		end
+                                    if waypoint_distance_to_cursor < highlighted_distance_best then
+                                        g_highlighted_vehicle_id = vehicle:get_id()
+                                        g_highlighted_waypoint_id = waypoint:get_id()
+                                        highlighted_distance_best = waypoint_distance_to_cursor
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
 
-		for i = 0, vehicle_count - 1, 1 do
-			local vehicle = update_get_map_vehicle_by_index(i)
-			
-			local vehicle_pos_xz = vehicle:get_position_xz()
-			local screen_pos_x, screen_pos_y = get_holomap_from_world(vehicle_pos_xz:x(), vehicle_pos_xz:y(), screen_w, screen_h)
+        for i = 0, vehicle_count - 1, 1 do
+            local vehicle = update_get_map_vehicle_by_index(i)
+            
+            local vehicle_pos_xz = vehicle:get_position_xz()
+            local screen_pos_x, screen_pos_y = get_holomap_from_world(vehicle_pos_xz:x(), vehicle_pos_xz:y(), screen_w, screen_h)
 
-			local vehicle_team = vehicle:get_team()
-			local vehicle_attached_parent_id = vehicle:get_attached_parent_id()
-			local vehicle_support_id = vehicle:get_supporting_vehicle_id()
-			local vehicle_definition_index = vehicle:get_definition_index()
-			local is_render_vehicle_icon = vehicle_attached_parent_id == 0
+            local vehicle_team = vehicle:get_team()
+            local vehicle_attached_parent_id = vehicle:get_attached_parent_id()
+            local vehicle_support_id = vehicle:get_supporting_vehicle_id()
+            local vehicle_definition_index = vehicle:get_definition_index()
+            local is_render_vehicle_icon = vehicle_attached_parent_id == 0
 
-			local waypoint_count = vehicle:get_waypoint_count()
+            local waypoint_count = vehicle:get_waypoint_count()
                         
-			local waypoint_pos_x_prev = screen_pos_x
-			local waypoint_pos_y_prev = screen_pos_y
-						
-			if vehicle_team == screen_team and vehicle_definition_index ~= e_game_object_type.chassis_sea_barge and vehicle_definition_index ~= e_game_object_type.drydock then
-				local waypoint_remove = -1
-				local waypoint_color = g_color_waypoint
+            local waypoint_pos_x_prev = screen_pos_x
+            local waypoint_pos_y_prev = screen_pos_y
+                        
+            if vehicle_team == screen_team and vehicle_definition_index ~= e_game_object_type.chassis_sea_barge and vehicle_definition_index ~= e_game_object_type.drydock then
+                local waypoint_remove = -1
+                local waypoint_color = g_color_waypoint
 
-				if g_highlighted_vehicle_id == vehicle:get_id() and g_highlighted_waypoint_id == -1 then
-					waypoint_color = color8(255, 255, 255, 255)
-				end
+                if g_highlighted_vehicle_id == vehicle:get_id() and g_highlighted_waypoint_id == -1 then
+                    waypoint_color = color8(255, 255, 255, 255)
+                end
 
-				local vehicle_dock_state = vehicle:get_dock_state()
-				local vehicle_dock_queue_id = vehicle:get_dock_queue_vehicle_id()
+                local vehicle_dock_state = vehicle:get_dock_state()
+                local vehicle_dock_queue_id = vehicle:get_dock_queue_vehicle_id()
 
-				if (vehicle_dock_state == e_vehicle_dock_state.dock_queue or vehicle_dock_state == e_vehicle_dock_state.docking) and vehicle_dock_queue_id ~= 0 and is_render_vehicle_icon then
-					local parent_vehicle = update_get_map_vehicle_by_id(vehicle_dock_queue_id)
+                if (vehicle_dock_state == e_vehicle_dock_state.dock_queue or vehicle_dock_state == e_vehicle_dock_state.docking) and vehicle_dock_queue_id ~= 0 and is_render_vehicle_icon then
+                    local parent_vehicle = update_get_map_vehicle_by_id(vehicle_dock_queue_id)
 
-					if parent_vehicle:get() then
-						local parent_pos_xz = parent_vehicle:get_position_xz()
-						local parent_screen_pos_x, parent_screen_pos_y = get_holomap_from_world(parent_pos_xz:x(), parent_pos_xz:y(), screen_w, screen_h)
+                    if parent_vehicle:get() then
+                        local parent_pos_xz = parent_vehicle:get_position_xz()
+                        local parent_screen_pos_x, parent_screen_pos_y = get_holomap_from_world(parent_pos_xz:x(), parent_pos_xz:y(), screen_w, screen_h)
 
-						render_dashed_line(screen_pos_x, screen_pos_y, parent_screen_pos_x, parent_screen_pos_y, waypoint_color)
-					end
-				end
+                        render_dashed_line(screen_pos_x, screen_pos_y, parent_screen_pos_x, parent_screen_pos_y, waypoint_color)
+                    end
+                end
 
-				if vehicle_support_id ~= 0 then
-					local parent_vehicle = update_get_map_vehicle_by_id(vehicle_support_id)
+                if vehicle_support_id ~= 0 then
+                    local parent_vehicle = update_get_map_vehicle_by_id(vehicle_support_id)
 
-					if parent_vehicle:get() then
-						local parent_pos_xz = parent_vehicle:get_position_xz()
-						local parent_screen_pos_x, parent_screen_pos_y = get_holomap_from_world(parent_pos_xz:x(), parent_pos_xz:y(), screen_w, screen_h)
+                    if parent_vehicle:get() then
+                        local parent_pos_xz = parent_vehicle:get_position_xz()
+                        local parent_screen_pos_x, parent_screen_pos_y = get_holomap_from_world(parent_pos_xz:x(), parent_pos_xz:y(), screen_w, screen_h)
 
-						render_dashed_line(screen_pos_x, screen_pos_y, parent_screen_pos_x, parent_screen_pos_y, waypoint_color)
-					end
-				else
-					local waypoint_path = vehicle:get_waypoint_path()
-					local waypoint_start_index = 0
+                        render_dashed_line(screen_pos_x, screen_pos_y, parent_screen_pos_x, parent_screen_pos_y, waypoint_color)
+                    end
+                else
+                    local waypoint_path = vehicle:get_waypoint_path()
+                    local waypoint_start_index = 0
 
-					-- Computed path to next waypoint
-					if #waypoint_path > 0 then
-						waypoint_start_index = 1
+                    -- Computed path to next waypoint
+                    if #waypoint_path > 0 then
+                        waypoint_start_index = 1
 
-						for i = 1, #waypoint_path do
-							local waypoint_screen_pos_x, waypoint_screen_pos_y = get_holomap_from_world(waypoint_path[i]:x(), waypoint_path[i]:y(), screen_w, screen_h)
+                        for i = 1, #waypoint_path do
+                            local waypoint_screen_pos_x, waypoint_screen_pos_y = get_holomap_from_world(waypoint_path[i]:x(), waypoint_path[i]:y(), screen_w, screen_h)
 
-							update_ui_line(waypoint_pos_x_prev, waypoint_pos_y_prev, waypoint_screen_pos_x, waypoint_screen_pos_y, waypoint_color)
+                            update_ui_line(waypoint_pos_x_prev, waypoint_pos_y_prev, waypoint_screen_pos_x, waypoint_screen_pos_y, waypoint_color)
 
-							update_ui_rectangle(waypoint_screen_pos_x - 1, waypoint_screen_pos_y - 1, 2, 2, waypoint_color)
+                            update_ui_rectangle(waypoint_screen_pos_x - 1, waypoint_screen_pos_y - 1, 2, 2, waypoint_color)
 
-							waypoint_pos_x_prev = waypoint_screen_pos_x
-							waypoint_pos_y_prev = waypoint_screen_pos_y
-						end
+                            waypoint_pos_x_prev = waypoint_screen_pos_x
+                            waypoint_pos_y_prev = waypoint_screen_pos_y
+                        end
 
-						if waypoint_count > 0 then
-							local waypoint = vehicle:get_waypoint(0)
-							local waypoint_pos = waypoint:get_position_xz()
-							local path_end_x, path_end_y = get_holomap_from_world(waypoint_pos:x(), waypoint_pos:y(), screen_w, screen_h)
+                        if waypoint_count > 0 then
+                            local waypoint = vehicle:get_waypoint(0)
+                            local waypoint_pos = waypoint:get_position_xz()
+                            local path_end_x, path_end_y = get_holomap_from_world(waypoint_pos:x(), waypoint_pos:y(), screen_w, screen_h)
 
-							update_ui_line(waypoint_pos_x_prev, waypoint_pos_y_prev, path_end_x, path_end_y, waypoint_color)
-						end
-					end
+                            update_ui_line(waypoint_pos_x_prev, waypoint_pos_y_prev, path_end_x, path_end_y, waypoint_color)
+                        end
+                    end
 
-					waypoint_pos_x_prev = screen_pos_x
-					waypoint_pos_y_prev = screen_pos_y
+                    waypoint_pos_x_prev = screen_pos_x
+                    waypoint_pos_y_prev = screen_pos_y
 
-					if is_render_vehicle_icon == false then
-						if vehicle_attached_parent_id ~= 0 then
-							local parent_vehicle = update_get_map_vehicle_by_id(vehicle_attached_parent_id)
+                    if is_render_vehicle_icon == false then
+                        if vehicle_attached_parent_id ~= 0 then
+                            local parent_vehicle = update_get_map_vehicle_by_id(vehicle_attached_parent_id)
 
-							if parent_vehicle:get() then
-								local parent_vehicle_pos_xz = parent_vehicle:get_position_xz()
-								waypoint_pos_x_prev, waypoint_pos_y_prev = get_holomap_from_world(parent_vehicle_pos_xz:x(), parent_vehicle_pos_xz:y(), screen_w, screen_h)
-							end
-						end
-					end
+                            if parent_vehicle:get() then
+                                local parent_vehicle_pos_xz = parent_vehicle:get_position_xz()
+                                waypoint_pos_x_prev, waypoint_pos_y_prev = get_holomap_from_world(parent_vehicle_pos_xz:x(), parent_vehicle_pos_xz:y(), screen_w, screen_h)
+                            end
+                        end
+                    end
 
-					-- Draw waypoint lines
-					for j = 0, waypoint_count - 1, 1 do
-						local waypoint = vehicle:get_waypoint(j)
-						local waypoint_pos = waypoint:get_position_xz()
-						local waypoint_screen_pos_x, waypoint_screen_pos_y = get_holomap_from_world(waypoint_pos:x(), waypoint_pos:y(), screen_w, screen_h)
+                    -- Draw waypoint lines
+                    for j = 0, waypoint_count - 1, 1 do
+                        local waypoint = vehicle:get_waypoint(j)
+                        local waypoint_pos = waypoint:get_position_xz()
+                        local waypoint_screen_pos_x, waypoint_screen_pos_y = get_holomap_from_world(waypoint_pos:x(), waypoint_pos:y(), screen_w, screen_h)
 
-						if j >= waypoint_start_index then
-							update_ui_line(waypoint_pos_x_prev, waypoint_pos_y_prev, waypoint_screen_pos_x, waypoint_screen_pos_y, waypoint_color)
-						end
+                        if j >= waypoint_start_index then
+                            update_ui_line(waypoint_pos_x_prev, waypoint_pos_y_prev, waypoint_screen_pos_x, waypoint_screen_pos_y, waypoint_color)
+                        end
 
-						waypoint_pos_x_prev = waypoint_screen_pos_x
-						waypoint_pos_y_prev = waypoint_screen_pos_y
+                        waypoint_pos_x_prev = waypoint_screen_pos_x
+                        waypoint_pos_y_prev = waypoint_screen_pos_y
 
-						local waypoint_repeat_index = waypoint:get_repeat_index(j)
+                        local waypoint_repeat_index = waypoint:get_repeat_index(j)
 
-						if waypoint_repeat_index >= 0 then
-							local waypoint_repeat = vehicle:get_waypoint(waypoint_repeat_index)
-							local waypoint_repeat_pos = waypoint_repeat:get_position_xz()
+                        if waypoint_repeat_index >= 0 then
+                            local waypoint_repeat = vehicle:get_waypoint(waypoint_repeat_index)
+                            local waypoint_repeat_pos = waypoint_repeat:get_position_xz()
 
-							local repeat_screen_pos_x, repeat_screen_pos_y = get_holomap_from_world(waypoint_repeat_pos:x(), waypoint_repeat_pos:y(), screen_w, screen_h)
+                            local repeat_screen_pos_x, repeat_screen_pos_y = get_holomap_from_world(waypoint_repeat_pos:x(), waypoint_repeat_pos:y(), screen_w, screen_h)
 
-							update_ui_line(waypoint_screen_pos_x, waypoint_screen_pos_y, repeat_screen_pos_x, repeat_screen_pos_y, waypoint_color)
-							update_ui_image((waypoint_screen_pos_x + repeat_screen_pos_x) / 2 - 4, (waypoint_screen_pos_y + repeat_screen_pos_y) / 2 - 4, atlas_icons.map_icon_loop, waypoint_color, 0)
-						end
+                            update_ui_line(waypoint_screen_pos_x, waypoint_screen_pos_y, repeat_screen_pos_x, repeat_screen_pos_y, waypoint_color)
+                            update_ui_image((waypoint_screen_pos_x + repeat_screen_pos_x) / 2 - 4, (waypoint_screen_pos_y + repeat_screen_pos_y) / 2 - 4, atlas_icons.map_icon_loop, waypoint_color, 0)
+                        end
 
-						local attack_target_count = waypoint:get_attack_target_count()
+                        local attack_target_count = waypoint:get_attack_target_count()
 
-						for k = 0, attack_target_count - 1, 1 do
-							local is_valid = waypoint:get_attack_target_is_valid(k)
+                        for k = 0, attack_target_count - 1, 1 do
+                            local is_valid = waypoint:get_attack_target_is_valid(k)
 
-							if is_valid then
-								local attack_target_pos = waypoint:get_attack_target_position_xz(k)
-								local attack_target_attack_type = waypoint:get_attack_target_attack_type(k)
-								local attack_target_icon = get_attack_type_icon(attack_target_attack_type)
+                            if is_valid then
+                                local attack_target_pos = waypoint:get_attack_target_position_xz(k)
+                                local attack_target_attack_type = waypoint:get_attack_target_attack_type(k)
+                                local attack_target_icon = get_attack_type_icon(attack_target_attack_type)
 
-								local attack_target_screen_pos_x, attack_target_screen_pos_y = get_holomap_from_world(attack_target_pos:x(), attack_target_pos:y(), screen_w, screen_h)
+                                local attack_target_screen_pos_x, attack_target_screen_pos_y = get_holomap_from_world(attack_target_pos:x(), attack_target_pos:y(), screen_w, screen_h)
 
-								local color = g_color_attack_order
+                                local color = g_color_attack_order
 
-								if attack_target_attack_type == e_attack_type.airlift then
-									color = g_color_airlift_order
-								end
+                                if attack_target_attack_type == e_attack_type.airlift then
+                                    color = g_color_airlift_order
+                                end
 
-								update_ui_line(waypoint_screen_pos_x, waypoint_screen_pos_y, attack_target_screen_pos_x, attack_target_screen_pos_y, color)
-								update_ui_image(attack_target_screen_pos_x - 8, attack_target_screen_pos_y - 8, atlas_icons.map_icon_attack, color, 0)
-								update_ui_image(attack_target_screen_pos_x - 4, attack_target_screen_pos_y - 4 - 8, attack_target_icon, color, 0)
-							end
-						end
-					end
+                                update_ui_line(waypoint_screen_pos_x, waypoint_screen_pos_y, attack_target_screen_pos_x, attack_target_screen_pos_y, color)
+                                update_ui_image(attack_target_screen_pos_x - 8, attack_target_screen_pos_y - 8, atlas_icons.map_icon_attack, color, 0)
+                                update_ui_image(attack_target_screen_pos_x - 4, attack_target_screen_pos_y - 4 - 8, attack_target_icon, color, 0)
+                            end
+                        end
+                    end
 
-					-- Draw waypoint icons
-					for j = 0, waypoint_count - 1, 1 do
-						local waypoint = vehicle:get_waypoint(j)
-						local waypoint_pos = waypoint:get_position_xz()
+                    -- Draw waypoint icons
+                    for j = 0, waypoint_count - 1, 1 do
+                        local waypoint = vehicle:get_waypoint(j)
+                        local waypoint_pos = waypoint:get_position_xz()
 
-						local waypoint_distance = vec2_dist( vehicle_pos_xz, waypoint_pos )
-						
-						if vehicle_definition_index == e_game_object_type.chassis_carrier and waypoint_distance < 500 then
-							waypoint_remove = j
-						end
+                        local waypoint_distance = vec2_dist( vehicle_pos_xz, waypoint_pos )
+                        
+                        if vehicle_definition_index == e_game_object_type.chassis_carrier and waypoint_distance < 500 then
+                            waypoint_remove = j
+                        end
 
-						local waypoint_screen_pos_x, waypoint_screen_pos_y = get_holomap_from_world(waypoint_pos:x(), waypoint_pos:y(), screen_w, screen_h)
+                        local waypoint_screen_pos_x, waypoint_screen_pos_y = get_holomap_from_world(waypoint_pos:x(), waypoint_pos:y(), screen_w, screen_h)
 
-						local waypoint_color = g_color_waypoint
+                        local waypoint_color = g_color_waypoint
 
-						local is_group_a = waypoint:get_is_wait_group(0)
-						local is_group_b = waypoint:get_is_wait_group(1)
-						local is_group_c = waypoint:get_is_wait_group(2)
-						local is_group_d = waypoint:get_is_wait_group(3)
+                        local is_group_a = waypoint:get_is_wait_group(0)
+                        local is_group_b = waypoint:get_is_wait_group(1)
+                        local is_group_c = waypoint:get_is_wait_group(2)
+                        local is_group_d = waypoint:get_is_wait_group(3)
 
-						local group_text = ""
+                        local group_text = ""
 
-						if is_group_a then group_text = group_text..update_get_loc(e_loc.upp_acronym_alpha) end
-						if is_group_b then group_text = group_text..update_get_loc(e_loc.upp_acronym_beta) end
-						if is_group_c then group_text = group_text..update_get_loc(e_loc.upp_acronym_charlie) end
-						if is_group_d then group_text = group_text..update_get_loc(e_loc.upp_acronym_delta) end
+                        if is_group_a then group_text = group_text..update_get_loc(e_loc.upp_acronym_alpha) end
+                        if is_group_b then group_text = group_text..update_get_loc(e_loc.upp_acronym_beta) end
+                        if is_group_c then group_text = group_text..update_get_loc(e_loc.upp_acronym_charlie) end
+                        if is_group_d then group_text = group_text..update_get_loc(e_loc.upp_acronym_delta) end
 
-						local is_group = (is_group_a or is_group_b or is_group_c or is_group_d)
-						local is_deploy = waypoint:get_type() == e_waypoint_type.deploy
+                        local is_group = (is_group_a or is_group_b or is_group_c or is_group_d)
+                        local is_deploy = waypoint:get_type() == e_waypoint_type.deploy
 
-						if g_highlighted_vehicle_id == vehicle:get_id() and g_highlighted_waypoint_id == -1 then
-							waypoint_color = color8(255, 255, 255, 255)
-						elseif g_highlighted_vehicle_id == vehicle:get_id() and g_highlighted_waypoint_id == waypoint:get_id() then
-							waypoint_color = color8(255, 255, 255, 255)
-						elseif is_deploy then
-							waypoint_color = g_color_airlift_order
-						elseif is_group then
-							waypoint_color = g_color_attack_order
-						end
+                        if g_highlighted_vehicle_id == vehicle:get_id() and g_highlighted_waypoint_id == -1 then
+                            waypoint_color = color8(255, 255, 255, 255)
+                        elseif g_highlighted_vehicle_id == vehicle:get_id() and g_highlighted_waypoint_id == waypoint:get_id() then
+                            waypoint_color = color8(255, 255, 255, 255)
+                        elseif is_deploy then
+                            waypoint_color = g_color_airlift_order
+                        elseif is_group then
+                            waypoint_color = g_color_attack_order
+                        end
 
-						update_ui_image(waypoint_screen_pos_x - 4, waypoint_screen_pos_y - 4, atlas_icons.map_icon_waypoint, waypoint_color, 0)
+                        update_ui_image(waypoint_screen_pos_x - 4, waypoint_screen_pos_y - 4, atlas_icons.map_icon_waypoint, waypoint_color, 0)
 
-						if is_deploy then
-							update_ui_image(waypoint_screen_pos_x - 4, waypoint_screen_pos_y - 11, atlas_icons.icon_deploy_vehicle, waypoint_color, 0)
-						elseif is_group then
-							update_ui_text(waypoint_screen_pos_x - 64, waypoint_screen_pos_y - 13, group_text, 128, 1, waypoint_color, 0)
-						end
-					end
-				end
+                        if is_deploy then
+                            update_ui_image(waypoint_screen_pos_x - 4, waypoint_screen_pos_y - 11, atlas_icons.icon_deploy_vehicle, waypoint_color, 0)
+                        elseif is_group then
+                            update_ui_text(waypoint_screen_pos_x - 64, waypoint_screen_pos_y - 13, group_text, 128, 1, waypoint_color, 0)
+                        end
+                    end
+                end
 
-				local attack_target_type = vehicle:get_attack_target_type()
+                local attack_target_type = vehicle:get_attack_target_type()
 
-				if attack_target_type ~= e_attack_type.none then
-					local attack_target_pos = vehicle:get_attack_target_position_xz()
-					local attack_target_attack_type = vehicle:get_attack_target_type()
-					local attack_target_icon = get_attack_type_icon(attack_target_attack_type)
+                if attack_target_type ~= e_attack_type.none then
+                    local attack_target_pos = vehicle:get_attack_target_position_xz()
+                    local attack_target_attack_type = vehicle:get_attack_target_type()
+                    local attack_target_icon = get_attack_type_icon(attack_target_attack_type)
 
-					local attack_target_screen_pos_x, attack_target_screen_pos_y = get_holomap_from_world(attack_target_pos:x(), attack_target_pos:y(), screen_w, screen_h)
+                    local attack_target_screen_pos_x, attack_target_screen_pos_y = get_holomap_from_world(attack_target_pos:x(), attack_target_pos:y(), screen_w, screen_h)
 
-					local color = g_color_attack_order
+                    local color = g_color_attack_order
 
-					if attack_target_attack_type == e_attack_type.airlift then
-						color = g_color_airlift_order
-					end
+                    if attack_target_attack_type == e_attack_type.airlift then
+                        color = g_color_airlift_order
+                    end
 
-					render_dashed_line(screen_pos_x, screen_pos_y, attack_target_screen_pos_x, attack_target_screen_pos_y, color)
-					update_ui_image(attack_target_screen_pos_x - 4, attack_target_screen_pos_y - 4, atlas_icons.map_icon_waypoint, color, 0)
-					update_ui_image(attack_target_screen_pos_x - 4, attack_target_screen_pos_y - 4 - 8, attack_target_icon, color, 0)
-					update_ui_text(attack_target_screen_pos_x - 4, attack_target_screen_pos_y - 4 - 8, attack_target_attack_type, 128, 0, color_black, 0)
-				end
-				
-				-- Waypoint cleanup for the carrier
-				if waypoint_remove > -1 then
-					local waypoint_path = {}
-					
-					for i = waypoint_remove + 1, waypoint_count - 1, 1 do
-						local waypoint = vehicle:get_waypoint(i)
-						
-						waypoint_path[#waypoint_path + 1] = waypoint:get_position_xz()
-					end
-					
-					vehicle:clear_waypoints()
-					
-					for i = 1, #waypoint_path, 1 do
-						vehicle:add_waypoint(waypoint_path[i]:x(), waypoint_path[i]:y())
-					end
-				end
-			end
-		end
+                    render_dashed_line(screen_pos_x, screen_pos_y, attack_target_screen_pos_x, attack_target_screen_pos_y, color)
+                    update_ui_image(attack_target_screen_pos_x - 4, attack_target_screen_pos_y - 4, atlas_icons.map_icon_waypoint, color, 0)
+                    update_ui_image(attack_target_screen_pos_x - 4, attack_target_screen_pos_y - 4 - 8, attack_target_icon, color, 0)
+                    update_ui_text(attack_target_screen_pos_x - 4, attack_target_screen_pos_y - 4 - 8, attack_target_attack_type, 128, 0, color_black, 0)
+                end
+                
+                -- Waypoint cleanup for the carrier
+                if waypoint_remove > -1 then
+                    local waypoint_path = {}
+                    
+                    for i = waypoint_remove + 1, waypoint_count - 1, 1 do
+                        local waypoint = vehicle:get_waypoint(i)
+                        
+                        waypoint_path[#waypoint_path + 1] = waypoint:get_position_xz()
+                    end
+                    
+                    vehicle:clear_waypoints()
+                    
+                    for i = 1, #waypoint_path, 1 do
+                        vehicle:add_waypoint(waypoint_path[i]:x(), waypoint_path[i]:y())
+                    end
+                end
+            end
+        end
 
-		if g_is_ruler then
-			if g_is_pointer_hovered then
-				g_ruler_end_x = world_x
-				g_ruler_end_y = world_y
-			end
-			
-			if not g_is_ruler_set and g_is_pointer_hovered then
-				g_ruler_beg_x = g_ruler_end_x
-				g_ruler_beg_y = g_ruler_end_y
-				
-				g_is_ruler_set = true
-			end
-		
-			if g_is_ruler_set then
-				local cy = screen_h - 45
-				local cx = 15
-				
-				local icon_col = color_grey_mid
-				local text_col = color_grey_dark
-				
-				local screen_beg_x, screen_beg_y = get_holomap_from_world(g_ruler_beg_x, g_ruler_beg_y, screen_w, screen_h)
-				local screen_end_x, screen_end_y = get_holomap_from_world(g_ruler_end_x, g_ruler_end_y, screen_w, screen_h)
-				
-				update_ui_line(screen_beg_x, screen_beg_y, screen_end_x, screen_end_y, color_grey_dark)
-				
-				update_ui_text(cx, cy, "X", 100, 0, icon_col, 0)
-				update_ui_text(cx + 15, cy, string.format("%.0f", g_ruler_end_x), 100, 0, text_col, 0)
-				cy = cy + 10
-				
-				update_ui_text(cx, cy, "Y", 100, 0, icon_col, 0)
-				update_ui_text(cx + 15, cy, string.format("%.0f", g_ruler_end_y), 100, 0, text_col, 0)
-				cy = cy + 10
-				
-				local dist = vec2_dist(vec2(g_ruler_beg_x, g_ruler_beg_y), vec2(g_ruler_end_x, g_ruler_end_y))
+        if g_is_ruler then
+            if g_is_pointer_hovered then
+                g_ruler_end_x = world_x
+                g_ruler_end_y = world_y
+            end
+            
+            if not g_is_ruler_set and g_is_pointer_hovered then
+                g_ruler_beg_x = g_ruler_end_x
+                g_ruler_beg_y = g_ruler_end_y
+                
+                g_is_ruler_set = true
+            end
+        
+            if g_is_ruler_set then
+                local cy = screen_h - 45
+                local cx = 15
+                
+                local icon_col = color_grey_mid
+                local text_col = color_grey_dark
+                
+                local screen_beg_x, screen_beg_y = get_holomap_from_world(g_ruler_beg_x, g_ruler_beg_y, screen_w, screen_h)
+                local screen_end_x, screen_end_y = get_holomap_from_world(g_ruler_end_x, g_ruler_end_y, screen_w, screen_h)
+                
+                update_ui_line(screen_beg_x, screen_beg_y, screen_end_x, screen_end_y, color_grey_dark)
+                
+                update_ui_text(cx, cy, "X", 100, 0, icon_col, 0)
+                update_ui_text(cx + 15, cy, string.format("%.0f", g_ruler_end_x), 100, 0, text_col, 0)
+                cy = cy + 10
+                
+                update_ui_text(cx, cy, "Y", 100, 0, icon_col, 0)
+                update_ui_text(cx + 15, cy, string.format("%.0f", g_ruler_end_y), 100, 0, text_col, 0)
+                cy = cy + 10
+                
+                local dist = vec2_dist(vec2(g_ruler_beg_x, g_ruler_beg_y), vec2(g_ruler_end_x, g_ruler_end_y))
 
-				if dist < 10000 then
-					update_ui_image(cx, cy, atlas_icons.column_distance, icon_col, 0)
-					update_ui_text(cx + 15, cy, string.format("%.0f ", dist) .. update_get_loc(e_loc.acronym_meters), 100, 0, text_col, 0)
-				else
-					update_ui_image(cx, cy, atlas_icons.column_distance, icon_col, 0)
-					update_ui_text(cx + 15, cy, string.format("%.2f ", dist / 1000) .. update_get_loc(e_loc.acronym_kilometers), 100, 0, text_col, 0)
-				end
+                if dist < 10000 then
+                    update_ui_image(cx, cy, atlas_icons.column_distance, icon_col, 0)
+                    update_ui_text(cx + 15, cy, string.format("%.0f ", dist) .. update_get_loc(e_loc.acronym_meters), 100, 0, text_col, 0)
+                else
+                    update_ui_image(cx, cy, atlas_icons.column_distance, icon_col, 0)
+                    update_ui_text(cx + 15, cy, string.format("%.2f ", dist / 1000) .. update_get_loc(e_loc.acronym_kilometers), 100, 0, text_col, 0)
+                end
 
-				cy = cy + 10
+                cy = cy + 10
 
-				local bearing = 90 - math.atan(g_ruler_end_y - g_ruler_beg_y, g_ruler_end_x - g_ruler_beg_x) / math.pi * 180
+                local bearing = 90 - math.atan(g_ruler_end_y - g_ruler_beg_y, g_ruler_end_x - g_ruler_beg_x) / math.pi * 180
 
-				if bearing < 0 then bearing = bearing + 360 end
+                if bearing < 0 then bearing = bearing + 360 end
 
-				update_ui_image(cx, cy, atlas_icons.column_angle, icon_col, 0)
-				update_ui_text(cx + 15, cy, string.format("%.0f deg", bearing), 100, 0, text_col, 0)
-				cy = cy + 10
-			end
-		else				
-			if g_highlighted_vehicle_id >= 0 then
-				local highlighted_vehicle = update_get_map_vehicle_by_id(g_highlighted_vehicle_id)
-				if highlighted_vehicle:get() then
-					local vehicle_definition_index = highlighted_vehicle:get_definition_index()
-					
-					if g_highlighted_waypoint_id >= 0 then
-						local highlighted_waypoint = highlighted_vehicle:get_waypoint_by_id(g_highlighted_waypoint_id)
-						
-						if get_is_vehicle_air(vehicle_definition_index) then
-							local alt_str = string.format( "%.0f m", highlighted_waypoint:get_altitude() )
-							local alt_width = update_ui_get_text_size(alt_str, 10000, 0) + 4
-							
-							render_tooltip(10, 10, screen_w - 20, screen_h - 20, g_pointer_pos_x, g_pointer_pos_y, alt_width, 14, 10, function(w, h) 	update_ui_text(2, 2, alt_str, w - 4, 0, color_white, 0) end)
-						end
-					else
-						local tool_height = iff( get_vehicle_has_robot_dogs(highlighted_vehicle), 31, 21 )
-						render_tooltip(10, 10, screen_w - 20, screen_h - 20, g_pointer_pos_x, g_pointer_pos_y, 128, tool_height, 10, function(w, h) render_vehicle_tooltip(w, h, highlighted_vehicle) end)
-						
-						if vehicle_definition_index ~= e_game_object_type.chassis_carrier then
-							local weapon_range = get_vehicle_weapon_range(highlighted_vehicle)
-							local vehicle_pos_xz = highlighted_vehicle:get_position_xz()
+                update_ui_image(cx, cy, atlas_icons.column_angle, icon_col, 0)
+                update_ui_text(cx + 15, cy, string.format("%.0f deg", bearing), 100, 0, text_col, 0)
+                cy = cy + 10
+            end
+        else                
+            if g_highlighted_vehicle_id >= 0 then
+                local highlighted_vehicle = update_get_map_vehicle_by_id(g_highlighted_vehicle_id)
+                if highlighted_vehicle:get() then
+                    local vehicle_definition_index = highlighted_vehicle:get_definition_index()
+                    
+                    if g_highlighted_waypoint_id >= 0 then
+                        local highlighted_waypoint = highlighted_vehicle:get_waypoint_by_id(g_highlighted_waypoint_id)
+                        
+                        if get_is_vehicle_air(vehicle_definition_index) then
+                            local alt_str = string.format( "%.0f m", highlighted_waypoint:get_altitude() )
+                            local alt_width = update_ui_get_text_size(alt_str, 10000, 0) + 4
+                            
+                            render_tooltip(10, 10, screen_w - 20, screen_h - 20, g_pointer_pos_x, g_pointer_pos_y, alt_width, 14, 10, function(w, h)    update_ui_text(2, 2, alt_str, w - 4, 0, color_white, 0) end)
+                        end
+                    else
+                        local tool_height = iff( get_vehicle_has_robot_dogs(highlighted_vehicle), 31, 21 )
+                        render_tooltip(10, 10, screen_w - 20, screen_h - 20, g_pointer_pos_x, g_pointer_pos_y, 128, tool_height, 10, function(w, h) render_vehicle_tooltip(w, h, highlighted_vehicle) end)
+                        
+                        if vehicle_definition_index ~= e_game_object_type.chassis_carrier then
+                            local weapon_range = get_vehicle_weapon_range(highlighted_vehicle)
+                            local vehicle_pos_xz = highlighted_vehicle:get_position_xz()
 
-							if weapon_range > 0 then
-								render_weapon_radius(vehicle_pos_xz:x(), vehicle_pos_xz:y(), weapon_range, screen_w, screen_h)
-							end
-						end
-					end
-				end
-			end
-		
-			local cy = screen_h - 15
-			local cx = 15
-			
-			local icon_col = color_grey_mid
-			local text_col = color_grey_dark
-			
-			local map_scale = 500
-			local map_scale_size = map_zoom
-			
-			while map_scale_size > 2000 and map_scale < 16000 do
-				map_scale_size = map_scale_size / 2
-				map_scale = map_scale * 2
-			end
-			
-			if map_scale < 10000 then
-				update_ui_image(cx, cy, atlas_icons.column_distance, icon_col, 0)
-				update_ui_text(cx + 15, cy, string.format("%.0f ", map_scale) .. update_get_loc(e_loc.acronym_meters), 100, 0, text_col, 0)
-			else
-				update_ui_image(cx, cy, atlas_icons.column_distance, icon_col, 0)
-				update_ui_text(cx + 15, cy, string.format("%.2f ", map_scale / 1000) .. update_get_loc(e_loc.acronym_kilometers), 100, 0, text_col, 0)
-			end
-			
-			cy = cy - 10
+                            if weapon_range > 0 then
+                                render_weapon_radius(vehicle_pos_xz:x(), vehicle_pos_xz:y(), weapon_range, screen_w, screen_h)
+                            end
+                        end
+                    end
+                end
+            end
+        
+            local cy = screen_h - 15
+            local cx = 15
+            
+            local icon_col = color_grey_mid
+            local text_col = color_grey_dark
+            
+            local map_scale = 500
+            local map_scale_size = map_zoom
+            
+            while map_scale_size > 2000 and map_scale < 16000 do
+                map_scale_size = map_scale_size / 2
+                map_scale = map_scale * 2
+            end
+            
+            if map_scale < 10000 then
+                update_ui_image(cx, cy, atlas_icons.column_distance, icon_col, 0)
+                update_ui_text(cx + 15, cy, string.format("%.0f ", map_scale) .. update_get_loc(e_loc.acronym_meters), 100, 0, text_col, 0)
+            else
+                update_ui_image(cx, cy, atlas_icons.column_distance, icon_col, 0)
+                update_ui_text(cx + 15, cy, string.format("%.2f ", map_scale / 1000) .. update_get_loc(e_loc.acronym_kilometers), 100, 0, text_col, 0)
+            end
+            
+            cy = cy - 10
 
-			update_ui_text(cx, cy, "Y", 100, 0, icon_col, 0)
-			update_ui_text(cx + 15, cy, string.format("%.0f", world_x), 100, 0, text_col, 0)
-			cy = cy - 10
-			
-			update_ui_text(cx, cy, "X", 100, 0, icon_col, 0)
-			update_ui_text(cx + 15, cy, string.format("%.0f", world_y), 100, 0, text_col, 0)
-			cy = cy - 10
-		end
+            update_ui_text(cx, cy, "Y", 100, 0, icon_col, 0)
+            update_ui_text(cx + 15, cy, string.format("%.0f", world_x), 100, 0, text_col, 0)
+            cy = cy - 10
+            
+            update_ui_text(cx, cy, "X", 100, 0, icon_col, 0)
+            update_ui_text(cx + 15, cy, string.format("%.0f", world_y), 100, 0, text_col, 0)
+            cy = cy - 10
+        end
 
-		local label_x = 24
-		local label_y = 16
-		local label_w = screen_w - 2 * label_x
-		local label_h = 10
+        local label_x = 24
+        local label_y = 16
+        local label_w = screen_w - 2 * label_x
+        local label_h = 10
 
-		update_ui_push_offset(label_x, label_y)
+        update_ui_push_offset(label_x, label_y)
 
-		if g_button_mode > 0 then
-			update_ui_rectangle(0, 0, label_w, label_h, color_black)
-		end
+        if g_button_mode > 0 then
+            update_ui_rectangle(0, 0, label_w, label_h, color_black)
+        end
 
-		if g_button_mode == 1 then
-			update_ui_text(1, 1, string.format(update_get_loc(e_loc.upp_wind)..": %.2f", update_get_weather_wind_velocity(world_x, world_y)), label_w, 0, color_white, 0)
-		elseif g_button_mode == 2 then
-			update_ui_text(1, 1, string.format(update_get_loc(e_loc.upp_precipitation)..": %.0f%%", update_get_weather_precipitation_factor(world_x, world_y) * 100), label_w, 0, color_white, 0)
+        if g_button_mode == 1 then
+            update_ui_text(1, 1, string.format(update_get_loc(e_loc.upp_wind)..": %.2f", update_get_weather_wind_velocity(world_x, world_y)), label_w, 0, color_white, 0)
+        elseif g_button_mode == 2 then
+            update_ui_text(1, 1, string.format(update_get_loc(e_loc.upp_precipitation)..": %.0f%%", update_get_weather_precipitation_factor(world_x, world_y) * 100), label_w, 0, color_white, 0)
 
-			local cx = label_w - 42
-			update_ui_image(cx, 1, atlas_icons.column_power, color_white, 0)
-			cx = cx + 5
-			update_ui_text(cx, 1, string.format(": %.0f%%", update_get_weather_lightning_factor(world_x, world_y) * 100), label_w, 0, color_white, 0)
-		elseif g_button_mode == 3 then
-			update_ui_text(1, 1, string.format(update_get_loc(e_loc.upp_visibility)..": %.0f%%", update_get_weather_fog_factor(world_x, world_y) * 100), label_w, 0, color_white, 0)
-		elseif g_button_mode == 4 then
-			update_ui_text(1, 1, string.format(update_get_loc(e_loc.upp_ocean_current)..": %.2f", update_get_ocean_current_velocity(world_x, world_y)), label_w, 0, color_white, 0)
-		elseif g_button_mode == 5 then
-			update_ui_text(1, 1, string.format(update_get_loc(e_loc.upp_ocean_depth)..": %.2f", update_get_ocean_depth_factor(world_x, world_y)), label_w, 0, color_white, 0)
-		end
-		update_ui_pop_offset()
+            local cx = label_w - 42
+            update_ui_image(cx, 1, atlas_icons.column_power, color_white, 0)
+            cx = cx + 5
+            update_ui_text(cx, 1, string.format(": %.0f%%", update_get_weather_lightning_factor(world_x, world_y) * 100), label_w, 0, color_white, 0)
+        elseif g_button_mode == 3 then
+            update_ui_text(1, 1, string.format(update_get_loc(e_loc.upp_visibility)..": %.0f%%", update_get_weather_fog_factor(world_x, world_y) * 100), label_w, 0, color_white, 0)
+        elseif g_button_mode == 4 then
+            update_ui_text(1, 1, string.format(update_get_loc(e_loc.upp_ocean_current)..": %.2f", update_get_ocean_current_velocity(world_x, world_y)), label_w, 0, color_white, 0)
+        elseif g_button_mode == 5 then
+            update_ui_text(1, 1, string.format(update_get_loc(e_loc.upp_ocean_depth)..": %.2f", update_get_ocean_depth_factor(world_x, world_y)), label_w, 0, color_white, 0)
+        end
+        update_ui_pop_offset()
 
-		
-		-- render cursor last
-		render_cursor(world_x, world_y, screen_w, screen_h)
+        
+        -- render cursor last
+        render_cursor(world_x, world_y, screen_w, screen_h)
 
         g_dismiss_counter = 0
         g_notification_time = 0
     end
 
-	if g_is_pointer_hovered then
-		g_pointer_pos_x_prev = g_pointer_pos_x
-		g_pointer_pos_y_prev = g_pointer_pos_y
-	end
-	
-	g_ui:end_ui()
+    if g_is_pointer_hovered then
+        g_pointer_pos_x_prev = g_pointer_pos_x
+        g_pointer_pos_y_prev = g_pointer_pos_y
+    end
+    
+    g_ui:end_ui()
 end
 
 function render_cursor(world_x, world_y, screen_w, screen_h)
-	local cursor_x, cursor_y = get_holomap_from_world(world_x, world_y, screen_w, screen_h)
+    local cursor_x, cursor_y = get_holomap_from_world(world_x, world_y, screen_w, screen_h)
         update_ui_image_rot(cursor_x, cursor_y, atlas_icons.map_icon_crosshair, color_white, math.pi / 4)
 end
 
 function input_event(event, action)
-	g_ui:input_event(event, action)
-	
-	local screen_vehicle = update_get_screen_vehicle()
-	local world_x, world_y = get_world_from_holomap(g_pointer_pos_x, g_pointer_pos_y, 512, 256)
+    g_ui:input_event(event, action)
+    
+    local screen_vehicle = update_get_screen_vehicle()
+    local world_x, world_y = get_world_from_holomap(g_pointer_pos_x, g_pointer_pos_y, 512, 256)
 
     if event == e_input.action_a then
         g_is_dismiss_pressed = action == e_input_action.press
-		g_is_ruler = action == e_input_action.press
-	elseif event == e_input.action_b then
-		if action == e_input_action.press and g_is_pointer_hovered and screen_vehicle:get() and screen_vehicle:get_dock_state() ~= e_vehicle_dock_state.docked then
-			local waypoint_count = screen_vehicle:get_waypoint_count()
-			-- Delete waypoint
-			if g_highlighted_vehicle_id == screen_vehicle:get_id() and g_highlighted_waypoint_id >= 0 then
-				local waypoint_path = {}
-				
-				for i = 0, waypoint_count - 1, 1 do
-					local waypoint = screen_vehicle:get_waypoint(i)
-					if waypoint:get_id() ~= g_highlighted_waypoint_id then
-						waypoint_path[#waypoint_path + 1] = waypoint:get_position_xz()
-					end
-				end
-					
-				screen_vehicle:clear_waypoints()
-					
-				for i = 1, #waypoint_path, 1 do
-					screen_vehicle:add_waypoint(waypoint_path[i]:x(), waypoint_path[i]:y())
-				end
-			else
-				-- Add new waypoint
-				local screen_vehicle_pos = screen_vehicle:get_position_xz()
-				local carrier_pos_x, carrier_pos_y = get_holomap_from_world(screen_vehicle_pos:x(), screen_vehicle_pos:y(), 512, 256)
-			
-				local carrier_screen_size = 16 * math.max( 1, 2000 / (g_map_size + g_map_size_offset) )
-				local carrier_screen_dist = vec2_dist( vec2(carrier_pos_x, carrier_pos_y), vec2(g_pointer_pos_x, g_pointer_pos_y ) )
-				
-				if carrier_screen_dist <= carrier_screen_size then
-					screen_vehicle:clear_waypoints()
-				elseif waypoint_count < 20 then
-					screen_vehicle:add_waypoint(world_x, world_y)
-				end
-			end
-		end
+        g_is_ruler = action == e_input_action.press
+    elseif event == e_input.action_b then
+        if action == e_input_action.press and g_is_pointer_hovered and screen_vehicle:get() and screen_vehicle:get_dock_state() ~= e_vehicle_dock_state.docked then
+            local waypoint_count = screen_vehicle:get_waypoint_count()
+            -- Delete waypoint
+            if g_highlighted_vehicle_id == screen_vehicle:get_id() and g_highlighted_waypoint_id >= 0 then
+                local waypoint_path = {}
+                
+                for i = 0, waypoint_count - 1, 1 do
+                    local waypoint = screen_vehicle:get_waypoint(i)
+                    if waypoint:get_id() ~= g_highlighted_waypoint_id then
+                        waypoint_path[#waypoint_path + 1] = waypoint:get_position_xz()
+                    end
+                end
+                    
+                screen_vehicle:clear_waypoints()
+                    
+                for i = 1, #waypoint_path, 1 do
+                    screen_vehicle:add_waypoint(waypoint_path[i]:x(), waypoint_path[i]:y())
+                end
+            else
+                -- Add new waypoint
+                local screen_vehicle_pos = screen_vehicle:get_position_xz()
+                local carrier_pos_x, carrier_pos_y = get_holomap_from_world(screen_vehicle_pos:x(), screen_vehicle_pos:y(), 512, 256)
+            
+                local carrier_screen_size = 16 * math.max( 1, 2000 / (g_map_size + g_map_size_offset) )
+                local carrier_screen_dist = vec2_dist( vec2(carrier_pos_x, carrier_pos_y), vec2(g_pointer_pos_x, g_pointer_pos_y ) )
+                
+                if carrier_screen_dist <= carrier_screen_size then
+                    screen_vehicle:clear_waypoints()
+                elseif waypoint_count < 20 then
+                    screen_vehicle:add_waypoint(world_x, world_y)
+                end
+            end
+        end
     elseif event == e_input.pointer_1 then
         g_is_pointer_pressed = action == e_input_action.press
-    elseif event == e_input.back and action == e_input_action.press then		
-		if g_selection_vehicle_id >= 0 then
-			g_selection_vehicle_id = -1
-		else
-			g_is_ruler = false
-		
-			local drydock, waypoint_mouse, waypoint_options = get_team_drydock()
+    elseif event == e_input.back and action == e_input_action.press then        
+        if g_selection_vehicle_id >= 0 then
+            g_selection_vehicle_id = -1
+        else
+            g_is_ruler = false
+        
+            local drydock, waypoint_mouse, waypoint_options = get_team_drydock()
 
-			if waypoint_options ~= nil then
-				local waypoint_pos = waypoint_mouse:get_position_xz()
-				drydock:clear_waypoints()
-				drydock:add_waypoint(waypoint_pos:x(), waypoint_pos:y())
-				drydock:add_waypoint(0, 0)
-			end
-		
-			update_set_screen_state_exit()
-		end
+            if waypoint_options ~= nil then
+                local waypoint_pos = waypoint_mouse:get_position_xz()
+                drydock:clear_waypoints()
+                drydock:add_waypoint(waypoint_pos:x(), waypoint_pos:y())
+                drydock:add_waypoint(0, 0)
+            end
+        
+            update_set_screen_state_exit()
+        end
     end
-	
-	if not g_is_ruler then
-		g_is_ruler_set = false
-	end
+    
+    if not g_is_ruler then
+        g_is_ruler_set = false
+    end
 end
 
 function input_axis(x, y, z, w)
@@ -922,18 +922,18 @@ function input_axis(x, y, z, w)
 end
 
 function input_pointer(is_hovered, x, y)
-	g_ui:input_pointer(is_hovered, x, y)
-	
+    g_ui:input_pointer(is_hovered, x, y)
+    
     g_is_pointer_hovered = is_hovered
-	
+    
     g_pointer_pos_x = x
     g_pointer_pos_y = y
-	
+    
 end
 
 function input_scroll(dy)
-	g_ui:input_scroll(dy)
-	
+    g_ui:input_scroll(dy)
+    
     if update_get_is_notification_holomap_set() == false then
         if g_is_mouse_mode then
             map_zoom(1 - dy * 0.15)
@@ -1172,15 +1172,15 @@ function transition_to_map_pos(x, z, size)
 end
 
 function get_holomap_from_world(world_x, world_y, screen_w, screen_h)
-	local map_x = g_map_x + g_map_x_offset
-	local map_z = g_map_z + g_map_z_offset
-	local map_size = g_map_size + g_map_size_offset
-	
-	if g_override then
-		map_x = g_override_x
-		map_z = g_override_z
-		map_size = g_override_zoom
-	end
+    local map_x = g_map_x + g_map_x_offset
+    local map_z = g_map_z + g_map_z_offset
+    local map_size = g_map_size + g_map_size_offset
+    
+    if g_override then
+        map_x = g_override_x
+        map_z = g_override_z
+        map_size = g_override_zoom
+    end
 
     local view_w = map_size * 1.64
     local view_h = map_size
@@ -1195,17 +1195,17 @@ function get_holomap_from_world(world_x, world_y, screen_w, screen_h)
 end
 
 function get_world_from_holomap(screen_x, screen_y, screen_w, screen_h)
-	local map_x = g_map_x + g_map_x_offset
-	local map_z = g_map_z + g_map_z_offset
-	local map_size = g_map_size + g_map_size_offset
+    local map_x = g_map_x + g_map_x_offset
+    local map_z = g_map_z + g_map_z_offset
+    local map_size = g_map_size + g_map_size_offset
 
-	if g_override then
-		map_x = g_override_x
-		map_z = g_override_z
-		map_size = g_override_zoom
-	end
+    if g_override then
+        map_x = g_override_x
+        map_z = g_override_z
+        map_size = g_override_zoom
+    end
 
-	local view_w = map_size * 1.64
+    local view_w = map_size * 1.64
     local view_h = map_size
 
     local view_x = (screen_x / screen_w) - 0.5
@@ -1289,13 +1289,13 @@ function render_vehicle_tooltip(w, h, vehicle)
 --        update_ui_image(cx, 2, vehicle_definition_region, color8(255, 255, 255, 255), 0)
 --        cx = cx + 18
 
-		local display_name = nil
-		if vehicle_definition_index == e_game_object_type.chassis_carrier then
-			local team_id = vehicle:get_team() + 1
-			display_name = string.upper( e_vessel_names[team_id] ) .. " " .. vehicle_definition_name
-		else
-			display_name = vehicle_definition_name .. string.format( " %.0f", vehicle:get_id() )
-		end
+        local display_name = nil
+        if vehicle_definition_index == e_game_object_type.chassis_carrier then
+            local team_id = vehicle:get_team() + 1
+            display_name = string.upper( e_vessel_names[team_id] ) .. " " .. vehicle_definition_name
+        else
+            display_name = vehicle_definition_name .. string.format( " %.0f", vehicle:get_id() )
+        end
 
         update_ui_text(cx, 6, display_name, 124, 0, color8(255, 255, 255, 255), 0)
         cx = cx + update_ui_get_text_size(display_name, 10000, 0) + 2
@@ -1373,27 +1373,27 @@ function render_vehicle_tooltip(w, h, vehicle)
 end
 
 function get_team_drydock()
-	local vehicle_count = update_get_map_vehicle_count()
-	for i = 0, vehicle_count - 1, 1 do
-		local vehicle = update_get_map_vehicle_by_index(i)
-		
-		if vehicle:get() and vehicle:get_definition_index() == e_game_object_type.drydock and vehicle:get_team() == update_get_screen_team_id() then
-			local waypoint_mouse = nil
-			local waypoint_ruler = nil
-			
-			local waypoint_count = vehicle:get_waypoint_count()
-			if waypoint_count > 0 then
-				waypoint_mouse = vehicle:get_waypoint(0)
-				if waypoint_count > 1 then
-					waypoint_ruler = vehicle:get_waypoint(1)
-				end
-			end
-			
-			return vehicle, waypoint_mouse, waypoint_ruler
-		end
-	end
-	
-	return nil, nil, nil
+    local vehicle_count = update_get_map_vehicle_count()
+    for i = 0, vehicle_count - 1, 1 do
+        local vehicle = update_get_map_vehicle_by_index(i)
+        
+        if vehicle:get() and vehicle:get_definition_index() == e_game_object_type.drydock and vehicle:get_team() == update_get_screen_team_id() then
+            local waypoint_mouse = nil
+            local waypoint_ruler = nil
+            
+            local waypoint_count = vehicle:get_waypoint_count()
+            if waypoint_count > 0 then
+                waypoint_mouse = vehicle:get_waypoint(0)
+                if waypoint_count > 1 then
+                    waypoint_ruler = vehicle:get_waypoint(1)
+                end
+            end
+            
+            return vehicle, waypoint_mouse, waypoint_ruler
+        end
+    end
+    
+    return nil, nil, nil
 end
 
 function render_dashed_line(x0, y0, x1, y1, col)
@@ -1437,203 +1437,203 @@ function render_weapon_radius(world_pos_x, world_pos_y, radius, screen_w, screen
 end
 
 function holomap_override( screen_w, screen_h, ticks )
-	g_override = false
+    g_override = false
 
-	if update_self_destruct_override(screen_w, screen_h) then
-		g_is_render_holomap = false
-		g_override = true
-	elseif holomap_override_startup ( screen_w, screen_h, ticks ) then
-		g_override = true
-	elseif render_selection(screen_w, screen_h) then
-		g_override = true
-	end
-	
-	if g_override then
-		update_set_screen_background_type(0)
-		update_set_screen_map_position_scale(g_override_x, g_override_z, g_override_zoom)
-		g_is_render_holomap_grids = false
-	end
-	
-	return g_override
+    if update_self_destruct_override(screen_w, screen_h) then
+        g_is_render_holomap = false
+        g_override = true
+    elseif holomap_override_startup ( screen_w, screen_h, ticks ) then
+        g_override = true
+    elseif render_selection(screen_w, screen_h) then
+        g_override = true
+    end
+    
+    if g_override then
+        update_set_screen_background_type(0)
+        update_set_screen_map_position_scale(g_override_x, g_override_z, g_override_zoom)
+        g_is_render_holomap_grids = false
+    end
+    
+    return g_override
 end
 
 function holomap_override_startup( screen_w, screen_h, ticks )
 
-	local screen_vehicle = update_get_screen_vehicle()
+    local screen_vehicle = update_get_screen_vehicle()
 
-	if g_startup_phase == holomap_startup_phases.finish then
-		return false
-	elseif screen_vehicle:get() and screen_vehicle:get_dock_state() ~= e_vehicle_dock_state.docked then
-		g_startup_phase = holomap_startup_phases.finish
-		return false
-	end
+    if g_startup_phase == holomap_startup_phases.finish then
+        return false
+    elseif screen_vehicle:get() and screen_vehicle:get_dock_state() ~= e_vehicle_dock_state.docked then
+        g_startup_phase = holomap_startup_phases.finish
+        return false
+    end
 
-	if screen_vehicle:get() then
-		local veh = update_get_vehicle_by_id(screen_vehicle:get_id())
-		local target_desired, target_allocated = veh:get_power_system_state(4) -- Radar
-		if target_desired == 0 then	g_startup_phase_anim = g_startup_phase_anim + ticks	end
-	end
+    if screen_vehicle:get() then
+        local veh = update_get_vehicle_by_id(screen_vehicle:get_id())
+        local target_desired, target_allocated = veh:get_power_system_state(4) -- Radar
+        if target_desired == 0 then g_startup_phase_anim = g_startup_phase_anim + ticks end
+    end
 
-	g_is_render_holomap = g_startup_phase >= holomap_startup_phases.sys
+    g_is_render_holomap = g_startup_phase >= holomap_startup_phases.sys
 
-	if g_startup_phase == holomap_startup_phases.memchk then
-		render_startup_memchk( screen_w, screen_h )
-	elseif g_startup_phase == holomap_startup_phases.bios then
-		render_startup_bios( screen_w, screen_h )
-	elseif g_startup_phase == holomap_startup_phases.sys then
-		render_startup_sys( screen_w, screen_h )
-	elseif g_startup_phase == holomap_startup_phases.manual then
-		render_startup_manual( screen_w, screen_h )
-	end
-	
-	if g_startup_phase == holomap_startup_phases.finish then
-		return false
-	end
-	
-	return true
+    if g_startup_phase == holomap_startup_phases.memchk then
+        render_startup_memchk( screen_w, screen_h )
+    elseif g_startup_phase == holomap_startup_phases.bios then
+        render_startup_bios( screen_w, screen_h )
+    elseif g_startup_phase == holomap_startup_phases.sys then
+        render_startup_sys( screen_w, screen_h )
+    elseif g_startup_phase == holomap_startup_phases.manual then
+        render_startup_manual( screen_w, screen_h )
+    end
+    
+    if g_startup_phase == holomap_startup_phases.finish then
+        return false
+    end
+    
+    return true
 end
 
 function render_startup_memchk( screen_w, screen_h )
-	local anim = (g_animation_time - g_startup_phase_anim) * 2
-	
-	local mem = math.min( 640, anim )
-	update_ui_text(16, 16, string.format("%.0fKB OK", math.floor(mem)), 128, 0, color_white, 0)
-	
-	if anim > 700 then
-		g_startup_phase_anim = g_animation_time
-		g_startup_phase = g_startup_phase + 1
-	end
+    local anim = (g_animation_time - g_startup_phase_anim) * 2
+    
+    local mem = math.min( 640, anim )
+    update_ui_text(16, 16, string.format("%.0fKB OK", math.floor(mem)), 128, 0, color_white, 0)
+    
+    if anim > 700 then
+        g_startup_phase_anim = g_animation_time
+        g_startup_phase = g_startup_phase + 1
+    end
 end
 
 function render_startup_bios( screen_w, screen_h )
-	local anim = math.floor( (g_animation_time - g_startup_phase_anim) / 5 ) + 1
-	
-	local bios_text = {
-		"Firmware Version 3.22.7\n",
-		"Firmware Checksum ", ".", ".", ".", " OK\n\n",
-		
-		
-		"Welcome to your:\n",
-		"Series 7 - Battlefield Command and Control Mainframe\n",
-		"A Sigletics© Tactical Computer System\n\n",
-		
-		
-		"Accessing Master Boot Record ", ".", ".", ".",	" Done\n",
-		"Loading Image: ACC Carrier Operating System ", ".", ".", ".", ".", ".", " Done\n",
-		"Operating System Handoff\n",
-		"******************************************************\n",
-		"CRR OS: Loading Drivers:\n",
-		"CRR OS:     PS/2 Keyboard ", ".", ".", ".", " Okay\n",
-		"CRR OS:     PS/2 Mouse ", ".", ".", ".", " Okay\n",
-		"CRR OS:     VGA Graphics ", ".", ".", ".", " Okay\n",
-		"CRR OS:     Sound Caster 16 ", ".", ".", ".", " Okay\n",
-		"CRR OS:     3D Accelerator ", ".", ".", ".", " Fail\n",
-		
-		"CRR OS: Starting user interface"
-	}
-	
-	local out = ""
-	
-	local stop = math.min( #bios_text, anim )
-	
-	for i = 1, stop, 1 do
-		out = out .. bios_text[i]
-	end
-	
-	update_ui_text(16, 16, out, 496, 0, color_white, 0)
-	
-	if anim > #bios_text + 12 then
-		g_startup_phase_anim = g_animation_time
-		g_startup_phase = g_startup_phase + 1
-	end
+    local anim = math.floor( (g_animation_time - g_startup_phase_anim) / 5 ) + 1
+    
+    local bios_text = {
+        "Firmware Version 3.22.7\n",
+        "Firmware Checksum ", ".", ".", ".", " OK\n\n",
+        
+        
+        "Welcome to your:\n",
+        "Series 7 - Battlefield Command and Control Mainframe\n",
+        "A Sigletics© Tactical Computer System\n\n",
+        
+        
+        "Accessing Master Boot Record ", ".", ".", ".", " Done\n",
+        "Loading Image: ACC Carrier Operating System ", ".", ".", ".", ".", ".", " Done\n",
+        "Operating System Handoff\n",
+        "******************************************************\n",
+        "CRR OS: Loading Drivers:\n",
+        "CRR OS:     PS/2 Keyboard ", ".", ".", ".", " Okay\n",
+        "CRR OS:     PS/2 Mouse ", ".", ".", ".", " Okay\n",
+        "CRR OS:     VGA Graphics ", ".", ".", ".", " Okay\n",
+        "CRR OS:     Sound Caster 16 ", ".", ".", ".", " Okay\n",
+        "CRR OS:     3D Accelerator ", ".", ".", ".", " Fail\n",
+        
+        "CRR OS: Starting user interface"
+    }
+    
+    local out = ""
+    
+    local stop = math.min( #bios_text, anim )
+    
+    for i = 1, stop, 1 do
+        out = out .. bios_text[i]
+    end
+    
+    update_ui_text(16, 16, out, 496, 0, color_white, 0)
+    
+    if anim > #bios_text + 12 then
+        g_startup_phase_anim = g_animation_time
+        g_startup_phase = g_startup_phase + 1
+    end
 end
 
 function render_startup_sys( screen_w, screen_h )
-	local anim = (g_animation_time - g_startup_phase_anim)
+    local anim = (g_animation_time - g_startup_phase_anim)
 
-	local team_id = update_get_screen_team_id()
-	
-	local crew = {"Altus Gage"}
+    local team_id = update_get_screen_team_id()
+    
+    local crew = {"Altus Gage"}
 --[[
-	if update_get_is_multiplayer() then
-		local peer_count = update_get_peer_count()
-		for i = 0, peer_count - 1 do
-			local name = update_get_peer_name(i)
-			local team = update_get_peer_team(i)
-			
-			if team == team_id then
-				crew[#crew + 1] = name
-			end
-		end
-	else
-		crew[1] = "Altus Gage"
-	end
+    if update_get_is_multiplayer() then
+        local peer_count = update_get_peer_count()
+        for i = 0, peer_count - 1 do
+            local name = update_get_peer_name(i)
+            local team = update_get_peer_team(i)
+            
+            if team == team_id then
+                crew[#crew + 1] = name
+            end
+        end
+    else
+        crew[1] = "Altus Gage"
+    end
 --]]
-	local ui = g_ui
-	
-	local win_w = 256
-	local win_h = 85
-	
-	local anim_win_w = math.min( win_w, anim * 8 )
-	local anim_win_h = math.min( win_h, anim * 8 )
-	
-	local win_title = ""
-	if anim_win_w > 128 then win_title = "Vessel Registration" end
-	
-	local reg_win = ui:begin_window(win_title, 128, 16, anim_win_w, anim_win_h, atlas_icons.column_pending, true, 2)
+    local ui = g_ui
+    
+    local win_w = 256
+    local win_h = 85
+    
+    local anim_win_w = math.min( win_w, anim * 8 )
+    local anim_win_h = math.min( win_h, anim * 8 )
+    
+    local win_title = ""
+    if anim_win_w > 128 then win_title = "Vessel Registration" end
+    
+    local reg_win = ui:begin_window(win_title, 128, 16, anim_win_w, anim_win_h, atlas_icons.column_pending, true, 2)
 
-	if anim > 37 then ui:stat("Registrant", "United Earth Coalition", color_white) end
-	if anim > 42 then ui:stat("Vessel Name", e_vessel_names[team_id + 1], color_white) end
-	if anim > 47 then ui:stat("Vessel Class", "Amphibious Assault Carrier", color_white) end
-	if anim > 52 then ui:stat("Operating Number", string.format( "%010.0f", g_startup_op_num), color_white) end
-	
-	ui:end_window()
-	
-	if anim > 80 then
-		local login_win = ui:begin_window("Crew Manifest", 128, 110, 256, 128, atlas_icons.column_pending, true, 2)
-		
-		for i = 1, #crew, 1 do
-			local status = "Validating Credentials"
-		
-			if anim > 90 + i * 20 then
-				status = "Authenticated"
-			end
-			
-			ui:stat( crew[i], status, color_white )
-		end
-		
-		ui:end_window()
-		
-		if anim > 120 + #crew * 20 then
-			g_startup_phase_anim = g_animation_time
-			g_startup_phase = holomap_startup_phases.finish -- bypass manual stage
-			--g_startup_phase = g_startup_phase + 1
-		end
-	end
+    if anim > 37 then ui:stat("Registrant", "United Earth Coalition", color_white) end
+    if anim > 42 then ui:stat("Vessel Name", e_vessel_names[team_id + 1], color_white) end
+    if anim > 47 then ui:stat("Vessel Class", "Amphibious Assault Carrier", color_white) end
+    if anim > 52 then ui:stat("Operating Number", string.format( "%010.0f", g_startup_op_num), color_white) end
+    
+    ui:end_window()
+    
+    if anim > 80 then
+        local login_win = ui:begin_window("Crew Manifest", 128, 110, 256, 128, atlas_icons.column_pending, true, 2)
+        
+        for i = 1, #crew, 1 do
+            local status = "Validating Credentials"
+        
+            if anim > 90 + i * 20 then
+                status = "Authenticated"
+            end
+            
+            ui:stat( crew[i], status, color_white )
+        end
+        
+        ui:end_window()
+        
+        if anim > 120 + #crew * 20 then
+            g_startup_phase_anim = g_animation_time
+            g_startup_phase = holomap_startup_phases.finish -- bypass manual stage
+            --g_startup_phase = g_startup_phase + 1
+        end
+    end
 end
 
 function render_startup_manual( screen_w, screen_h )
-	local anim = (g_animation_time - g_startup_phase_anim)
+    local anim = (g_animation_time - g_startup_phase_anim)
 
-	local ui = g_ui
-	
-	local win_w = 192
-	local win_h = 32
-	
-	local anim_win_w = math.min( win_w, anim * 4 )
-	local anim_win_h = math.min( win_h, anim * 4 )
-	
-	local win_title = ""
-	if anim_win_w > 128 then win_title = "Carrier Command" end
-	
-	local reg_win = ui:begin_window(win_title, 160, 16, anim_win_w, anim_win_h, atlas_icons.column_pending, true, 2)
+    local ui = g_ui
+    
+    local win_w = 192
+    local win_h = 32
+    
+    local anim_win_w = math.min( win_w, anim * 4 )
+    local anim_win_h = math.min( win_h, anim * 4 )
+    
+    local win_title = ""
+    if anim_win_w > 128 then win_title = "Carrier Command" end
+    
+    local reg_win = ui:begin_window(win_title, 160, 16, anim_win_w, anim_win_h, atlas_icons.column_pending, true, 2)
 
-	if anim > 37 and imgui_list_item_blink(ui, "Enable Manual Override", true) then
+    if anim > 37 and imgui_list_item_blink(ui, "Enable Manual Override", true) then
         g_startup_phase_anim = g_animation_time
-		g_startup_phase = g_startup_phase + 1
+        g_startup_phase = g_startup_phase + 1
     end
-	
-	ui:end_window()
+    
+    ui:end_window()
 end
 
 function ui_render_selection_carrier_vehicle_overview(x, y, w, h)
@@ -1750,52 +1750,52 @@ function render_selection_vehicle(screen_w, screen_h, vehicle)
     update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_ud)
 
     if screen_vehicle:get() then
-		local ui = g_ui
-		
-		local loadout_w = 74
-		local left_w = (screen_w / 2) - loadout_w - 25
+        local ui = g_ui
+        
+        local loadout_w = 74
+        local left_w = (screen_w / 2) - loadout_w - 25
 
-		local window = ui:begin_window(update_get_loc(e_loc.upp_loadout), 10 + (screen_w / 4) + left_w + 5, (screen_h / 2) - 50, loadout_w, 84, atlas_icons.column_stock, false, 2)
-			local region_w, region_h = ui:get_region()
-			window.cy = region_h / 2 - 32
-			imgui_vehicle_chassis_loadout(ui, vehicle, nil)
-		ui:end_window()
+        local window = ui:begin_window(update_get_loc(e_loc.upp_loadout), 10 + (screen_w / 4) + left_w + 5, (screen_h / 2) - 50, loadout_w, 84, atlas_icons.column_stock, false, 2)
+            local region_w, region_h = ui:get_region()
+            window.cy = region_h / 2 - 32
+            imgui_vehicle_chassis_loadout(ui, vehicle, nil)
+        ui:end_window()
 
-		local vehicle_definition_index = vehicle:get_definition_index()
-		local vehicle_definition_name, vehicle_definition_region = get_chassis_data_by_definition_index(vehicle_definition_index)
+        local vehicle_definition_index = vehicle:get_definition_index()
+        local vehicle_definition_name, vehicle_definition_region = get_chassis_data_by_definition_index(vehicle_definition_index)
 
-		local hitpoints = vehicle:get_hitpoints()
-		local hitpoints_total = vehicle:get_total_hitpoints()
-		local damage_factor = clamp(hitpoints / hitpoints_total, 0, 1)
-		local fuel_factor = vehicle:get_fuel_factor()
-		local ammo_factor = vehicle:get_ammo_factor()
-		local color_low = color_status_bad
-		local color_mid = color8(255, 255, 0, 255)
-		local color_high = color_status_ok
+        local hitpoints = vehicle:get_hitpoints()
+        local hitpoints_total = vehicle:get_total_hitpoints()
+        local damage_factor = clamp(hitpoints / hitpoints_total, 0, 1)
+        local fuel_factor = vehicle:get_fuel_factor()
+        local ammo_factor = vehicle:get_ammo_factor()
+        local color_low = color_status_bad
+        local color_mid = color8(255, 255, 0, 255)
+        local color_high = color_status_ok
 
-		local title = vehicle_definition_name .. string.format( " ID %.0f", vehicle:get_id() )
+        local title = vehicle_definition_name .. string.format( " ID %.0f", vehicle:get_id() )
 
-		ui:begin_window(title, 10 + (screen_w / 4), (screen_h / 2) - 50, left_w, 100, atlas_icons.column_pending, true, 2)
-			ui:stat(update_get_loc(e_loc.hp), hitpoints .. "/" .. hitpoints_total, iff(damage_factor < 0.2, color_low, color_high))
+        ui:begin_window(title, 10 + (screen_w / 4), (screen_h / 2) - 50, left_w, 100, atlas_icons.column_pending, true, 2)
+            ui:stat(update_get_loc(e_loc.hp), hitpoints .. "/" .. hitpoints_total, iff(damage_factor < 0.2, color_low, color_high))
 
-			if vehicle:get_definition_index() == e_game_object_type.chassis_land_turret then
-				ui:stat(update_get_loc(e_loc.upp_fuel), "---", color_grey_dark)
-				ui:stat(update_get_loc(e_loc.upp_ammo), "---", color_grey_dark)
-			else
-				ui:stat(update_get_loc(e_loc.upp_fuel), string.format("%.0f%%", fuel_factor * 100), iff(fuel_factor < 0.25, color_low, iff(fuel_factor < 0.5, color_mid, color_high)))
-				ui:stat(update_get_loc(e_loc.upp_ammo), string.format("%.0f%%", ammo_factor * 100), iff(ammo_factor < 0.25, color_low, iff(ammo_factor < 0.5, color_mid, color_high)))
-			end
+            if vehicle:get_definition_index() == e_game_object_type.chassis_land_turret then
+                ui:stat(update_get_loc(e_loc.upp_fuel), "---", color_grey_dark)
+                ui:stat(update_get_loc(e_loc.upp_ammo), "---", color_grey_dark)
+            else
+                ui:stat(update_get_loc(e_loc.upp_fuel), string.format("%.0f%%", fuel_factor * 100), iff(fuel_factor < 0.25, color_low, iff(fuel_factor < 0.5, color_mid, color_high)))
+                ui:stat(update_get_loc(e_loc.upp_ammo), string.format("%.0f%%", ammo_factor * 100), iff(ammo_factor < 0.25, color_low, iff(ammo_factor < 0.5, color_mid, color_high)))
+            end
 --[[ 
-			ui:header(update_get_loc(e_loc.upp_actions))
-			-- This is broken apparently
-			if ui:list_item(update_get_loc(e_loc.upp_center_to_vehicle), true) then
-				local pos_xz = vehicle:get_position_xz()
-				transition_to_map_pos(pos_xz:x(), pos_xz:y(), 2000)
-				g_selection_vehicle_id = -1
-				g_is_pointer_pressed = false
-			end
+            ui:header(update_get_loc(e_loc.upp_actions))
+            -- This is broken apparently
+            if ui:list_item(update_get_loc(e_loc.upp_center_to_vehicle), true) then
+                local pos_xz = vehicle:get_position_xz()
+                transition_to_map_pos(pos_xz:x(), pos_xz:y(), 2000)
+                g_selection_vehicle_id = -1
+                g_is_pointer_pressed = false
+            end
 --]]
-		ui:end_window()
+        ui:end_window()
     end
 end
 
@@ -1808,17 +1808,17 @@ function render_selection(screen_w, screen_h)
         if selected_vehicle:get() and selected_vehicle:get_team() == update_get_screen_team_id() then
             local vehicle_definition_index = selected_vehicle:get_definition_index()
 
-			if vehicle_definition_index == e_game_object_type.chassis_carrier then
-				render_selection_carrier(screen_w, screen_h, selected_vehicle)
-			else
-				render_selection_vehicle(screen_w, screen_h, selected_vehicle)
-			end
+            if vehicle_definition_index == e_game_object_type.chassis_carrier then
+                render_selection_carrier(screen_w, screen_h, selected_vehicle)
+            else
+                render_selection_vehicle(screen_w, screen_h, selected_vehicle)
+            end
         else
             g_selection_vehicle_id = -1
         end
-		
-		return g_selection_vehicle_id >= 0
+        
+        return g_selection_vehicle_id >= 0
     end
-	
-	return false
+    
+    return false
 end

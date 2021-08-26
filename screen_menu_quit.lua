@@ -9,7 +9,7 @@ function begin()
 end
 
 function update(screen_w, screen_h, ticks) 
-	if update_screen_overrides(screen_w, screen_h, ticks)  then return end
+    if update_screen_overrides(screen_w, screen_h, ticks)  then return end
 
     update_interaction_ui()
     
@@ -58,7 +58,7 @@ function update_interaction_ui()
 end
 
 function input_event(event, action)
-	if action == e_input_action.release then
+    if action == e_input_action.release then
         if event == e_input.back then
             if g_selected_panel == 0 then
                 update_set_screen_state_exit()

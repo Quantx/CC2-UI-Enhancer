@@ -53,7 +53,7 @@ function begin()
 end
 
 function update(screen_w, screen_h, ticks) 
-	g_animation_time = g_animation_time + ticks
+    g_animation_time = g_animation_time + ticks
 
     local this_vehicle = update_get_screen_vehicle()
     update_set_screen_background_type(0)
@@ -72,7 +72,7 @@ function update(screen_w, screen_h, ticks)
 
     if update_screen_overrides(screen_w, screen_h, ticks)  then return end
 
-	local is_local = update_get_is_focus_local()
+    local is_local = update_get_is_focus_local()
 
     local ui = g_ui
     ui:begin_ui()
@@ -95,36 +95,36 @@ function update(screen_w, screen_h, ticks)
 
             update_set_screen_background_is_render_islands(is_render_islands)
 
-			local island_count = update_get_tile_count()
+            local island_count = update_get_tile_count()
 
-			for i = 0, island_count - 1, 1 do 
-				local island = update_get_tile_by_index(i)
+            for i = 0, island_count - 1, 1 do 
+                local island = update_get_tile_by_index(i)
 
-				if island:get() then
-					local island_color = get_island_team_color(island:get_team_control())
-					local island_position = island:get_position_xz()
-								
-					if is_render_islands == false then
-						local screen_pos_x, screen_pos_y = get_screen_from_world(island_position:x(), island_position:y(), g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
-						update_ui_image(screen_pos_x - 4, screen_pos_y - 4, atlas_icons.map_icon_island, island_color, 0)
-					elseif g_is_island_names then
-						local screen_pos_x, screen_pos_y = get_screen_from_world(island_position:x(), island_position:y() + 3000.0, g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
-									
-						update_ui_text(screen_pos_x - 64, screen_pos_y - 9, island:get_name(), 128, 1, island_color, 0)
-									
-						if island:get_team_control() ~= update_get_screen_team_id() then
-							local difficulty_level = island:get_difficulty_level()
-							local icon_w = 6
-							local icon_spacing = 2
-							local total_w = icon_w * difficulty_level + icon_spacing * (difficulty_level - 1)
+                if island:get() then
+                    local island_color = get_island_team_color(island:get_team_control())
+                    local island_position = island:get_position_xz()
+                                
+                    if is_render_islands == false then
+                        local screen_pos_x, screen_pos_y = get_screen_from_world(island_position:x(), island_position:y(), g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
+                        update_ui_image(screen_pos_x - 4, screen_pos_y - 4, atlas_icons.map_icon_island, island_color, 0)
+                    elseif g_is_island_names then
+                        local screen_pos_x, screen_pos_y = get_screen_from_world(island_position:x(), island_position:y() + 3000.0, g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
+                                    
+                        update_ui_text(screen_pos_x - 64, screen_pos_y - 9, island:get_name(), 128, 1, island_color, 0)
+                                    
+                        if island:get_team_control() ~= update_get_screen_team_id() then
+                            local difficulty_level = island:get_difficulty_level()
+                            local icon_w = 6
+                            local icon_spacing = 2
+                            local total_w = icon_w * difficulty_level + icon_spacing * (difficulty_level - 1)
 
-							for i = 0, difficulty_level - 1 do
-								update_ui_image(screen_pos_x - total_w / 2 + (icon_w + icon_spacing) * i, screen_pos_y, atlas_icons.column_difficulty, island_color, 0)
-							end
-						end
-					end
-				end
-			end
+                            for i = 0, difficulty_level - 1 do
+                                update_ui_image(screen_pos_x - total_w / 2 + (icon_w + icon_spacing) * i, screen_pos_y, atlas_icons.column_difficulty, island_color, 0)
+                            end
+                        end
+                    end
+                end
+            end
 
             local vehicle_count = update_get_map_vehicle_count()
 
@@ -159,134 +159,134 @@ function update(screen_w, screen_h, ticks)
             end
             
             -- render carrier direction indicator
-			update_ui_image(64 - 5, 64 - 5, atlas_icons.map_icon_circle_9, color_white, 0)
+            update_ui_image(64 - 5, 64 - 5, atlas_icons.map_icon_circle_9, color_white, 0)
 
             local this_vehicle_dir = this_vehicle:get_direction()
             update_ui_line(64, 64, 64 + (this_vehicle_dir:x() * 20), 64 + (this_vehicle_dir:y() * -20), color_white)
 
-			-- render carrier waypoints
-			local waypoint_count = this_vehicle:get_waypoint_count()
-			
-			local screen_vehicle_pos = this_vehicle:get_position_xz()
-			local waypoint_prev_x, waypoint_prev_y = get_screen_from_world(screen_vehicle_pos:x(), screen_vehicle_pos:y(), g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
-			
-			for i = 0, waypoint_count - 1, 1 do
-				local waypoint = this_vehicle:get_waypoint(i)
-				local waypoint_pos = waypoint:get_position_xz()
-				
-				local waypoint_screen_pos_x, waypoint_screen_pos_y = get_screen_from_world(waypoint_pos:x(), waypoint_pos:y(), g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
-				
-				update_ui_line(waypoint_prev_x, waypoint_prev_y, waypoint_screen_pos_x, waypoint_screen_pos_y, g_color_waypoint)
-				update_ui_image(waypoint_screen_pos_x - 3, waypoint_screen_pos_y - 3, atlas_icons.map_icon_waypoint, g_color_waypoint, 0)
-				
-				waypoint_prev_x = waypoint_screen_pos_x
-				waypoint_prev_y = waypoint_screen_pos_y
-			end
+            -- render carrier waypoints
+            local waypoint_count = this_vehicle:get_waypoint_count()
+            
+            local screen_vehicle_pos = this_vehicle:get_position_xz()
+            local waypoint_prev_x, waypoint_prev_y = get_screen_from_world(screen_vehicle_pos:x(), screen_vehicle_pos:y(), g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
+            
+            for i = 0, waypoint_count - 1, 1 do
+                local waypoint = this_vehicle:get_waypoint(i)
+                local waypoint_pos = waypoint:get_position_xz()
+                
+                local waypoint_screen_pos_x, waypoint_screen_pos_y = get_screen_from_world(waypoint_pos:x(), waypoint_pos:y(), g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
+                
+                update_ui_line(waypoint_prev_x, waypoint_prev_y, waypoint_screen_pos_x, waypoint_screen_pos_y, g_color_waypoint)
+                update_ui_image(waypoint_screen_pos_x - 3, waypoint_screen_pos_y - 3, atlas_icons.map_icon_waypoint, g_color_waypoint, 0)
+                
+                waypoint_prev_x = waypoint_screen_pos_x
+                waypoint_prev_y = waypoint_screen_pos_y
+            end
 
-			local missile_count = update_get_missile_count()
+            local missile_count = update_get_missile_count()
 
-		    for i = 0, missile_count - 1 do
-		        local missile = update_get_missile_by_index(i)
-		        local def = missile:get_definition_index()
-		        
-		        local position_xz = missile:get_position_xz()
-		        local screen_pos_x, screen_pos_y = get_screen_from_world(position_xz:x(), position_xz:y(), g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
+            for i = 0, missile_count - 1 do
+                local missile = update_get_missile_by_index(i)
+                local def = missile:get_definition_index()
+                
+                local position_xz = missile:get_position_xz()
+                local screen_pos_x, screen_pos_y = get_screen_from_world(position_xz:x(), position_xz:y(), g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
 
-		        if missile:get_is_visible() and (def == e_game_object_type.torpedo or def == e_game_object_type.torpedo_decoy or def == e_game_object_type.torpedo_noisemaker) then
-	                local missile_trail_count = missile:get_trail_count()
-	                local trail_prev_x = screen_pos_x
-	                local trail_prev_y = screen_pos_y
-	                for missile_trail_index = 0, missile_trail_count - 1 do
-	                    local trail_xz = missile:get_trail_position(missile_trail_index)
-	                    local trail_next_x, trail_next_y = get_screen_from_world(trail_xz:x(), trail_xz:y(), g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)        
-	                    update_ui_line(trail_prev_x, trail_prev_y, trail_next_x, trail_next_y, color8(255, 255, 255, 16 - math.floor(missile_trail_index / 4)))
-	                    trail_prev_x = trail_next_x
-	                    trail_prev_y = trail_next_y
-	                end
+                if missile:get_is_visible() and (def == e_game_object_type.torpedo or def == e_game_object_type.torpedo_decoy or def == e_game_object_type.torpedo_noisemaker) then
+                    local missile_trail_count = missile:get_trail_count()
+                    local trail_prev_x = screen_pos_x
+                    local trail_prev_y = screen_pos_y
+                    for missile_trail_index = 0, missile_trail_count - 1 do
+                        local trail_xz = missile:get_trail_position(missile_trail_index)
+                        local trail_next_x, trail_next_y = get_screen_from_world(trail_xz:x(), trail_xz:y(), g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)        
+                        update_ui_line(trail_prev_x, trail_prev_y, trail_next_x, trail_next_y, color8(255, 255, 255, 16 - math.floor(missile_trail_index / 4)))
+                        trail_prev_x = trail_next_x
+                        trail_prev_y = trail_next_y
+                    end
 
-	                local is_timer_running = missile:get_timer() > 0
-	                local is_own_team = missile:get_team() == update_get_local_team_id()
+                    local is_timer_running = missile:get_timer() > 0
+                    local is_own_team = missile:get_team() == update_get_local_team_id()
 
-	                local color_missile = color_white
+                    local color_missile = color_white
 
-	                local icon_image = atlas_icons.map_icon_torpedo
-	                if def == e_game_object_type.torpedo_decoy or def == e_game_object_type.torpedo_noisemaker then
-	                    icon_image = atlas_icons.map_icon_torpedo_decoy
+                    local icon_image = atlas_icons.map_icon_torpedo
+                    if def == e_game_object_type.torpedo_decoy or def == e_game_object_type.torpedo_noisemaker then
+                        icon_image = atlas_icons.map_icon_torpedo_decoy
 
-	                    if is_own_team then
-	                        if is_timer_running then
-	                            if g_animation_time % 10 < 5 then
-	                                color_missile = color8(64, 64, 255, 255)
-	                            else
-	                                color_missile = color_white
-	                            end
-	                        end
-	                    end
-	                else
-	                    icon_image = atlas_icons.map_icon_torpedo
+                        if is_own_team then
+                            if is_timer_running then
+                                if g_animation_time % 10 < 5 then
+                                    color_missile = color8(64, 64, 255, 255)
+                                else
+                                    color_missile = color_white
+                                end
+                            end
+                        end
+                    else
+                        icon_image = atlas_icons.map_icon_torpedo
 
-	                    if is_own_team then
-	                        if is_timer_running then
-	                            color_missile = color_white
-	                        else
-	                            if g_animation_time % 10 < 5 then
-	                                color_missile = color8(255, 64, 64, 255)
-	                            else
-	                                color_missile = color_white
-	                            end
-	                        end
-	                    end
-	                end
+                        if is_own_team then
+                            if is_timer_running then
+                                color_missile = color_white
+                            else
+                                if g_animation_time % 10 < 5 then
+                                    color_missile = color8(255, 64, 64, 255)
+                                else
+                                    color_missile = color_white
+                                end
+                            end
+                        end
+                    end
 
-	                update_ui_image(screen_pos_x - 3, screen_pos_y - 3, icon_image, color_missile, 0)
-	                
-	                if is_local and g_is_pointer_hovered then
-			            local missile_distance_to_cursor = math.abs(screen_pos_x - g_pointer_pos_x) + math.abs(screen_pos_y - g_pointer_pos_y)
+                    update_ui_image(screen_pos_x - 3, screen_pos_y - 3, icon_image, color_missile, 0)
+                    
+                    if is_local and g_is_pointer_hovered then
+                        local missile_distance_to_cursor = math.abs(screen_pos_x - g_pointer_pos_x) + math.abs(screen_pos_y - g_pointer_pos_y)
 
-			            if is_own_team and missile_distance_to_cursor < 8 and is_timer_running then
-			                update_ui_text(screen_pos_x - 16, screen_pos_y - 12, tostring(math.floor(missile:get_timer() / 30) + 1), 32, 1, color_missile, 0)
-			            end
-			        end
-		        end
-		    end
+                        if is_own_team and missile_distance_to_cursor < 8 and is_timer_running then
+                            update_ui_text(screen_pos_x - 16, screen_pos_y - 12, tostring(math.floor(missile:get_timer() / 30) + 1), 32, 1, color_missile, 0)
+                        end
+                    end
+                end
+            end
 
-			local world_x = g_camera_pos_x
-			local world_y = g_camera_pos_y
+            local world_x = g_camera_pos_x
+            local world_y = g_camera_pos_y
 
-			if is_local and g_is_pointer_hovered then
-				world_x, world_y = get_world_from_screen(g_pointer_pos_x, g_pointer_pos_y, g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
+            if is_local and g_is_pointer_hovered then
+                world_x, world_y = get_world_from_screen(g_pointer_pos_x, g_pointer_pos_y, g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
 
-		        local label_x = 5
-		        local label_y = 5
-		        local label_w = screen_w - 2 * label_x
-		        local label_h = 10
+                local label_x = 5
+                local label_y = 5
+                local label_w = screen_w - 2 * label_x
+                local label_h = 10
 
-		        update_ui_push_offset(label_x, label_y)
+                update_ui_push_offset(label_x, label_y)
 
-		        if g_map_render_mode > 1 then
-		        	if g_map_render_mode == 3 then label_h = label_h * 2 end
-		            update_ui_rectangle(0, 0, label_w, label_h, color_black)
-		        end
+                if g_map_render_mode > 1 then
+                    if g_map_render_mode == 3 then label_h = label_h * 2 end
+                    update_ui_rectangle(0, 0, label_w, label_h, color_black)
+                end
 
-		        if g_map_render_mode == 2 then
-		            update_ui_text(1, 1, string.format(update_get_loc(e_loc.upp_wind)..": %.2f", update_get_weather_wind_velocity(world_x, world_y)), label_w, 0, color_white, 0)
-		        elseif g_map_render_mode == 3 then
-		            update_ui_text(1, 1, string.format(update_get_loc(e_loc.upp_precipitation)..": %.0f%%", update_get_weather_precipitation_factor(world_x, world_y) * 100), label_w, 0, color_white, 0)
+                if g_map_render_mode == 2 then
+                    update_ui_text(1, 1, string.format(update_get_loc(e_loc.upp_wind)..": %.2f", update_get_weather_wind_velocity(world_x, world_y)), label_w, 0, color_white, 0)
+                elseif g_map_render_mode == 3 then
+                    update_ui_text(1, 1, string.format(update_get_loc(e_loc.upp_precipitation)..": %.0f%%", update_get_weather_precipitation_factor(world_x, world_y) * 100), label_w, 0, color_white, 0)
 
-		            update_ui_image(1, 10, atlas_icons.column_power, color_white, 0)
-		            update_ui_text(1, 10, string.format(": %.0f%%", update_get_weather_lightning_factor(world_x, world_y) * 100), label_w, 0, color_white, 0)
-		        elseif g_map_render_mode == 4 then
-		            update_ui_text(1, 1, string.format(update_get_loc(e_loc.upp_visibility)..": %.0f%%", update_get_weather_fog_factor(world_x, world_y) * 100), label_w, 0, color_white, 0)
-		        elseif g_map_render_mode == 5 then
-		            update_ui_text(1, 1, string.format(update_get_loc(e_loc.upp_ocean_current)..": %.2f", update_get_ocean_current_velocity(world_x, world_y)), label_w, 0, color_white, 0)
-		        elseif g_map_render_mode == 6 then
-		            update_ui_text(1, 1, string.format(update_get_loc(e_loc.upp_ocean_depth)..": %.2f", update_get_ocean_depth_factor(world_x, world_y)), label_w, 0, color_white, 0)
-		        end
+                    update_ui_image(1, 10, atlas_icons.column_power, color_white, 0)
+                    update_ui_text(1, 10, string.format(": %.0f%%", update_get_weather_lightning_factor(world_x, world_y) * 100), label_w, 0, color_white, 0)
+                elseif g_map_render_mode == 4 then
+                    update_ui_text(1, 1, string.format(update_get_loc(e_loc.upp_visibility)..": %.0f%%", update_get_weather_fog_factor(world_x, world_y) * 100), label_w, 0, color_white, 0)
+                elseif g_map_render_mode == 5 then
+                    update_ui_text(1, 1, string.format(update_get_loc(e_loc.upp_ocean_current)..": %.2f", update_get_ocean_current_velocity(world_x, world_y)), label_w, 0, color_white, 0)
+                elseif g_map_render_mode == 6 then
+                    update_ui_text(1, 1, string.format(update_get_loc(e_loc.upp_ocean_depth)..": %.2f", update_get_ocean_depth_factor(world_x, world_y)), label_w, 0, color_white, 0)
+                end
 
-		        update_ui_pop_offset()
-				
-			end
-			
+                update_ui_pop_offset()
+                
+            end
+            
             update_ui_text(10, screen_h - 13, string.format("X:%-6.0f ", world_x) .. string.format("Y:%-6.0f", world_y), screen_w - 10, 0, color_grey_dark, 0)
         end
     elseif g_screen_index == 1 then
@@ -308,7 +308,7 @@ function update(screen_w, screen_h, ticks)
 
             g_is_vehicle_team_colors = ui:checkbox(update_get_loc(e_loc.upp_vehicle_team_colors), g_is_vehicle_team_colors)
             g_is_island_team_colors = ui:checkbox(update_get_loc(e_loc.upp_island_team_colors), g_is_island_team_colors)
-			g_is_island_names = ui:checkbox("ISLAND NAMES", g_is_island_names)
+            g_is_island_names = ui:checkbox("ISLAND NAMES", g_is_island_names)
 
             ui:spacer(5)
     
@@ -381,13 +381,13 @@ function input_event(event, action)
                 g_screen_index = 0
             end
         end
-	elseif g_screen_index == 2 then
-		if action == e_input_action.release then
+    elseif g_screen_index == 2 then
+        if action == e_input_action.release then
             if event == e_input.back then
                 update_set_screen_state_exit()
             end
         end
-	end
+    end
 end
 
 function input_pointer(is_hovered, x, y)

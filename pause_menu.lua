@@ -109,7 +109,7 @@ g_hovered_tab = -1
 g_input_axis = { x = 0, y = 0, z = 0, w = 0 }
 
 g_text = {
-	["save_name"] = "savename",
+    ["save_name"] = "savename",
 }
 
 g_edit_text = nil
@@ -255,16 +255,16 @@ function update_interaction_ui()
     end
 
     if get_is_text_input_mode() then
-		update_add_ui_interaction(update_get_loc(e_loc.interaction_confirm), e_game_input.text_enter)
-		
-		if update_get_active_input_type() == e_active_input.keyboard then
-			update_add_ui_interaction("", e_game_input.back)
-		else
-			update_add_ui_interaction(update_get_loc(e_loc.interaction_back), e_game_input.back)
-			update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_all)
-			update_add_ui_interaction(update_get_loc(e_loc.interaction_select), e_game_input.interact_a)
-		end
-	elseif update_get_active_input_type() == e_active_input.gamepad then
+        update_add_ui_interaction(update_get_loc(e_loc.interaction_confirm), e_game_input.text_enter)
+        
+        if update_get_active_input_type() == e_active_input.keyboard then
+            update_add_ui_interaction("", e_game_input.back)
+        else
+            update_add_ui_interaction(update_get_loc(e_loc.interaction_back), e_game_input.back)
+            update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_all)
+            update_add_ui_interaction(update_get_loc(e_loc.interaction_select), e_game_input.interact_a)
+        end
+    elseif update_get_active_input_type() == e_active_input.gamepad then
         if g_focused_screen == g_screens.active_tab then
             if g_active_tab == g_tabs.options then
                 update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_ud)
@@ -335,8 +335,8 @@ function input_event(event, action)
     end
 
     if g_edit_text ~= nil and update_get_active_input_type() == e_active_input.keyboard and event ~= e_input.pointer_1 and event ~= e_input.text_backspace and event ~= e_input.text_enter then
-		return
-	end
+        return
+    end
 
     if g_focused_screen == g_screens.menu then
         if event == e_input.left then
@@ -389,11 +389,11 @@ function input_axis(x, y, z, w)
 end
 
 function input_text(text)
-	if g_edit_text ~= nil then
-		g_text[g_edit_text] = g_text[g_edit_text] .. text
-		g_text[g_edit_text] = clamp_str(g_text[g_edit_text], 128)
-		g_text_blink_time = 0
-	end
+    if g_edit_text ~= nil then
+        g_text[g_edit_text] = g_text[g_edit_text] .. text
+        g_text[g_edit_text] = clamp_str(g_text[g_edit_text], 128)
+        g_text_blink_time = 0
+    end
 end
 
 function on_close_pause_menu()
@@ -631,7 +631,7 @@ function tab_game_render(screen_w, screen_h, x, y, w, h, delta_time, is_tab_acti
         ui:end_window()
     elseif g_tab_game.screen_index == 1 then
         ui:begin_window(update_get_loc(e_loc.upp_load_game), 5, 5, w - 10, h - 15, atlas_icons.column_load, is_active and g_tab_game.confirm_load_slot == nil)
-			
+            
         ui:header(update_get_loc(e_loc.upp_save_slots))
 
         local save_slots = update_get_save_slots()
@@ -666,7 +666,7 @@ function tab_game_render(screen_w, screen_h, x, y, w, h, delta_time, is_tab_acti
         end
     elseif g_tab_game.screen_index == 2 then
         ui:begin_window(update_get_loc(e_loc.upp_save_game), 5, 5, w - 10, h - 15, atlas_icons.column_save, is_active and g_tab_game.confirm_save_slot == nil)
-			
+            
         ui:header(update_get_loc(e_loc.upp_save_slots))
 
         local save_slots = update_get_save_slots()
@@ -716,30 +716,30 @@ function tab_game_render(screen_w, screen_h, x, y, w, h, delta_time, is_tab_acti
 
     if g_edit_text then
         g_tab_game.is_overlay = true
-		update_ui_rectangle(0, 0, w, h, color8(0, 0, 0, 200))
+        update_ui_rectangle(0, 0, w, h, color8(0, 0, 0, 200))
 
         local display_text = g_text[g_edit_text] .. iff(math.floor(g_text_blink_time / 1000 * 30) % 20 > 10, "$[1]|", "$[2]|")
-		local border = 32
-		local text_w, text_h = update_ui_get_text_size(display_text, screen_w - border * 2, 1)
+        local border = 32
+        local text_w, text_h = update_ui_get_text_size(display_text, screen_w - border * 2, 1)
 
         update_ui_push_offset(0, -20)
         update_ui_set_text_color(1, color_empty)
-		update_ui_set_text_color(2, color_highlight)
-		update_ui_rectangle_outline(border - 6, screen_h / 2 - 5 - text_h - 2, screen_w - border * 2 + 12, text_h + 4, color_button_bg_inactive)
-		update_ui_text(border, screen_h / 2 - 5 - text_h, display_text, screen_w - border * 2, 1, color_white, 0)
+        update_ui_set_text_color(2, color_highlight)
+        update_ui_rectangle_outline(border - 6, screen_h / 2 - 5 - text_h - 2, screen_w - border * 2 + 12, text_h + 4, color_button_bg_inactive)
+        update_ui_text(border, screen_h / 2 - 5 - text_h, display_text, screen_w - border * 2, 1, color_white, 0)
 
         ui:begin_window("##keyboard", 0, screen_h / 2, screen_w, screen_h, nil, true, 1)
-		
-		local is_done = false
-		g_keyboard_state, g_text[g_edit_text], is_done = ui:keyboard(g_keyboard_state, g_text[g_edit_text])
-		
-		if is_done then
-			g_edit_text = nil
-		end
+        
+        local is_done = false
+        g_keyboard_state, g_text[g_edit_text], is_done = ui:keyboard(g_keyboard_state, g_text[g_edit_text])
+        
+        if is_done then
+            g_edit_text = nil
+        end
 
-		ui:end_window()
+        ui:end_window()
         update_ui_pop_offset()
-	end
+    end
 
     ui:end_ui()
     update_ui_pop_offset()

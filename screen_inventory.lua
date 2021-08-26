@@ -477,7 +477,7 @@ function imgui_barge_table(ui, barges)
     local w, h = ui:get_region()
     local selected_item = -1
 
-	local id_w = update_ui_get_text_size("0000", 10000, 0) + 8
+    local id_w = update_ui_get_text_size("0000", 10000, 0) + 8
 
     local column_widths = { id_w, 94, 60, 40 }
     local column_margins = { 5, 2, 2, 2 }
@@ -607,27 +607,27 @@ function render_map_details(screen_vehicle, screen_w, screen_h, is_tab_active)
     update_set_screen_background_is_render_islands(is_render_islands)
 
     for _, vehicle in iter_vehicles(vehicle_filter) do
-		if vehicle:get_definition_index() ~= e_game_object_type.chassis_carrier then
-			local waypoint_count = vehicle:get_waypoint_count()
+        if vehicle:get_definition_index() ~= e_game_object_type.chassis_carrier then
+            local waypoint_count = vehicle:get_waypoint_count()
 
-			local pos_prev = vehicle:get_position_xz()
+            local pos_prev = vehicle:get_position_xz()
 
-			for i = 0, waypoint_count do
-				local waypoint_data = vehicle:get_waypoint(i)
+            for i = 0, waypoint_count do
+                local waypoint_data = vehicle:get_waypoint(i)
 
-				if waypoint_data:get() then
-					local waypoint_pos = waypoint_data:get_position_xz()
+                if waypoint_data:get() then
+                    local waypoint_pos = waypoint_data:get_position_xz()
 
-					local s0x, s0y = get_screen_from_world(pos_prev:x(), pos_prev:y(), g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
-					
-					local s1x, s1y = get_screen_from_world(waypoint_pos:x(), waypoint_pos:y(), g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
+                    local s0x, s0y = get_screen_from_world(pos_prev:x(), pos_prev:y(), g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
+                    
+                    local s1x, s1y = get_screen_from_world(waypoint_pos:x(), waypoint_pos:y(), g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
 
-					update_ui_line(s0x, s0y, s1x, s1y, color_grey_dark)
+                    update_ui_line(s0x, s0y, s1x, s1y, color_grey_dark)
 
-					pos_prev = waypoint_pos
-				end
-			end
-		end
+                    pos_prev = waypoint_pos
+                end
+            end
+        end
     end
 
     for _, link in iter_resource_links() do
@@ -1138,8 +1138,8 @@ function render_node_tooltip(w, h, id, type)
     local name, color = get_node_data(id, type)
 
     if type == g_link_types.carrier then
-    	local vehicle = update_get_map_vehicle_by_id(id)
-    	local vessel = string.upper( e_vessel_names[vehicle:get_team() + 1] )
+        local vehicle = update_get_map_vehicle_by_id(id)
+        local vessel = string.upper( e_vessel_names[vehicle:get_team() + 1] )
     
         update_ui_image(2, h / 2 - 8, atlas_icons.icon_chassis_16_carrier, color, 0)
         update_ui_text(18, h / 2 - 4, vessel .. " " .. name, 200, 0, color_white, 0)
@@ -1439,7 +1439,7 @@ end
 
 function tab_map_input_scroll(dy)
     if g_is_pointer_hovered and g_tab_map.is_overlay == false then
-		input_map_zoom_camera(1 - dy * 0.15)
+        input_map_zoom_camera(1 - dy * 0.15)
     end
 
     g_ui:input_scroll(dy)

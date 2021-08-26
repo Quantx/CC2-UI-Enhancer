@@ -677,20 +677,20 @@ function render_attachment_info(info_pos, map_data, vehicle, attachment, alpha, 
             local peer_index = update_get_peer_index_by_id(controlling_peer_id)
             local peer_name = update_get_peer_name(peer_index)
             local max_text_chars = 10
-			local is_clipped = false
+            local is_clipped = false
 
-			if utf8.len(peer_name) > max_text_chars then
-				peer_name = peer_name:sub(1, utf8.offset(peer_name, max_text_chars) - 1)
-				is_clipped = true
-			end
+            if utf8.len(peer_name) > max_text_chars then
+                peer_name = peer_name:sub(1, utf8.offset(peer_name, max_text_chars) - 1)
+                is_clipped = true
+            end
 
-			local text_render_w, text_render_h = update_ui_get_text_size(peer_name, 200, 0)
+            local text_render_w, text_render_h = update_ui_get_text_size(peer_name, 200, 0)
             update_ui_image(pos:x(), pos:y(), atlas_icons.column_controlling_peer, color, 0)
             update_ui_text(pos:x() + 12, pos:y(), peer_name, 200, 0, color, 0)
 
             if is_clipped then
-				update_ui_image(pos:x() + 12 + text_render_w, pos:y(), atlas_icons.text_ellipsis, color, 0)
-			end
+                update_ui_image(pos:x() + 12 + text_render_w, pos:y(), atlas_icons.text_ellipsis, color, 0)
+            end
             
             pos:y(pos:y() + 10)
         end
@@ -843,8 +843,8 @@ function render_attachment_info(info_pos, map_data, vehicle, attachment, alpha, 
 
             local consuming_type_names = {
                 [e_team_target_consuming_type.none] = "---",
-	            [e_team_target_consuming_type.attachment] = update_get_loc(e_loc.upp_wep),
-	            [e_team_target_consuming_type.missile] = update_get_loc(e_loc.upp_msl),
+                [e_team_target_consuming_type.attachment] = update_get_loc(e_loc.upp_wep),
+                [e_team_target_consuming_type.missile] = update_get_loc(e_loc.upp_msl),
             }
 
             local consuming_type = attachment:get_weapon_target_consuming_type()
@@ -1194,9 +1194,9 @@ function render_attachment_hud_missile(screen_w, screen_h, map_data, vehicle, at
     local col = color8(0, 255, 0, 255)
     
     render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachment)
-	if attachment:get_definition_index() == e_game_object_type.attachment_turret_missile then
-	    render_turret_vehicle_direction(screen_w, screen_h, vehicle, attachment, col)
-	end
+    if attachment:get_definition_index() == e_game_object_type.attachment_turret_missile then
+        render_turret_vehicle_direction(screen_w, screen_h, vehicle, attachment, col)
+    end
 
     update_ui_image_rot(hud_pos:x() + 1, hud_pos:y() + 1, atlas_icons.hud_horizon_cursor, col, 0)
     render_atachment_projectile_cooldown(hud_pos, attachment, true, color8(0, 255, 0, 255))
@@ -1440,8 +1440,8 @@ function render_attachment_hud_cannon(screen_w, screen_h, map_data, vehicle, att
                 end
             end
         end
-		
-		if def == e_game_object_type.attachment_turret_heavy_cannon and display_zoom > 1 then
+        
+        if def == e_game_object_type.attachment_turret_heavy_cannon and display_zoom > 1 then
             local projectile_gravity = 50 / 30
             local projectile_speed = 600
             local projectile_velocity = update_get_camera_forward()
@@ -1975,7 +1975,7 @@ end
 
 function render_altitude_ticker(pos, altitude, col)
     update_ui_image(pos:x(), pos:y(), atlas_icons.hud_ticker_large, col, 0)
-	if altitude >= 10000 then altitude = math.floor( altitude / 10 ) end
+    if altitude >= 10000 then altitude = math.floor( altitude / 10 ) end
     render_number_ticker(vec2(pos:x() + 6, pos:y() + 2), vec2(30, 13), altitude, 4, 2, col, false)
 end
 
@@ -2669,23 +2669,23 @@ function render_vision_target_missile_outline(pos, is_clamped, col)
 end
 
 function render_turret_vehicle_direction(screen_w, screen_h, vehicle, turret, col)
-	local attachment_icon_region, attachment_16_icon_region = get_attachment_icons(turret:get_definition_index())
---	local icon_w, icon_h = update_ui_get_image_size(attachment_icon_region)
+    local attachment_icon_region, attachment_16_icon_region = get_attachment_icons(turret:get_definition_index())
+--  local icon_w, icon_h = update_ui_get_image_size(attachment_icon_region)
 
-	local hud_size = vec2(230, 140)	
+    local hud_size = vec2(230, 140) 
     local hud_min = vec2((screen_w - hud_size:x()) / 2, (screen_h - hud_size:y()) / 2)
     local hud_pos = vec2(hud_min:x() + hud_size:x() / 2, hud_min:y() + hud_size:y() / 2)
 
-	local pos_x = hud_min:x() + hud_size:x() - 6
-	local pos_y = hud_pos:y() - 30
-	
-	local turret_ang = update_get_camera_heading()
+    local pos_x = hud_min:x() + hud_size:x() - 6
+    local pos_y = hud_pos:y() - 30
+    
+    local turret_ang = update_get_camera_heading()
 
-	local vehicle_dir = vehicle:get_forward()
+    local vehicle_dir = vehicle:get_forward()
     local vehicle_ang = math.atan( vehicle_dir:x(), vehicle_dir:z() )
-	
-	update_ui_image_rot( pos_x, pos_y, atlas_icons.hud_ticker_small, col, -(turret_ang - vehicle_ang) - (math.pi / 2) )
-	update_ui_image_rot( pos_x, pos_y - 4, attachment_icon_region, col, 0 )
+    
+    update_ui_image_rot( pos_x, pos_y, atlas_icons.hud_ticker_small, col, -(turret_ang - vehicle_ang) - (math.pi / 2) )
+    update_ui_image_rot( pos_x, pos_y - 4, attachment_icon_region, col, 0 )
 end
 
 -- toggle between no target and a specific target

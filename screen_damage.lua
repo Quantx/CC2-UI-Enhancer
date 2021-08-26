@@ -42,7 +42,7 @@ end
 
 function update(screen_w, screen_h, ticks) 
     if update_self_destruct_override(screen_w, screen_h) then return end
-	if update_screen_overrides(screen_w, screen_h, ticks)  then return end
+    if update_screen_overrides(screen_w, screen_h, ticks)  then return end
     
     local map_vehicle = update_get_screen_vehicle()
     if map_vehicle:get() == false then return end

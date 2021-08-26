@@ -54,9 +54,9 @@ atlas_icons = {
     icon_attachment_air_bomb_2 = 0,
     icon_attachment_air_bomb_3 = 0,
     icon_attachment_air_bomb_4 = 0,
-	icon_attachment_air_torpedo = 0,
-	icon_attachment_air_torpedo_noisemaker = 0,
-	icon_attachment_air_torpedo_decoy = 0,
+    icon_attachment_air_torpedo = 0,
+    icon_attachment_air_torpedo_noisemaker = 0,
+    icon_attachment_air_torpedo_decoy = 0,
     icon_attachment_air_missile_1 = 0,
     icon_attachment_air_missile_2 = 0,
     icon_attachment_air_missile_3 = 0,
@@ -83,9 +83,9 @@ atlas_icons = {
     icon_attachment_16_air_bomb_2 = 0,
     icon_attachment_16_air_bomb_3 = 0,
     icon_attachment_16_air_bomb_4 = 0,
-	icon_attachment_16_air_torpedo = 0,
-	icon_attachment_16_air_torpedo_noisemaker = 0,
-	icon_attachment_16_air_torpedo_decoy = 0,
+    icon_attachment_16_air_torpedo = 0,
+    icon_attachment_16_air_torpedo_noisemaker = 0,
+    icon_attachment_16_air_torpedo_decoy = 0,
     icon_attachment_16_air_missile_1 = 0,
     icon_attachment_16_air_missile_2 = 0,
     icon_attachment_16_air_missile_3 = 0,
@@ -217,17 +217,17 @@ atlas_icons = {
     damage_br = 0,
     damage_bl = 0,
     damage_thruster = 0,
-	icon_exclamation = 0,
-	icon_play = 0,
-	icon_pause = 0,
-	icon_stop = 0,
-	flag_en = 0,
-	flag_de = 0,
-	flag_fr = 0,
-	flag_es = 0,
-	flag_pt = 0,
-	flag_ru = 0,
-	flag_cn = 0,
+    icon_exclamation = 0,
+    icon_play = 0,
+    icon_pause = 0,
+    icon_stop = 0,
+    flag_en = 0,
+    flag_de = 0,
+    flag_fr = 0,
+    flag_es = 0,
+    flag_pt = 0,
+    flag_ru = 0,
+    flag_cn = 0,
     flag_jp = 0,
     column_profile = 0,
     gamepad_icon_a = 0,
@@ -305,29 +305,29 @@ atlas_icons = {
     text_shift = 0,
     text_del = 0,
     text_space = 0,
-	text_confirm = 0,
-	column_power = 0,
-	column_repair = 0,
-	column_propulsion = 0,
-	column_difficulty = 0,
-	icon_attachment_air_missile_tv = 0,
-	icon_attachment_16_air_missile_tv = 0,
-	map_icon_camera = 0,
-	map_icon_visible = 0,
-	map_icon_ship = 0,
-	icon_chassis_16_ship_light = 0,
+    text_confirm = 0,
+    column_power = 0,
+    column_repair = 0,
+    column_propulsion = 0,
+    column_difficulty = 0,
+    icon_attachment_air_missile_tv = 0,
+    icon_attachment_16_air_missile_tv = 0,
+    map_icon_camera = 0,
+    map_icon_visible = 0,
+    map_icon_ship = 0,
+    icon_chassis_16_ship_light = 0,
     icon_chassis_16_ship_heavy = 0,
     column_locked = 0,
     column_angle = 0,
     hud_audio = 0,
     icon_attachment_radar_golfball = 0,
-	icon_attachment_16_radar_golfball = 0,
+    icon_attachment_16_radar_golfball = 0,
     icon_attachment_sonic_pulse_generator = 0,
-	icon_attachment_16_sonic_pulse_generator = 0,
+    icon_attachment_16_sonic_pulse_generator = 0,
     icon_attachment_smoke_launcher_explosive = 0,
-	icon_attachment_16_smoke_launcher_explosive = 0,
+    icon_attachment_16_smoke_launcher_explosive = 0,
     icon_attachment_smoke_launcher_stream = 0,
-	icon_attachment_16_smoke_launcher_stream = 0,
+    icon_attachment_16_smoke_launcher_stream = 0,
     gamepad_icon_special_dpad_all = 0,
     gamepad_icon_special_dpad_lr = 0,
     gamepad_icon_special_dpad_ud = 0,
@@ -406,9 +406,9 @@ function get_attachment_icons(definition_index)
         [e_game_object_type.attachment_hardpoint_missile_ir] = { atlas_icons.icon_attachment_air_missile_1, atlas_icons.icon_attachment_16_air_missile_1 },
         [e_game_object_type.attachment_hardpoint_missile_laser] = { atlas_icons.icon_attachment_air_missile_2, atlas_icons.icon_attachment_16_air_missile_2 },
         [e_game_object_type.attachment_hardpoint_missile_aa] = { atlas_icons.icon_attachment_air_missile_4, atlas_icons.icon_attachment_16_air_missile_4 },
-		[e_game_object_type.attachment_hardpoint_torpedo] = { atlas_icons.icon_attachment_air_torpedo, atlas_icons.icon_attachment_16_air_torpedo },
-		[e_game_object_type.attachment_hardpoint_torpedo_noisemaker] = { atlas_icons.icon_attachment_air_torpedo_noisemaker, atlas_icons.icon_attachment_16_air_torpedo_noisemaker },
-		[e_game_object_type.attachment_hardpoint_torpedo_decoy] = { atlas_icons.icon_attachment_air_torpedo_decoy, atlas_icons.icon_attachment_16_air_torpedo_decoy },
+        [e_game_object_type.attachment_hardpoint_torpedo] = { atlas_icons.icon_attachment_air_torpedo, atlas_icons.icon_attachment_16_air_torpedo },
+        [e_game_object_type.attachment_hardpoint_torpedo_noisemaker] = { atlas_icons.icon_attachment_air_torpedo_noisemaker, atlas_icons.icon_attachment_16_air_torpedo_noisemaker },
+        [e_game_object_type.attachment_hardpoint_torpedo_decoy] = { atlas_icons.icon_attachment_air_torpedo_decoy, atlas_icons.icon_attachment_16_air_torpedo_decoy },
         [e_game_object_type.attachment_hardpoint_missile_tv] = { atlas_icons.icon_attachment_air_missile_tv, atlas_icons.icon_attachment_16_air_missile_tv },
         [e_game_object_type.attachment_camera] = { atlas_icons.icon_attachment_camera_large, atlas_icons.icon_attachment_16_camera_large },
         [e_game_object_type.attachment_camera_vehicle_control] = { atlas_icons.icon_attachment_small_camera, atlas_icons.icon_attachment_16_small_camera },
@@ -687,34 +687,34 @@ g_self_destruct_modes = {
 }
 
 function update_screen_overrides(screen_w, screen_h, ticks)
-	if update_boot_override(screen_w, screen_h, ticks) then
-		return true
-	elseif update_self_destruct_override(screen_w, screen_h) then
-		return true
-	end
+    if update_boot_override(screen_w, screen_h, ticks) then
+        return true
+    elseif update_self_destruct_override(screen_w, screen_h) then
+        return true
+    end
 
-	return false
+    return false
 end
 
 function update_boot_override(screen_w, screen_h, ticks)
-	if g_is_on then
-		if g_boot_counter > 0 then
-		
-			local cx = screen_w / 2
-			local cy = screen_h / 2
-			
-			update_ui_rectangle(cx - 31, cy - 4, 62, 8, color_white)
-			update_ui_rectangle(cx - 30, cy - 3, 60, 6, color_black)
-			update_ui_rectangle(cx - 30, cy - 3, 60 - (g_boot_counter * 2), 6, color_status_ok)
-			g_boot_counter = g_boot_counter - math.random(0, ticks)
-			
-			return true
-		end
-	else
-		g_boot_counter = 30
-	end
-	
-	return false
+    if g_is_on then
+        if g_boot_counter > 0 then
+        
+            local cx = screen_w / 2
+            local cy = screen_h / 2
+            
+            update_ui_rectangle(cx - 31, cy - 4, 62, 8, color_white)
+            update_ui_rectangle(cx - 30, cy - 3, 60, 6, color_black)
+            update_ui_rectangle(cx - 30, cy - 3, 60 - (g_boot_counter * 2), 6, color_status_ok)
+            g_boot_counter = g_boot_counter - math.random(0, ticks)
+            
+            return true
+        end
+    else
+        g_boot_counter = 30
+    end
+    
+    return false
 end
 
 function update_self_destruct_override(screen_w, screen_h)

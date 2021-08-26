@@ -29,32 +29,32 @@ function update(screen_w, screen_h, ticks)
         update_ui_image_rot(102, 26, atlas_icons.screen_compass_tilt_front_pivot, color_white, -this_vehicle_pitch)
 
         update_ui_text(0, 30, string.format("%.0f", this_vehicle_bearing * (360 / (math.pi * 2))), 128, 1, color_white, 0)
-		
-		local waypoint_count = this_vehicle:get_waypoint_count()
-		
-		if waypoint_count > 0 then
-			local waypoint = this_vehicle:get_waypoint(0)
-			local waypoint_pos = waypoint:get_position_xz()
-			
-			local vehicle_pos = this_vehicle:get_position_xz()
-			
-			local delta_pos_x = waypoint_pos:x() - vehicle_pos:x()
-			local delta_pos_y = waypoint_pos:y() - vehicle_pos:y()
-			
-			local waypoint_angle = (math.pi / 2) - math.atan(delta_pos_y, delta_pos_x)
-			if waypoint_angle < 0 then waypoint_angle = waypoint_angle + (math.pi * 2.0) end
+        
+        local waypoint_count = this_vehicle:get_waypoint_count()
+        
+        if waypoint_count > 0 then
+            local waypoint = this_vehicle:get_waypoint(0)
+            local waypoint_pos = waypoint:get_position_xz()
+            
+            local vehicle_pos = this_vehicle:get_position_xz()
+            
+            local delta_pos_x = waypoint_pos:x() - vehicle_pos:x()
+            local delta_pos_y = waypoint_pos:y() - vehicle_pos:y()
+            
+            local waypoint_angle = (math.pi / 2) - math.atan(delta_pos_y, delta_pos_x)
+            if waypoint_angle < 0 then waypoint_angle = waypoint_angle + (math.pi * 2.0) end
 
-			update_ui_rectangle(50, 14, 28, 12, g_color_waypoint)
-			update_ui_rectangle(51, 15, 26, 10, color_black)
+            update_ui_rectangle(50, 14, 28, 12, g_color_waypoint)
+            update_ui_rectangle(51, 15, 26, 10, color_black)
 
-			update_ui_text(0, 16, string.format("%.0f", math.deg(waypoint_angle)), 128, 1, g_color_waypoint, 0)
-			
-			local dir = (waypoint_angle - this_vehicle_bearing) + (math.pi / 2)
-			local dir_x = math.cos(dir) * -38
-			local dir_y = math.sin(dir) * -38
-			
-			update_ui_line(26 + 38, 42 + 38, 26 + 38 + dir_x, 42 + 38 + dir_y, g_color_waypoint)
-		end
+            update_ui_text(0, 16, string.format("%.0f", math.deg(waypoint_angle)), 128, 1, g_color_waypoint, 0)
+            
+            local dir = (waypoint_angle - this_vehicle_bearing) + (math.pi / 2)
+            local dir_x = math.cos(dir) * -38
+            local dir_y = math.sin(dir) * -38
+            
+            update_ui_line(26 + 38, 42 + 38, 26 + 38 + dir_x, 42 + 38 + dir_y, g_color_waypoint)
+        end
     end
     
     update_ui_line(11, 27, 41, 27, color8(205, 8, 246, 255))
