@@ -16,7 +16,7 @@ function begin()
 end
 
 function update(screen_w, screen_h, ticks) 
-	if update_screen_overrides(screen_w, screen_h, ticks)  then return end
+    if update_screen_overrides(screen_w, screen_h, ticks)  then return end
 
     update_interaction_ui()
 
@@ -79,7 +79,7 @@ function update(screen_w, screen_h, ticks)
 
     ui:end_ui()
 
-	imgui_menu_focus_overlay(ui, screen_w, screen_h, update_get_loc(e_loc.upp_options), ticks)
+    imgui_menu_focus_overlay(ui, screen_w, screen_h, update_get_loc(e_loc.upp_options), ticks)
 end
 
 function update_interaction_ui()
@@ -97,7 +97,7 @@ function input_event(event, action)
         end
     end
 
-	if action == e_input_action.release then
+    if action == e_input_action.release then
         if event == e_input.back then
             if g_selected_panel == 0 then
                 update_set_screen_state_exit()
@@ -123,15 +123,15 @@ function input_pointer(is_hovered, x, y)
     g_is_pointer_hovered = is_hovered
 
     if is_hovered then
-		g_pointer_pos_x = x
-		g_pointer_pos_y = y
+        g_pointer_pos_x = x
+        g_pointer_pos_y = y
     end
     
     g_ui:input_pointer(is_hovered, x, y)
 end
 
 function input_scroll(dy)
-	g_ui:input_scroll(dy)
+    g_ui:input_scroll(dy)
 end
 
 function input_axis(x, y, z, w)

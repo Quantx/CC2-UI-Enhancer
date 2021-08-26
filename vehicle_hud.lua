@@ -671,20 +671,20 @@ function render_attachment_info(info_pos, map_data, vehicle, attachment, alpha, 
             local peer_index = update_get_peer_index_by_id(controlling_peer_id)
             local peer_name = update_get_peer_name(peer_index)
             local max_text_chars = 10
-			local is_clipped = false
+            local is_clipped = false
 
-			if utf8.len(peer_name) > max_text_chars then
-				peer_name = peer_name:sub(1, utf8.offset(peer_name, max_text_chars) - 1)
-				is_clipped = true
-			end
+            if utf8.len(peer_name) > max_text_chars then
+                peer_name = peer_name:sub(1, utf8.offset(peer_name, max_text_chars) - 1)
+                is_clipped = true
+            end
 
-			local text_render_w, text_render_h = update_ui_get_text_size(peer_name, 200, 0)
+            local text_render_w, text_render_h = update_ui_get_text_size(peer_name, 200, 0)
             update_ui_image(pos:x(), pos:y(), atlas_icons.column_controlling_peer, color, 0)
             update_ui_text(pos:x() + 12, pos:y(), peer_name, 200, 0, color, 0)
 
             if is_clipped then
-				update_ui_image(pos:x() + 12 + text_render_w, pos:y(), atlas_icons.text_ellipsis, color, 0)
-			end
+                update_ui_image(pos:x() + 12 + text_render_w, pos:y(), atlas_icons.text_ellipsis, color, 0)
+            end
             
             pos:y(pos:y() + 10)
         end
@@ -837,8 +837,8 @@ function render_attachment_info(info_pos, map_data, vehicle, attachment, alpha, 
 
             local consuming_type_names = {
                 [e_team_target_consuming_type.none] = "---",
-	            [e_team_target_consuming_type.attachment] = update_get_loc(e_loc.upp_wep),
-	            [e_team_target_consuming_type.missile] = update_get_loc(e_loc.upp_msl),
+                [e_team_target_consuming_type.attachment] = update_get_loc(e_loc.upp_wep),
+                [e_team_target_consuming_type.missile] = update_get_loc(e_loc.upp_msl),
             }
 
             local consuming_type = attachment:get_weapon_target_consuming_type()

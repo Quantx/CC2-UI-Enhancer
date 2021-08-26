@@ -1854,8 +1854,8 @@ function input_axis(x, y, z, w)
 end
 
 function input_scroll(dy)
-	if g_is_pointer_hovered then
-		input_zoom_camera(1 - dy * 0.15)
+    if g_is_pointer_hovered then
+        input_zoom_camera(1 - dy * 0.15)
     end
     
     if get_is_selection() then
@@ -1864,7 +1864,7 @@ function input_scroll(dy)
 end
 
 function input_pointer(is_hovered, x, y)
-	g_is_pointer_hovered = is_hovered
+    g_is_pointer_hovered = is_hovered
 
     g_pointer_pos_dx = g_pointer_pos_dx + g_pointer_pos_x - x
     g_pointer_pos_dy = g_pointer_pos_dy + g_pointer_pos_y - y

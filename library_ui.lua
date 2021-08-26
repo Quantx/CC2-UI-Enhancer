@@ -1838,11 +1838,11 @@ function imgui_options_menu(ui, x, y, w, h, is_active, selected_category_index, 
             ui:header(update_get_loc(e_loc.upp_quality))
             settings.gfx_lights                     = ui:combo(update_get_loc(e_loc.lights), settings.gfx_lights, { update_get_loc(e_loc.low), update_get_loc(e_loc.med), update_get_loc(e_loc.high) })
             settings.gfx_main_shadows               = ui:combo(update_get_loc(e_loc.main_shadow), settings.gfx_main_shadows, { update_get_loc(e_loc.off), update_get_loc(e_loc.low), update_get_loc(e_loc.med), update_get_loc(e_loc.high), update_get_loc(e_loc.ultra) })
-			settings.gfx_spotlight_shadows          = ui:combo(update_get_loc(e_loc.spot_shadow), settings.gfx_spotlight_shadows, { update_get_loc(e_loc.off), update_get_loc(e_loc.low), update_get_loc(e_loc.med), update_get_loc(e_loc.high), update_get_loc(e_loc.ultra) })
-			settings.gfx_trees                  	= ui:combo(update_get_loc(e_loc.trees), settings.gfx_trees, { update_get_loc(e_loc.low), update_get_loc(e_loc.med), update_get_loc(e_loc.high), update_get_loc(e_loc.ultra) })
-			settings.gfx_ocean_foam             	= ui:checkbox(update_get_loc(e_loc.ocean_foam), settings.gfx_ocean_foam )
-			settings.gfx_screen_lights              = ui:checkbox(update_get_loc(e_loc.screen_glow), settings.gfx_screen_lights )
-            settings.gfx_bloom             			= ui:slider(update_get_loc(e_loc.bloom), settings.gfx_bloom, 0, 2)
+            settings.gfx_spotlight_shadows          = ui:combo(update_get_loc(e_loc.spot_shadow), settings.gfx_spotlight_shadows, { update_get_loc(e_loc.off), update_get_loc(e_loc.low), update_get_loc(e_loc.med), update_get_loc(e_loc.high), update_get_loc(e_loc.ultra) })
+            settings.gfx_trees                      = ui:combo(update_get_loc(e_loc.trees), settings.gfx_trees, { update_get_loc(e_loc.low), update_get_loc(e_loc.med), update_get_loc(e_loc.high), update_get_loc(e_loc.ultra) })
+            settings.gfx_ocean_foam                 = ui:checkbox(update_get_loc(e_loc.ocean_foam), settings.gfx_ocean_foam )
+            settings.gfx_screen_lights              = ui:checkbox(update_get_loc(e_loc.screen_glow), settings.gfx_screen_lights )
+            settings.gfx_bloom                      = ui:slider(update_get_loc(e_loc.bloom), settings.gfx_bloom, 0, 2)
             settings.gfx_antialiasing               = ui:checkbox(update_get_loc(e_loc.antialiasing), settings.gfx_antialiasing )
             ui:header(update_get_loc(e_loc.upp_display))
             
@@ -1879,9 +1879,9 @@ function imgui_options_menu(ui, x, y, w, h, is_active, selected_category_index, 
             end
 
             settings.gfx_gamma                      = ui:slider(update_get_loc(e_loc.gamma), settings.gfx_gamma, -1, 1)
-			
+            
             if update_get_is_vr() == false then
-                settings.gfx_fov                      	= ui:slider(update_get_loc(e_loc.fov), settings.gfx_fov, 0.75, 1.15, 0.05)
+                settings.gfx_fov                        = ui:slider(update_get_loc(e_loc.fov), settings.gfx_fov, 0.75, 1.15, 0.05)
             end
             
             settings.gfx_screen_shake               = ui:slider(update_get_loc(e_loc.screen_shake), settings.gfx_screen_shake, 0.0, 1.0)

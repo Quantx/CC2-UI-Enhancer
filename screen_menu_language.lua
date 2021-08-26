@@ -49,15 +49,15 @@ function update(screen_w, screen_h, ticks)
     local flag_size_x = 36
     local flag_size_y = 24
     local flag_spacing_x = 10
-	local flag_spacing_y = 2
+    local flag_spacing_y = 2
     local flag_border_x = 22
     local flag_border_y = 14
-	
+    
     local is_use_pointer = g_is_pointer_hovered and update_get_active_input_type() == e_active_input.keyboard
     
-	local flag_icons = {atlas_icons.flag_en, atlas_icons.flag_fr, atlas_icons.flag_de, atlas_icons.flag_sp, atlas_icons.flag_ru, atlas_icons.flag_pt, atlas_icons.flag_cn, atlas_icons.flag_jp}
-	
-	local icon = flag_icons[0]
+    local flag_icons = {atlas_icons.flag_en, atlas_icons.flag_fr, atlas_icons.flag_de, atlas_icons.flag_sp, atlas_icons.flag_ru, atlas_icons.flag_pt, atlas_icons.flag_cn, atlas_icons.flag_jp}
+    
+    local icon = flag_icons[0]
 
     for x = 0, g_grid_size_x - 1, 1 do 
         for y = 0, g_grid_size_y - 1, 1 do 
@@ -76,11 +76,11 @@ function update(screen_w, screen_h, ticks)
             if (x == g_highlight_x) and (y == g_highlight_y) and update_get_is_focus_local() then
                 update_ui_rectangle(rect_x, rect_y, rect_w, rect_h, color8(255, 255, 255, 255))
             end
-			
-			if (x == g_active_x) and (y == g_active_y) then
+            
+            if (x == g_active_x) and (y == g_active_y) then
                 update_ui_image(flag_border_x + 1 + (x * (flag_size_x + flag_spacing_x)), flag_border_y + 1 + (y * (flag_size_y + flag_spacing_y)), get_flag_icon(x+(y*g_grid_size_x)), color8(255, 255, 255, 255), 0)
-			else
-				update_ui_image(flag_border_x + 1 + (x * (flag_size_x + flag_spacing_x)), flag_border_y + 1 + (y * (flag_size_y + flag_spacing_y)), get_flag_icon(x+(y*g_grid_size_x)), color8(16, 16, 16, 255), 0)
+            else
+                update_ui_image(flag_border_x + 1 + (x * (flag_size_x + flag_spacing_x)), flag_border_y + 1 + (y * (flag_size_y + flag_spacing_y)), get_flag_icon(x+(y*g_grid_size_x)), color8(16, 16, 16, 255), 0)
             end
         end
     end
@@ -104,11 +104,11 @@ function input_event(event, action)
         elseif event == e_input.action_a or event == e_input.pointer_1 then
             g_active_x = g_highlight_x
             g_active_y = g_highlight_y
-			update_ui_event(get_event_string(g_active_x + (g_active_y * g_grid_size_x)))
+            update_ui_event(get_event_string(g_active_x + (g_active_y * g_grid_size_x)))
         end
     end
 
-	if action == e_input_action.release then
+    if action == e_input_action.release then
         if event == e_input.back then
             update_set_screen_state_exit()
         end
@@ -119,8 +119,8 @@ function input_pointer(is_hovered, x, y)
     g_is_pointer_hovered = is_hovered
 
     if is_hovered then
-		g_pointer_pos_x = x
-		g_pointer_pos_y = y
+        g_pointer_pos_x = x
+        g_pointer_pos_y = y
     end
 end
 

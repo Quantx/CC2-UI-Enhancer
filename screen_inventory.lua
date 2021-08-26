@@ -1434,7 +1434,7 @@ end
 
 function tab_map_input_scroll(dy)
     if g_is_pointer_hovered and g_tab_map.is_overlay == false then
-		input_map_zoom_camera(1 - dy * 0.15)
+        input_map_zoom_camera(1 - dy * 0.15)
     end
 
     g_ui:input_scroll(dy)

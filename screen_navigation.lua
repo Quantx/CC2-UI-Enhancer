@@ -233,13 +233,13 @@ function input_event(event, action)
                 g_screen_index = 0
             end
         end
-	elseif g_screen_index == 2 then
-		if action == e_input_action.release then
+    elseif g_screen_index == 2 then
+        if action == e_input_action.release then
             if event == e_input.back then
                 update_set_screen_state_exit()
             end
         end
-	end
+    end
 end
 
 function input_pointer(is_hovered, x, y)
