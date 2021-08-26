@@ -530,17 +530,20 @@ end
 function get_all_air_vehicles()
     local vehicle_list = {}
 
+    local carrier_vehicle = update_get_screen_vehicle()
+    local carrier_pos = carrier_vehicle:get_position_xz()
+
     local vehicle_count = update_get_map_vehicle_count()
     local screen_team = update_get_screen_team_id()
     
     for i = 0, vehicle_count - 1, 1 do 
         local vehicle = update_get_map_vehicle_by_index(i)
 
-        if vehicle:get() and vehicle:get_team() == screen_team and vehicle:get_dock_state() ~= e_vehicle_dock_state.docked then
+        if vehicle:get() and vehicle:get_team() == screen_team and vehicle:get_dock_state() ~= e_vehicle_dock_state.docked and vec2_dist( carrier_pos, vehicle:get_position_xz() ) <= 10000 then
             local def_index = vehicle:get_definition_index()
             if def_index == e_game_object_type.chassis_air_wing_light or def_index == e_game_object_type.chassis_air_wing_heavy then
                 table.insert(vehicle_list, {
-                    vehicle = vehicle,  
+                    vehicle = vehicle,
                     is_wing = true,
                     is_rotor = false
                 })
@@ -560,17 +563,20 @@ end
 function get_all_surface_vehicles()
     local vehicle_list = {}
 
+    local carrier_vehicle = update_get_screen_vehicle()
+    local carrier_pos = carrier_vehicle:get_position_xz()
+
     local vehicle_count = update_get_map_vehicle_count()
     local screen_team = update_get_screen_team_id()
     
     for i = 0, vehicle_count - 1, 1 do 
         local vehicle = update_get_map_vehicle_by_index(i)
 
-        if vehicle:get() and vehicle:get_team() == screen_team and vehicle:get_dock_state() ~= e_vehicle_dock_state.docked then
+        if vehicle:get() and vehicle:get_team() == screen_team and vehicle:get_dock_state() ~= e_vehicle_dock_state.docked and vec2_dist( carrier_pos, vehicle:get_position_xz() ) <= 10000 then
             local def_index = vehicle:get_definition_index()
             if def_index == e_game_object_type.chassis_land_wheel_light or def_index == e_game_object_type.chassis_land_wheel_medium or def_index == e_game_object_type.chassis_land_wheel_heavy then
                 table.insert(vehicle_list, {
-                    vehicle = vehicle,  
+                    vehicle = vehicle,
                     is_wing = false,
                     is_rotor = false
                 })

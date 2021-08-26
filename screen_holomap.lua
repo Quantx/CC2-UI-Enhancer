@@ -1635,7 +1635,9 @@ function render_startup_manual( screen_w, screen_h )
     ui:end_window()
 end
 
-function ui_render_selection_carrier_vehicle_overview(x, y, w, h)
+function ui_render_selection_carrier_vehicle_overview(x, y, w, h, carrier_vehicle)
+    local carrier_pos = carrier_vehicle:get_position_xz()
+
     local vehicle_count = update_get_map_vehicle_count()
     local deployed_vehicles = {}
 
@@ -1644,8 +1646,9 @@ function ui_render_selection_carrier_vehicle_overview(x, y, w, h)
 
         if vehicle:get() then
             local vehicle_team = vehicle:get_team()
+            local vehicle_dist = vec2_dist( carrier_pos, vehicle:get_position_xz() )
 
-            if vehicle_team == update_get_screen_team_id() then
+            if vehicle_team == update_get_screen_team_id() and vehicle_dist <= 10000 then
                 local def = vehicle:get_definition_index()
 
                 if def ~= e_game_object_type.chassis_carrier and def ~= e_game_object_type.chassis_sea_barge and def ~= e_game_object_type.chassis_land_turret and def ~= e_game_object_type.chassis_land_robot_dog and def ~= e_game_object_type.chassis_spaceship and def ~= e_game_object_type.drydock then
@@ -1733,7 +1736,7 @@ function render_selection_carrier(screen_w, screen_h, carrier_vehicle)
     ui:end_window()
     
     ui:begin_window(update_get_loc(e_loc.upp_deployed), 10 + (screen_w / 4), 145, left_w, 100, atlas_icons.column_pending, false, 2)
-        ui_render_selection_carrier_vehicle_overview(0, 0, left_w, 100)
+        ui_render_selection_carrier_vehicle_overview(0, 0, left_w, 100, carrier_vehicle)
     ui:end_window()
     
     window = ui:begin_window(update_get_loc(e_loc.upp_loadout), 10 + (screen_w / 4) + left_w + 5, 10, 74, 84, atlas_icons.column_stock, false, 2)
