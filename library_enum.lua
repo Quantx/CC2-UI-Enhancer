@@ -1523,8 +1523,12 @@ e_loc = {
 	vr_move_mode_smooth = 1383,
 	vr_smooth_move_speed = 1384,
 	vr_smooth_rotate_speed = 1385,
+	vr_recenter = 1386,
+	upp_stall = 1387,
+	upp_settings_gameplay = 1388,
+	eyes_level_with_horizon = 1389,
 
-	count = 1386,
+	count = 1390,
 }
 
 e_resource_node_type = {

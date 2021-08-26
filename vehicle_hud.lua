@@ -1656,7 +1656,8 @@ function render_flight_hud(screen_w, screen_h, is_render_center, vehicle)
 
     local warning_y = hud_min:y() - 10
     local is_missile_tracking = vehicle:get_is_missile_tracking()
-    
+    local is_stall = vehicle:get_position():y() > 1050
+
     if get_is_damage_warning(vehicle) then
         render_warning_text(hud_pos:x(), warning_y, update_get_loc(e_loc.upp_dmg_critical), col_red)
         warning_y = warning_y - 10
@@ -1664,6 +1665,11 @@ function render_flight_hud(screen_w, screen_h, is_render_center, vehicle)
     
     if is_missile_tracking then
         render_warning_text(hud_pos:x(), warning_y, update_get_loc(e_loc.upp_msl_incoming), col_red)
+        warning_y = warning_y - 10
+    end
+
+    if is_stall then
+        render_warning_text(hud_pos:x(), warning_y, update_get_loc(e_loc.upp_stall), col_red)
         warning_y = warning_y - 10
     end
 
@@ -2647,6 +2653,9 @@ function get_is_vision_target_lock_behaviour(attachment_def)
         or attachment_def == e_game_object_type.attachment_hardpoint_missile_ir
         or attachment_def == e_game_object_type.attachment_hardpoint_missile_laser
         or attachment_def == e_game_object_type.attachment_hardpoint_missile_aa
+        or attachment_def == e_game_object_type.attachment_hardpoint_bomb_1
+        or attachment_def == e_game_object_type.attachment_hardpoint_bomb_2
+        or attachment_def == e_game_object_type.attachment_hardpoint_bomb_3
         or attachment_def == e_game_object_type.attachment_turret_carrier_missile
         or attachment_def == e_game_object_type.attachment_turret_carrier_missile_silo
         or attachment_def == e_game_object_type.attachment_turret_ciws

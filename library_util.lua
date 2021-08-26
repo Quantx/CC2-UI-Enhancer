@@ -596,7 +596,7 @@ function clamp_str(str, max_chars)
         if(offset == nil) then
             return str:sub(1, max_chars)
         else
-            return str:sub(1, offset-1)
+            return str:sub(1, offset)
         end
     end
 

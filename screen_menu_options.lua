@@ -59,6 +59,11 @@ function update(screen_w, screen_h, ticks)
     ui:list_item(update_get_loc(e_loc.upp_graphics))
     ui:list_item(update_get_loc(e_loc.upp_audio))
     ui:list_item(update_get_loc(e_loc.upp_ui))
+
+    if update_get_is_vr() == false then
+        ui:list_item(update_get_loc(e_loc.upp_settings_gameplay))
+    end
+    
     if update_get_is_vr() then
         ui:list_item(update_get_loc(e_loc.upp_vr))
     else

@@ -448,7 +448,7 @@ g_message_box = {
 
 		local fade_in_duration_millis = 500
 		local fade_out_duration_millis = 500
-		local text_duration_millis = update_ui_get_text_size(self.text, 10000, 0) * 30
+		local text_duration_millis = update_ui_get_text_size(self.text, 10000, 0) * 3
 		local delay_duration_millis = 1000
 		local appear_duration = 500
 		local key_duration_millis = 500

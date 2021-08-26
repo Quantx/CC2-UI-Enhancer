@@ -1920,6 +1920,12 @@ function imgui_options_menu(ui, x, y, w, h, is_active, selected_category_index, 
             end
         ui:end_window()
     elseif selected_category_index == 3 then
+        local window = ui:begin_window(update_get_loc(e_loc.upp_settings_gameplay), x, y, w, h, nil, is_active, 0, true, is_highlight)
+            window.label_bias = window_label_bias
+
+            settings.gameplay_lock_camera_to_horizon    = ui:checkbox(update_get_loc(e_loc.eyes_level_with_horizon), settings.gameplay_lock_camera_to_horizon)
+        ui:end_window()
+    elseif selected_category_index == 4 then
         if update_get_is_vr() then
             local window = ui:begin_window(update_get_loc(e_loc.upp_vr), x, y, w, h, nil, is_active, 0, true, is_highlight)
                 window.label_bias = window_label_bias
@@ -1954,7 +1960,7 @@ function imgui_options_menu(ui, x, y, w, h, is_active, selected_category_index, 
                 end
             ui:end_window()
         end
-    elseif selected_category_index == 4 then
+    elseif selected_category_index == 5 then
         local window = ui:begin_window(update_get_loc(e_loc.upp_mouse), x, y, w, h, nil, is_active, 0, true, is_highlight)
             window.label_bias = window_label_bias
 
@@ -1965,7 +1971,7 @@ function imgui_options_menu(ui, x, y, w, h, is_active, selected_category_index, 
             settings.mouse_inv_x                    = ui:checkbox(update_get_loc(e_loc.horizontal), settings.mouse_inv_x)
             settings.mouse_inv_y                    = ui:checkbox(update_get_loc(e_loc.vertical), settings.mouse_inv_y)
         ui:end_window()
-    elseif selected_category_index == 5 then
+    elseif selected_category_index == 6 then
         local window = ui:begin_window(update_get_loc(e_loc.upp_gamepad), x, y, w, h, nil, is_active, 0, true, is_highlight)
             window.label_bias = window_label_bias
             
