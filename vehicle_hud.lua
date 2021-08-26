@@ -2549,15 +2549,21 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
     local vehicle_info_data = nil
 
     for _, data in pairs(target_data) do
-        if target_selected == nil or target_selected == data then
-            local is_target_locked = is_target_lock_behaviour and g_selected_target_id == data.id and g_selected_target_type == data.type
-            local is_friendly = data.team == vehicle_team
-            local col = iff(is_target_locked, colors.green, iff(is_friendly, color_friendly, colors.red))
-            local is_hovered = data == target_hovered
-            local is_render_health = (data == target_selected or (target_selected == nil and data == target_hovered)) and data.is_observed
+        if data.type == 1 then -- vehicle
+            if target_selected == nil or target_selected == data then
+                local is_target_locked = is_target_lock_behaviour and g_selected_target_id == data.id and g_selected_target_type == data.type
+                local is_friendly = data.team == vehicle_team
+                local col = iff(is_friendly, color_friendly, colors.red)
+                local is_hovered = data == target_hovered
+                local is_render_health = (data == target_selected or (target_selected == nil and data == target_hovered)) and data.is_observed
 
-            if data.type == 1 and data.is_observed == false and is_vision_reveal_targets and is_hovered then
-                if data.is_clamped == false then
+                if data.is_observed then
+                    render_vision_target_vehicle_outline(data.screen_pos, data.vehicle, data.is_clamped, is_target_locked or data.is_laser_target, is_friendly, is_render_health, col)
+
+                    if data.is_clamped == false and (is_hovered or data.is_laser_target) then
+                        vehicle_info_data = data
+                    end
+                elseif is_vision_reveal_targets and is_hovered and data.is_clamped == false then
                     local factor = data.vehicle:get_observation_factor()
 
                     if factor > 0 then
@@ -2574,24 +2580,10 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
                         update_ui_pop_offset()
                     end
                 end
-            elseif (data.is_observed and is_target_observation_behaviour == false) or is_hovered or data.is_laser_target then
-                if data.type == 1 then
-                    render_vision_target_vehicle_outline(data.screen_pos, data.vehicle, data.is_clamped, is_target_locked or data.is_laser_target, is_friendly, is_render_health, col)
-                elseif data.type == 2 then
-                    render_vision_target_missile_outline(data.screen_pos, data.is_clamped, col)
-                end
-    
-                if data.is_clamped == false and (data == target_hovered or data.is_laser_target) then
-                    if data.type == 1 then
-                        vehicle_info_data = data
-                    elseif data.type == 2 then
-                        -- render missile info not used yet, but keep it anyway
-                        render_target_vehicle_info(data.screen_pos, data, colors.green)
-                    end
-                end
-            elseif data.type == 1 and data.is_observed and is_target_observation_behaviour and is_hovered == false then
-                render_vision_target_vehicle_outline(data.screen_pos, data.vehicle, data.is_clamped, is_target_locked or data.is_laser_target, is_friendly, is_render_health, col)
             end
+        elseif data.type == 2 then -- missile
+            render_vision_target_missile_outline(data.screen_pos, data.is_clamped, color_friendly)
+            render_target_missile_info(data.screen_pos, data, colors.green)
         end
     end
 
