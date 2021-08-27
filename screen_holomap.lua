@@ -740,7 +740,7 @@ function update(screen_w, screen_h, ticks)
                         local highlighted_waypoint = highlighted_vehicle:get_waypoint_by_id(g_highlighted_waypoint_id)
                         
                         if get_is_vehicle_air(vehicle_definition_index) then
-                            local alt_str = string.format( "%.0f m", highlighted_waypoint:get_altitude() )
+                            local alt_str = string.format( "%.0f ", highlighted_waypoint:get_altitude() ) .. update_get_loc(e_loc.acronym_meters)
                             local alt_width = update_ui_get_text_size(alt_str, 10000, 0) + 4
                             
                             render_tooltip(10, 10, screen_w - 20, screen_h - 20, g_pointer_pos_x, g_pointer_pos_y, alt_width, 14, 10, function(w, h)    update_ui_text(2, 2, alt_str, w - 4, 0, color_white, 0) end)
@@ -788,11 +788,11 @@ function update(screen_w, screen_h, ticks)
             cy = cy - 10
 
             update_ui_text(cx, cy, "Y", 100, 0, icon_col, 0)
-            update_ui_text(cx + 15, cy, string.format("%.0f", world_x), 100, 0, text_col, 0)
+            update_ui_text(cx + 15, cy, string.format("%.0f", world_y), 100, 0, text_col, 0)
             cy = cy - 10
             
             update_ui_text(cx, cy, "X", 100, 0, icon_col, 0)
-            update_ui_text(cx + 15, cy, string.format("%.0f", world_y), 100, 0, text_col, 0)
+            update_ui_text(cx + 15, cy, string.format("%.0f", world_x), 100, 0, text_col, 0)
             cy = cy - 10
         end
 
