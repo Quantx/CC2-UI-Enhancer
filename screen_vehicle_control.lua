@@ -326,9 +326,23 @@ function render_selection_waypoint(screen_w, screen_h)
                 if get_is_vehicle_air(vehicle_definition_index) then
                     ui:header(update_get_loc(e_loc.upp_air))
 
-                    -- waypont altitude selector
+                    -- waypoint altitude selector
                     waypoint_altitude, is_modified = ui:selector(update_get_loc(e_loc.upp_altitude), waypoint_altitude, 50, 2000, 50)
                     if is_modified then selected_vehicle:set_waypoint_altitude(g_selection_waypoint_id, waypoint_altitude) end
+
+                    -- waypoint altitude increments
+                    local inc_val = { -500, -100, 100, 500 }
+                    local inc_act = ui:button_group({ "-500", "-100", "+100", "+500" }, true)
+                    if inc_act >= 0 and inc_act < #inc_val then
+                        selected_vehicle:set_waypoint_altitude(g_selection_waypoint_id, math.max( 50, math.min( 2000, waypoint_altitude + inc_val[inc_act + 1])))
+                    end
+
+                    -- waypoint altitude presets
+                    local pre_val = { 400, 1100, 1700, 2000 }
+                    local pre_act = ui:button_group({ "400", "1100", "1700", "2000" }, true)
+                    if pre_act >= 0 and pre_act < #pre_val then
+                        selected_vehicle:set_waypoint_altitude(g_selection_waypoint_id, pre_val[pre_act + 1])
+                    end
                 end
             ui:end_window()
         else
