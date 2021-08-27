@@ -327,14 +327,14 @@ function render_selection_waypoint(screen_w, screen_h)
                     ui:header(update_get_loc(e_loc.upp_air))
 
                     -- waypoint altitude selector
-                    waypoint_altitude, is_modified = ui:selector(update_get_loc(e_loc.upp_altitude), waypoint_altitude, 50, 2000, 50)
+                    waypoint_altitude, is_modified = ui:selector(update_get_loc(e_loc.upp_altitude), waypoint_altitude, 0, 2000, 50)
                     if is_modified then selected_vehicle:set_waypoint_altitude(g_selection_waypoint_id, waypoint_altitude) end
 
                     -- waypoint altitude increments
                     local inc_val = { -500, -100, 100, 500 }
                     local inc_act = ui:button_group({ "-500", "-100", "+100", "+500" }, true)
                     if inc_act >= 0 and inc_act < #inc_val then
-                        selected_vehicle:set_waypoint_altitude(g_selection_waypoint_id, math.max( 50, math.min( 2000, waypoint_altitude + inc_val[inc_act + 1])))
+                        selected_vehicle:set_waypoint_altitude(g_selection_waypoint_id, math.max( 0, math.min( 2000, waypoint_altitude + inc_val[inc_act + 1])))
                     end
 
                     -- waypoint altitude presets
@@ -2005,7 +2005,7 @@ function render_vehicle_tooltip(w, h, vehicle)
         local team_id = vehicle:get_team() + 1
         display_id = string.upper( e_vessel_names[team_id] )
     else
-        display_id = string.format( "ID %.0f", vehicle:get_id() )
+        display_id = update_get_loc(e_loc.upp_id) .. string.format( " %.0f", vehicle:get_id() )
     end
 
     if vehicle:get_is_observation_type_revealed() then
