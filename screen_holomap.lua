@@ -750,11 +750,13 @@ function update(screen_w, screen_h, ticks)
                         render_tooltip(10, 10, screen_w - 20, screen_h - 20, g_pointer_pos_x, g_pointer_pos_y, 128, tool_height, 10, function(w, h) render_vehicle_tooltip(w, h, highlighted_vehicle) end)
                         
                         if vehicle_definition_index ~= e_game_object_type.chassis_carrier then
-                            local weapon_range = get_vehicle_weapon_range(highlighted_vehicle)
-                            local vehicle_pos_xz = highlighted_vehicle:get_position_xz()
+                            if highlighted_vehicle:get_team() == screen_team or highlighted_vehicle:get_is_observation_weapon_revealed() then
+                                local weapon_range = get_vehicle_weapon_range(highlighted_vehicle)
+                                local vehicle_pos_xz = highlighted_vehicle:get_position_xz()
 
-                            if weapon_range > 0 then
-                                render_weapon_radius(vehicle_pos_xz:x(), vehicle_pos_xz:y(), weapon_range, screen_w, screen_h)
+                                if weapon_range > 0 then
+                                    render_weapon_radius(vehicle_pos_xz:x(), vehicle_pos_xz:y(), weapon_range, screen_w, screen_h)
+                                end
                             end
                         end
                     end
