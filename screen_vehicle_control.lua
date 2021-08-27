@@ -2013,19 +2013,26 @@ function render_vehicle_tooltip(w, h, vehicle)
         if vehicle:get_is_observation_weapon_revealed() then
             -- render primary attachment icon
 
+            local attachments = {}
+
             for i = 0, vehicle:get_attachment_count() - 1 do
                 local attachment_type = vehicle:get_attachment_type(i)
-                if attachment_type == e_game_object_attachment_type.plate_large or attachment_type == e_game_object_attachment_type.plate_huge then
+                if  attachment_type ~= e_game_object_attachment_type.plate_small
+                and attachment_type ~= e_game_object_attachment_type.plate_small_inverted then
                     local attachment = vehicle:get_attachment(i)
 
                     if attachment:get() then
-                        local icon, icon_16 = get_attachment_icons(attachment:get_definition_index())
-
-                        if icon_16 ~= nil then
-                            update_ui_image(cx, cy, icon_16, color_white, 0)
-                            break
-                        end
+                        table.insert(attachments, attachment)
                     end
+                end
+            end
+            
+            if #attachments > 0 then
+                local attachment_index = (math.floor( g_animation_time / 30 ) % (#attachments)) + 1
+                local icon, icon_16 = get_attachment_icons(attachments[attachment_index]:get_definition_index())
+
+                if icon_16 ~= nil then
+                    update_ui_image(cx, cy, icon_16, color_white, 0)
                 end
             end
         else

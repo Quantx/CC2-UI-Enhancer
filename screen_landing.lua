@@ -336,6 +336,12 @@ function render_vehicle_list( win_list, is_air )
                 if waypoint:get_type() == e_waypoint_type.deploy then
                     vehicle_state_string = "DPLY"
                     vehicle_state_color = color8(255, 100, 0, 255)
+                elseif waypoint:get_type() == e_waypoint_type.dock then
+                    vehicle_state_string = "RTRN"
+                    vehicle_state_color = g_colors.dock_queue
+                elseif waypoint:get_type() == e_waypoint_type.support then
+                    vehicle_state_string = "SUPP"
+                    vehicle_state_color = color_white
                 elseif waypoint:get_is_wait_group(0) and waypoint_dist then
                     vehicle_state_string = "WG A"
                     vehicle_state_color = color_status_warning
