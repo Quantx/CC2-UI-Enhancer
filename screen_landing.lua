@@ -176,7 +176,7 @@ function render_vehicle_list( win_list, is_air )
 
     local blink = 30
     
-    local column_name = iff( g_animation_time % (blink * 2) > blink, "ID", "NAME" ) 
+    local column_name = iff( g_animation_time % (blink * 2) > blink, update_get_loc(e_loc.upp_id), "NAME" )
 
     imgui_table_header(ui, {
         { w=column_widths[1], margin=column_margins[1], value=atlas_icons.column_transit },
