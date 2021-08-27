@@ -1115,7 +1115,9 @@ function render_attachment_hud_camera(screen_w, screen_h, map_data, vehicle, att
         local zoom_factor = attachment:get_zoom_factor()
         local angle = math.pi * 0.5 * zoom_factor
         update_ui_image_rot(hud_pos:x() + math.cos(angle - math.pi) * outer_radius, hud_pos:y() + math.sin(angle - math.pi) * outer_radius, atlas_icons.hud_zoom_indicator_2, col, angle)
-        update_ui_image_rot(hud_pos:x(), hud_pos:y() - 0.5, atlas_icons.hud_zoom_indicator, col, 0)
+        --update_ui_image_rot(hud_pos:x(), hud_pos:y() - 0.5, atlas_icons.hud_zoom_indicator, col, 0)
+        update_ui_rectangle(hud_pos:x() - 1, hud_pos:y(), 3, 1, col)
+        update_ui_rectangle(hud_pos:x(), hud_pos:y() - 1, 1, 3, col)
 
         if zoom_factor > 0.01 then
             render_circle(hud_pos, lerp(inner_radius, inner_radius * 0.9, zoom_factor), 16, col)
@@ -2470,13 +2472,16 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
             -- render right side of marker
             local cursor_y = pos:y() - 4
 
+            local capabilities = get_vehicle_capability(data.vehicle)
+            local capability_index = (math.floor( g_animation_time / 1000 ) % (#capabilities)) + 1
+
             if data.team == vehicle_team then
                 local name, icon, handle = get_chassis_data_by_definition_index(def)
                 update_ui_text(pos:x() + 9, cursor_y, handle, 200, 0, col, 0)
                 update_ui_image(pos:x() + 26, cursor_y - 3, icon, col, 0)
                 cursor_y = cursor_y + 10
 
-                update_ui_text(pos:x() + 9, cursor_y, get_vehicle_capability(data.vehicle), 200, 0, col, 0)
+                update_ui_text(pos:x() + 9, cursor_y, capabilities[capability_index].name, 64, 0, col, 0)
             else
                 if data.vehicle:get_is_observation_type_revealed() then
                     local name, icon, handle = get_chassis_data_by_definition_index(def)
@@ -2489,7 +2494,7 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
                 end
                     
                 if data.vehicle:get_is_observation_weapon_revealed() then
-                    update_ui_text(pos:x() + 9, cursor_y, get_vehicle_capability(data.vehicle), 200, 0, col, 0)
+                    update_ui_text(pos:x() + 9, cursor_y, capabilities[capability_index].name, 64, 0, col, 0)
                     cursor_y = cursor_y + 10
                 end
     

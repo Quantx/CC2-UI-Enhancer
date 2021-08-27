@@ -425,9 +425,7 @@ end
 function get_vehicle_capability(vehicle)
     local attachment_count = vehicle:get_attachment_count()
 
-    local has_missiles = false
-    local has_ciws = false
-    local has_cannon = false
+    local capabilities = {}
 
     for i = 0, attachment_count - 1 do
         local attachment = vehicle:get_attachment(i)
@@ -435,29 +433,41 @@ function get_vehicle_capability(vehicle)
         if attachment:get() then
             local attachment_def = attachment:get_definition_index()
 
-            if attachment_def == e_game_object_type.attachment_turret_15mm
-            or attachment_def == e_game_object_type.attachment_turret_30mm
-            or attachment_def == e_game_object_type.attachment_turret_40mm
-            or attachment_def == e_game_object_type.attachment_turret_heavy_cannon
-            or attachment_def == e_game_object_type.attachment_turret_artillery
-            or attachment_def == e_game_object_type.attachment_turret_battle_cannon
-            then
-                has_cannon = true
-            elseif attachment_def == e_game_object_type.attachment_turret_missile then
-                has_missiles = true
-            elseif attachment_def == e_game_object_type.attachment_turret_ciws then
-                has_ciws = true
+            if attachment_def ~= e_game_object_type.attachment_camera_vehicle_control then
+               capabilities[attachment_def] = get_attachment_data_by_definition_index(attachment_def)
             end
+--[[
+            if attachment_def == e_game_object_type.attachment_turret_15mm then
+                capabilities[1] = update_get_loc(e_loc.upp_gun) .. " 15MM"
+            elseif attachment_def == e_game_object_type.attachment_turret_30mm then
+                capabilities[2] = update_get_loc(e_loc.upp_gun) .. " 30MM"
+            elseif attachment_def == e_game_object_type.attachment_turret_40mm then
+                capabilities[3] = update_get_loc(e_loc.upp_gun) .. " 40MM"
+            elseif attachment_def == e_game_object_type.attachment_turret_heavy_cannon then
+                capabilities[4] = update_get_loc(e_loc.upp_gun) .. " HCAN"
+            elseif attachment_def == e_game_object_type.attachment_turret_artillery then
+                capabilities[5] = update_get_loc(e_loc.upp_gun) .. " ARTY"
+            elseif attachment_def == e_game_object_type.attachment_turret_battle_cannon then
+                capabilities[6] = update_get_loc(e_loc.upp_gun) .. " BCAN"
+            elseif attachment_def == e_game_object_type.attachment_turret_missile then
+                capabilities[7] = update_get_loc(e_loc.upp_msl)
+            elseif attachment_def == e_game_object_type.attachment_turret_ciws then
+                capabilities[8] = update_get_loc(e_loc.upp_a_msl)
+            end
+--]]
         end
     end
 
-    local capabilities = {}
-
-    if has_missiles then table.insert(capabilities, update_get_loc(e_loc.upp_msl)) end
-    if has_ciws then table.insert(capabilities, update_get_loc(e_loc.upp_aa)) end
-    if has_cannon then table.insert(capabilities, update_get_loc(e_loc.upp_gun)) end
+    local out = {}
     
-    return join_strings(capabilities, "/")
+    -- Big enough to iterate over all possible attachments
+    for i = 0, 2000 do
+        if capabilities[i] ~= nil then
+            table.insert( out, capabilities[i] )
+        end
+    end
+
+    return out
 end
 
 function join_strings(strings, delim)
