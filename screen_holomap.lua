@@ -1284,46 +1284,63 @@ function render_vehicle_tooltip(w, h, vehicle)
 
     cx = cx + 10
 
+    local display_id = ""
+    if vehicle_definition_index == e_game_object_type.chassis_carrier then
+        local team_id = vehicle:get_team() + 1
+        display_id = string.upper( e_vessel_names[team_id] )
+    else
+        display_id = string.format( "ID %.0f", vehicle:get_id() )
+    end
+
     if vehicle:get_is_observation_type_revealed() then
---        update_ui_image(cx, 2, vehicle_definition_region, color8(255, 255, 255, 255), 0)
+--        update_ui_image(cx, 2, vehicle_definition_region, color_white, 0)
 --        cx = cx + 18
 
-        local display_name = nil
-        if vehicle_definition_index == e_game_object_type.chassis_carrier then
-            local team_id = vehicle:get_team() + 1
-            display_name = string.upper( e_vessel_names[team_id] ) .. " " .. vehicle_definition_name
-        else
-            display_name = vehicle_definition_name .. string.format( " %.0f", vehicle:get_id() )
-        end
+        update_ui_text(cx, 11, display_id, 124, 0, color_white, 0)
 
-        update_ui_text(cx, 6, display_name, 124, 0, color8(255, 255, 255, 255), 0)
-        cx = cx + update_ui_get_text_size(display_name, 10000, 0) + 2
+        local display_name = vehicle_definition_name
+        update_ui_text(cx, 1, display_name, 124, 0, color_white, 0)
+        cx = cx + math.max(update_ui_get_text_size(display_id,   10000, 0),
+                           update_ui_get_text_size(display_name, 10000, 0)) + 2
     else
 --        update_ui_image(cx, 2, atlas_icons.icon_chassis_16_wheel_small, color_inactive, 0)
 --        cx = cx + 18
 
-        local display_name = string.format( "ID:%.0f", vehicle:get_id() )
-        update_ui_text(cx, 6, display_name, 124, 0, color_inactive, 0)
-        cx = cx + update_ui_get_text_size(display_name, 10000, 0) + 2
+        update_ui_text(cx, 11, display_id, 124, 0, color_inactive, 0)
+
+        local display_name = "***"
+        update_ui_text(cx, 1, display_name, 124, 0, color_inactive, 0)
+        cx = cx + math.max(update_ui_get_text_size(display_id,   10000, 0),
+                           update_ui_get_text_size(display_name, 10000, 0)) + 2
     end
 
-    if vehicle_definition_index ~= e_game_object_type.chassis_carrier then
+    if  vehicle_definition_index ~= e_game_object_type.chassis_carrier
+--    and vehicle_definition_index ~= e_game_object_type.chassis_sea_ship_light
+--    and vehicle_definition_index ~= e_game_object_type.chassis_sea_ship_heavy
+    then
         if vehicle:get_is_observation_weapon_revealed() then
             -- render primary attachment icon
 
+            local attachments = {}
+
             for i = 0, vehicle:get_attachment_count() - 1 do
                 local attachment_type = vehicle:get_attachment_type(i)
-                if attachment_type == e_game_object_attachment_type.plate_large or attachment_type == e_game_object_attachment_type.plate_huge then
+                if  attachment_type ~= e_game_object_attachment_type.plate_small
+                and attachment_type ~= e_game_object_attachment_type.plate_small_inverted then
                     local attachment = vehicle:get_attachment(i)
 
                     if attachment:get() then
-                        local icon, icon_16 = get_attachment_icons(attachment:get_definition_index())
-
-                        if icon_16 ~= nil then
-                            update_ui_image(cx, cy, icon_16, color_white, 0)
-                            break
-                        end
+                        table.insert(attachments, attachment)
                     end
+                end
+            end
+
+            if #attachments > 0 then
+                local attachment_index = (math.floor( g_animation_time / 20 ) % (#attachments)) + 1
+                local icon, icon_16 = get_attachment_icons(attachments[attachment_index]:get_definition_index())
+
+                if icon_16 ~= nil then
+                    update_ui_image(cx, cy, icon_16, color_white, 0)
                 end
             end
         else
