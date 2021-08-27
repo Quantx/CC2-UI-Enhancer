@@ -1291,7 +1291,7 @@ function render_vehicle_tooltip(w, h, vehicle)
         local team_id = vehicle:get_team() + 1
         display_id = string.upper( e_vessel_names[team_id] )
     else
-        display_id = string.format( "ID %.0f", vehicle:get_id() )
+        display_id = update_get_loc(e_loc.upp_id) .. string.format( " %.0f", vehicle:get_id() )
     end
 
     if vehicle:get_is_observation_type_revealed() then

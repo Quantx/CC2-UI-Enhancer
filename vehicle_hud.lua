@@ -2477,13 +2477,13 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
             if def ~= e_game_object_type.chassis_carrier then
                 local capabilities = get_vehicle_capability(data.vehicle)
                 local capability_index = (math.floor( g_animation_time / 1000 ) % (#capabilities)) + 1
-                capability_name = capabilities[capability_index].name
+                capability_name = capabilities[capability_index].name_short
             end
 
             if data.team == vehicle_team then
                 local name, icon, handle = get_chassis_data_by_definition_index(def)
                 update_ui_text(pos:x() + 9, cursor_y, handle, 200, 0, col, 0)
-                update_ui_image(pos:x() + 26, cursor_y - 3, icon, col, 0)
+                update_ui_image(pos:x() + 26, cursor_y - 4, icon, col, 0)
                 cursor_y = cursor_y + 10
 
                 update_ui_text(pos:x() + 9, cursor_y, capability_name, 64, 0, col, 0)
@@ -2491,7 +2491,7 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
                 if data.vehicle:get_is_observation_type_revealed() then
                     local name, icon, handle = get_chassis_data_by_definition_index(def)
                     update_ui_text(pos:x() + 9, cursor_y, handle, 200, 0, col, 0)
-                    update_ui_image(pos:x() + 26, cursor_y - 3, icon, col, 0)
+                    update_ui_image(pos:x() + 26, cursor_y - 4, icon, col, 0)
                     cursor_y = cursor_y + 10
                 elseif data.vehicle:get_is_observation_revealed() then
                     update_ui_text(pos:x() + 9, cursor_y, "***", 200, 0, col, 0)

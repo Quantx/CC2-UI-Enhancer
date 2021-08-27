@@ -75,158 +75,197 @@ function get_attachment_data_by_definition_index(index)
         [-1] = { 
             name = update_get_loc(e_loc.upp_unknown),
             icon16 = atlas_icons.icon_attachment_16_none,
+            name_short = update_get_loc(e_loc.upp_unknown),
         },
         [e_game_object_type.attachment_turret_15mm] = {
             name = update_get_loc(e_loc.upp_15mm_cannon),
             icon16 = atlas_icons.icon_attachment_16_turret_main_gun_light,
+            name_short = update_get_loc(e_loc.upp_gun) .. " 15MM",
         },
         [e_game_object_type.attachment_turret_30mm] = {
             name = update_get_loc(e_loc.upp_30mm_cannon),
             icon16 = atlas_icons.icon_attachment_16_turret_main_gun,
+            name_short = update_get_loc(e_loc.upp_gun) .. " 30MM",
         },
         [e_game_object_type.attachment_turret_40mm] = {
             name = update_get_loc(e_loc.upp_40mm_cannon),
             icon16 = atlas_icons.icon_attachment_16_turret_main_gun_2,
+            name_short = update_get_loc(e_loc.upp_gun) .. " 40MM",
         },
         [e_game_object_type.attachment_turret_heavy_cannon] = {
             name = update_get_loc(e_loc.upp_heavy_cannon),
             icon16 = atlas_icons.icon_attachment_16_turret_main_heavy_cannon,
+            name_short = update_get_loc(e_loc.upp_gun) .. " HEAVY",
         },
         [e_game_object_type.attachment_turret_battle_cannon] = {
             name = update_get_loc(e_loc.upp_100mm_cannon),
             icon16 = atlas_icons.icon_attachment_16_turret_main_battle_cannon,
+            name_short = update_get_loc(e_loc.upp_gun) .. " BATTLE",
         },
         [e_game_object_type.attachment_turret_artillery] = {
             name = update_get_loc(e_loc.upp_artillery_gun),
             icon16 = atlas_icons.icon_attachment_16_turret_artillery,
+            name_short = update_get_loc(e_loc.upp_gun) .. " 120MM",
         },
         [e_game_object_type.attachment_turret_carrier_main_gun] = {
             name = update_get_loc(e_loc.upp_naval_gun),
             icon16 = atlas_icons.icon_attachment_16_none,
+            name_short = update_get_loc(e_loc.upp_gun) .. " 160MM",
         },
         [e_game_object_type.attachment_turret_plane_chaingun] = {
             name = update_get_loc(e_loc.upp_20mm_auto_cannon),
             icon16 = atlas_icons.icon_attachment_16_air_chaingun,
+            name_short = "CHAINGUN",
         },
         [e_game_object_type.attachment_turret_rocket_pod] = {
             name = update_get_loc(e_loc.upp_rocket_pod),
             icon16 = atlas_icons.icon_attachment_16_rocket_pod,
+            name_short = "ROCKET POD",
         },
         [e_game_object_type.attachment_turret_robot_dog_capsule] = {
             name = update_get_loc(e_loc.upp_control_bots),
             icon16 = atlas_icons.icon_attachment_16_turret_robots,
+            name_short = update_get_loc(e_loc.upp_control_bot),
         },
         [e_game_object_type.attachment_turret_ciws] = {
             name = update_get_loc(e_loc.upp_anti_air_cannon),
             icon16 = atlas_icons.icon_attachment_16_turret_ciws,
+            name_short = update_get_loc(e_loc.upp_a_msl),
         },
         [e_game_object_type.attachment_turret_missile] = {
             name = update_get_loc(e_loc.upp_missile_array),
             icon16 = atlas_icons.icon_attachment_16_turret_missile,
+            name_short = update_get_loc(e_loc.upp_msl) .. " IR",
         },
         [e_game_object_type.attachment_turret_carrier_ciws] = {
             name = update_get_loc(e_loc.upp_naval_anti_air_cannon),
             icon16 = atlas_icons.icon_attachment_16_none,
+            name_short = update_get_loc(e_loc.upp_a_msl),
         },
         [e_game_object_type.attachment_turret_carrier_missile] = {
             name = update_get_loc(e_loc.upp_naval_missile_array),
             icon16 = atlas_icons.icon_attachment_16_none,
+            name_short = update_get_loc(e_loc.upp_msl) .. " AA",
         },
         [e_game_object_type.attachment_turret_carrier_missile_silo] = {
             name = update_get_loc(e_loc.upp_naval_cruise_missile),
             icon16 = atlas_icons.icon_attachment_16_none,
+            name_short = "CRUISE MSL",
         },
         [e_game_object_type.attachment_turret_carrier_flare_launcher] = {
             name = update_get_loc(e_loc.upp_naval_flare_launcher),
             icon16 = atlas_icons.icon_attachment_16_none,
+            name_short = "FLARE",
         },
         [e_game_object_type.attachment_turret_carrier_camera] = {
             name = update_get_loc(e_loc.upp_naval_camera),
             icon16 = atlas_icons.icon_attachment_16_none,
+            name_short = "CAMERA",
         },
         [e_game_object_type.attachment_hardpoint_bomb_1] = {
             name = update_get_loc(e_loc.upp_bomb_1),
             icon16 = atlas_icons.icon_attachment_16_air_bomb_1,
+            name_short = "BOMB LIGHT",
         },
         [e_game_object_type.attachment_hardpoint_bomb_2] = {
             name = update_get_loc(e_loc.upp_bomb_2),
             icon16 = atlas_icons.icon_attachment_16_air_bomb_2,
+            name_short = "BOMB MEDIUM",
         },
         [e_game_object_type.attachment_hardpoint_bomb_3] = {
             name = update_get_loc(e_loc.upp_bomb_3),
             icon16 = atlas_icons.icon_attachment_16_air_bomb_3,
+            name_short = "BOMB HEAVY",
         },
         [e_game_object_type.attachment_hardpoint_torpedo] = {
             name = update_get_loc(e_loc.upp_torpedo),
             icon16 = atlas_icons.icon_attachment_16_air_torpedo,
+            name_short = "TORP EXPL",
         },
         [e_game_object_type.attachment_hardpoint_torpedo_noisemaker] = {
             name = update_get_loc(e_loc.upp_torpedo_noisemaker),
             icon16 = atlas_icons.icon_attachment_16_air_torpedo_noisemaker,
+            name_short = "TORP NOISE",
         },
         [e_game_object_type.attachment_hardpoint_torpedo_decoy] = {
             name = update_get_loc(e_loc.upp_torpedo_decoy),
             icon16 = atlas_icons.icon_attachment_16_air_torpedo_decoy,
+            name_short = "TORP DECOY",
         },
         [e_game_object_type.attachment_hardpoint_missile_ir] = {
             name = update_get_loc(e_loc.upp_missile_1),
             icon16 = atlas_icons.icon_attachment_16_air_missile_1,
+            name_short = update_get_loc(e_loc.upp_msl) .. " IR",
         },
         [e_game_object_type.attachment_hardpoint_missile_laser] = {
             name = update_get_loc(e_loc.upp_missile_2),
             icon16 = atlas_icons.icon_attachment_16_air_missile_2,
+            name_short = update_get_loc(e_loc.upp_msl) .. " LSR",
         },
         [e_game_object_type.attachment_hardpoint_missile_aa] = {
             name = update_get_loc(e_loc.upp_missile_4),
             icon16 = atlas_icons.icon_attachment_16_air_missile_4,
+            name_short = update_get_loc(e_loc.upp_msl) .. " AA",
         },
         [e_game_object_type.attachment_hardpoint_missile_tv] = {
             name = update_get_loc(e_loc.upp_missile_tv),
             icon16 = atlas_icons.icon_attachment_16_air_missile_tv,
+            name_short = update_get_loc(e_loc.upp_msl) .. " TV",
         },
         [e_game_object_type.attachment_camera] = {
             name = update_get_loc(e_loc.upp_actuated_camera),
             icon16 = atlas_icons.icon_attachment_16_camera_large,
+            name_short = "CAMERA",
         },
         [e_game_object_type.attachment_camera_vehicle_control] = {
             name = update_get_loc(e_loc.upp_fixed_camera),
             icon16 = atlas_icons.icon_attachment_16_small_camera,
+            name_short = "CONTROL",
         },
         [e_game_object_type.attachment_camera_plane] = {
             name = update_get_loc(e_loc.upp_gimbal_camera),
             icon16 = atlas_icons.icon_attachment_16_camera_aircraft,
+            name_short = "CAMERA",
         },
         [e_game_object_type.attachment_camera_observation] = {
             name = update_get_loc(e_loc.upp_observation_camera),
             icon16 = atlas_icons.icon_attachment_16_small_camera_obs,
+            name_short = "CAMERA",
         },
         [e_game_object_type.attachment_radar_awacs] = {
             name = update_get_loc(e_loc.upp_awacs_radar_system),
             icon16 = atlas_icons.icon_attachment_16_air_radar,
+            name_short = "AWACS",
         },
         [e_game_object_type.attachment_fuel_tank_plane] = {
             name = update_get_loc(e_loc.upp_external_fuel_tank),
             icon16 = atlas_icons.icon_attachment_16_air_fuel,
+            name_short = "FUEL TANK",
         },
         [e_game_object_type.attachment_flare_launcher] = {
             name = update_get_loc(e_loc.upp_ir_countermeasures),
             icon16 = atlas_icons.icon_attachment_16_small_flare,
+            name_short = "FLARE",
         },
         [e_game_object_type.attachment_radar_golfball] = {
             name = update_get_loc(e_loc.upp_radar_golfball),
             icon16 = atlas_icons.icon_attachment_16_radar_golfball,
+            name_short = "RADAR",
         },
         [e_game_object_type.attachment_sonic_pulse_generator] = {
             name = update_get_loc(e_loc.upp_sonic_pulse_generator),
             icon16 = atlas_icons.icon_attachment_16_sonic_pulse_generator,
+            name_short = "PULSE GEN",
         },
         [e_game_object_type.attachment_smoke_launcher_explosive] = {
             name = update_get_loc(e_loc.upp_smoke_launcher_explosive),
             icon16 = atlas_icons.icon_attachment_16_smoke_launcher_explosive,
+            name_short = "SMK EXPL",
         },
         [e_game_object_type.attachment_smoke_launcher_stream] = {
             name = update_get_loc(e_loc.upp_smoke_launcher_stream),
             icon16 = atlas_icons.icon_attachment_16_smoke_launcher_stream,
+            name_short = "SMK STRM",
         },
     }
 
