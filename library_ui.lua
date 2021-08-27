@@ -1920,12 +1920,6 @@ function imgui_options_menu(ui, x, y, w, h, is_active, selected_category_index, 
             end
         ui:end_window()
     elseif selected_category_index == 3 then
-        local window = ui:begin_window(update_get_loc(e_loc.upp_settings_gameplay), x, y, w, h, nil, is_active, 0, true, is_highlight)
-            window.label_bias = window_label_bias
-
-            settings.gameplay_lock_camera_to_horizon    = ui:checkbox(update_get_loc(e_loc.eyes_level_with_horizon), settings.gameplay_lock_camera_to_horizon)
-        ui:end_window()
-    elseif selected_category_index == 4 then
         if update_get_is_vr() then
             local window = ui:begin_window(update_get_loc(e_loc.upp_vr), x, y, w, h, nil, is_active, 0, true, is_highlight)
                 window.label_bias = window_label_bias
@@ -1939,27 +1933,33 @@ function imgui_options_menu(ui, x, y, w, h, is_active, selected_category_index, 
                 settings.vr_smooth_rotate_speed         = ui:slider(update_get_loc(e_loc.vr_smooth_rotate_speed), settings.vr_smooth_rotate_speed, 0.5, 2, 0.1)
             ui:end_window()
         else
-            local window = ui:begin_window(update_get_loc(e_loc.upp_keyboard), x, y, w, h, nil, is_active, 0, true, is_highlight)
+            local window = ui:begin_window(update_get_loc(e_loc.upp_settings_gameplay), x, y, w, h, nil, is_active, 0, true, is_highlight)
                 window.label_bias = window_label_bias
-    
-                settings.keyboard_back_opens_pause      = ui:checkbox(update_get_loc(e_loc.BACK_opens_pause_menu), settings.keyboard_back_opens_pause)
-    
-                ui:header(update_get_loc(e_loc.upp_bindings_keys))
-    
-                if ui:button(update_get_loc(e_loc.upp_reset), true, 1) then
-                    update_ui_event("rebind_input keyboard reset")
-                end
-                
-                for i = 0, input_count - 1 do
-                    if update_get_is_input_rebindable_keyboard(i) then
-                        if ui:keybinding(update_get_game_input_name(i), update_get_input_binding_keyboard_key(i), update_get_input_binding_keyboard_pointer(i), -1, -1) then
-                            update_ui_event("rebind_input keyboard " .. i)
-                        end
-                        ui:divider()
-                    end
-                end
+
+                settings.gameplay_lock_camera_to_horizon    = ui:checkbox(update_get_loc(e_loc.eyes_level_with_horizon), settings.gameplay_lock_camera_to_horizon)
             ui:end_window()
-        end
+            end
+    elseif selected_category_index == 4 then
+        local window = ui:begin_window(update_get_loc(e_loc.upp_keyboard), x, y, w, h, nil, is_active, 0, true, is_highlight)
+            window.label_bias = window_label_bias
+
+            settings.keyboard_back_opens_pause      = ui:checkbox(update_get_loc(e_loc.BACK_opens_pause_menu), settings.keyboard_back_opens_pause)
+
+            ui:header(update_get_loc(e_loc.upp_bindings_keys))
+
+            if ui:button(update_get_loc(e_loc.upp_reset), true, 1) then
+                update_ui_event("rebind_input keyboard reset")
+            end
+            
+            for i = 0, input_count - 1 do
+                if update_get_is_input_rebindable_keyboard(i) then
+                    if ui:keybinding(update_get_game_input_name(i), update_get_input_binding_keyboard_key(i), update_get_input_binding_keyboard_pointer(i), -1, -1) then
+                        update_ui_event("rebind_input keyboard " .. i)
+                    end
+                    ui:divider()
+                end
+            end
+        ui:end_window()
     elseif selected_category_index == 5 then
         local window = ui:begin_window(update_get_loc(e_loc.upp_mouse), x, y, w, h, nil, is_active, 0, true, is_highlight)
             window.label_bias = window_label_bias
