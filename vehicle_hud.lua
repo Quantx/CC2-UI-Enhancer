@@ -2512,10 +2512,12 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
             -- render left side of marker
             cursor_y = pos:y() - 4
 
-            local id_str = string.format( "ID %.0f", data.id)
+            local id_str = ""
 
             if def == e_game_object_type.chassis_carrier then
                 id_str = string.upper( e_vessel_names[data.team + 1] )
+            else
+                id_str = update_get_loc(e_loc.upp_id) .. string.format( " %.0f", data.id)
             end
 
             local id_w = update_ui_get_text_size(id_str, 10000, 1) + 7
