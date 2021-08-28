@@ -422,6 +422,8 @@ function get_attachment_icons(definition_index)
         [e_game_object_type.attachment_turret_carrier_missile_silo] = { atlas_icons.icon_attachment_turret_missile, atlas_icons.icon_attachment_16_turret_missile },
         [e_game_object_type.attachment_turret_carrier_main_gun] = { atlas_icons.icon_attachment_turret_main_battle_cannon, atlas_icons.icon_attachment_16_turret_main_battle_cannon },
         [e_game_object_type.attachment_turret_carrier_flare_launcher] = { atlas_icons.icon_attachment_small_flare, atlas_icons.icon_attachment_16_small_flare },
+        [e_game_object_type.attachment_turret_carrier_torpedo] = { atlas_icons.icon_attachment_air_torpedo, atlas_icons.icon_attachment_16_air_torpedo },
+        [e_game_object_type.attachment_turret_carrier_torpedo_decoy] = { atlas_icons.icon_attachment_air_torpedo_decoy, atlas_icons.icon_attachment_16_air_torpedo_decoy },
         [e_game_object_type.attachment_turret_carrier_camera] = { atlas_icons.icon_attachment_camera_large, atlas_icons.icon_attachment_16_camera_large },
         [e_game_object_type.attachment_turret_battle_cannon] = { atlas_icons.icon_attachment_turret_main_battle_cannon, atlas_icons.icon_attachment_16_turret_main_battle_cannon },
         [e_game_object_type.attachment_turret_artillery] = { atlas_icons.icon_attachment_turret_artillery, atlas_icons.icon_attachment_16_turret_artillery },
