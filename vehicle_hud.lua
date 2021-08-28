@@ -2662,9 +2662,11 @@ function render_vision_target_vehicle_outline(pos, vehicle, is_clamped, is_targe
 
             if is_clamped then
                 local bar_size = math.ceil(5 * hitpoint_factor - 0.01)
+                update_ui_rectangle(pos:x() - 2, pos:y() + 4, 5, 1, color8(16, 16, 16, 255))
                 update_ui_rectangle(pos:x() - 2, pos:y() + 4, bar_size, 1, col)
             else
                 local bar_size = math.ceil(13 * hitpoint_factor - 0.01)
+                update_ui_rectangle(pos:x() - 6, pos:y() + 8, 13, 1, color8(16, 16, 16, 255))
                 update_ui_rectangle(pos:x() - 6, pos:y() + 8, bar_size, 1, col)
             end
         end
