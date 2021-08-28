@@ -2462,6 +2462,68 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
     end
 
     -- render targets
+    local function render_target_vehicle_peers(pos, data, col)
+        -- nothing to do in single player or for enemy vehicles
+        if not update_get_is_multiplayer() or data.team ~= vehicle_team then return end
+
+        local v = data.vehicle
+
+        -- don't show peers for carrier
+        if v:get_definition_index() == e_game_object_type.chassis_carrier then return end
+
+        -- get all peers connected to the vehicle
+        local peers = {}
+
+        local a_count = v:get_attachment_count()
+        for i = 0, a_count - 1 do
+            local a = v:get_attachment(i)
+            if a:get() then
+                local peer_id = a:get_controlling_peer_id()
+
+                if peer_id ~= 0 then
+                    local peer_ctrl = a:get_control_mode() == "manual"
+
+                    local peer_index = update_get_peer_index_by_id(peer_id)
+                    local peer = {
+                        index = peer_index,
+                        name = update_get_peer_name(peer_index),
+                        ctrl = peer_ctrl
+                    }
+
+                    table.insert( peers, peer )
+                end
+            end
+        end
+
+        local cursor_y = pos:y() - 16
+
+        for i = 1, #peers do
+            local peer = peers[i]
+            local peer_name = peer.name
+
+            local max_text_chars = 10
+            local is_clipped = false
+
+            if utf8.len(peer_name) > max_text_chars then
+                peer_name = peer_name:sub(1, utf8.offset(peer_name, max_text_chars) - 1)
+                is_clipped = true
+            end
+
+            local text_render_w, text_render_h = update_ui_get_text_size(peer_name, 200, 0)
+
+            if peer.ctrl then
+                update_ui_image((pos:x() - text_render_w / 2) - 12, cursor_y, atlas_icons.column_controlling_peer, col, 0)
+            end
+
+            update_ui_text(pos:x() - text_render_w / 2, cursor_y, peer_name, text_render_w, 0, col, 0)
+
+            if is_clipped then
+                update_ui_image(pos:x() + text_render_w / 2, cursor_y, atlas_icons.text_ellipsis, col, 0)
+            end
+
+            cursor_y = cursor_y - 10
+        end
+    end
 
     local function render_target_vehicle_info(pos, data, col)
         if data.is_laser_target then
@@ -2602,6 +2664,7 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
     -- Always draw info on top
     if vehicle_info_data ~= nil then
         render_target_vehicle_info(vehicle_info_data.screen_pos, vehicle_info_data, colors.green)
+        render_target_vehicle_peers(vehicle_info_data.screen_pos, vehicle_info_data, colors.green)
     end
 
     if is_vision_reveal_targets and target_hovered ~= nil and target_hovered.type == 1 and target_hovered.vehicle:get_is_observation_fully_revealed() == false then
