@@ -475,6 +475,7 @@ function get_vehicle_capability(vehicle)
 
             if attachment_def ~= e_game_object_type.attachment_camera_vehicle_control then
                capabilities[attachment_def] = get_attachment_data_by_definition_index(attachment_def)
+               capabilities[attachment_def].definition = attachment_def
             end
 --[[
             if attachment_def == e_game_object_type.attachment_turret_15mm then
