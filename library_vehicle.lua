@@ -73,6 +73,7 @@ end
 function get_attachment_data_by_definition_index(index)
     local attachment_data = {
         [-1] = { 
+            unknown = true,
             name = update_get_loc(e_loc.upp_unknown),
             icon16 = atlas_icons.icon_attachment_16_none,
             name_short = update_get_loc(e_loc.upp_unknown),
@@ -501,7 +502,7 @@ function get_vehicle_capability(vehicle)
     
     -- Big enough to iterate over all possible attachments
     for i = 0, 2000 do
-        if capabilities[i] ~= nil then
+        if capabilities[i] ~= nil and not capabilities[i].unknown then
             table.insert( out, capabilities[i] )
         end
     end
