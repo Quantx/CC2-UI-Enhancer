@@ -233,7 +233,7 @@ function render_selection_vehicle(screen_w, screen_h, vehicle)
             ui:begin_window(title, 10, 10, left_w, 100, atlas_icons.column_pending, true, 2)
                 ui:stat(update_get_loc(e_loc.hp), hitpoints .. "/" .. hitpoints_total, iff(damage_factor < 0.2, color_low, color_high))
 
-                if vehicle:get_definition_index() == e_game_object_type.chassis_land_turret then
+                if vehicle_definition_index == e_game_object_type.chassis_land_turret then
                     ui:stat(update_get_loc(e_loc.upp_fuel), "---", color_grey_dark)
                     ui:stat(update_get_loc(e_loc.upp_ammo), "---", color_grey_dark)
                 else
