@@ -703,11 +703,11 @@ function update(screen_w, screen_h, ticks)
                 update_ui_line(screen_beg_x, screen_beg_y, screen_end_x, screen_end_y, color_grey_dark)
                 
                 update_ui_text(cx, cy, "X", 100, 0, icon_col, 0)
-                update_ui_text(cx + 15, cy, string.format("%.0f", g_ruler_end_x), 100, 0, text_col, 0)
+                update_ui_text(cx + 15, cy, string.format("%.3f", g_ruler_end_x / 500), 100, 0, text_col, 0)
                 cy = cy + 10
                 
                 update_ui_text(cx, cy, "Y", 100, 0, icon_col, 0)
-                update_ui_text(cx + 15, cy, string.format("%.0f", g_ruler_end_y), 100, 0, text_col, 0)
+                update_ui_text(cx + 15, cy, string.format("%.3f", g_ruler_end_y / 500), 100, 0, text_col, 0)
                 cy = cy + 10
                 
                 local dist = vec2_dist(vec2(g_ruler_beg_x, g_ruler_beg_y), vec2(g_ruler_end_x, g_ruler_end_y))
@@ -782,17 +782,17 @@ function update(screen_w, screen_h, ticks)
                 update_ui_text(cx + 15, cy, string.format("%.0f ", map_scale) .. update_get_loc(e_loc.acronym_meters), 100, 0, text_col, 0)
             else
                 update_ui_image(cx, cy, atlas_icons.column_distance, icon_col, 0)
-                update_ui_text(cx + 15, cy, string.format("%.2f ", map_scale / 1000) .. update_get_loc(e_loc.acronym_kilometers), 100, 0, text_col, 0)
+                update_ui_text(cx + 15, cy, string.format("%.0f ", map_scale / 1000) .. update_get_loc(e_loc.acronym_kilometers), 100, 0, text_col, 0)
             end
             
             cy = cy - 10
 
             update_ui_text(cx, cy, "Y", 100, 0, icon_col, 0)
-            update_ui_text(cx + 15, cy, string.format("%.0f", world_y), 100, 0, text_col, 0)
+            update_ui_text(cx + 15, cy, string.format("%.3f", world_y / 500), 100, 0, text_col, 0)
             cy = cy - 10
             
             update_ui_text(cx, cy, "X", 100, 0, icon_col, 0)
-            update_ui_text(cx + 15, cy, string.format("%.0f", world_x), 100, 0, text_col, 0)
+            update_ui_text(cx + 15, cy, string.format("%.3f", world_x / 500), 100, 0, text_col, 0)
             cy = cy - 10
         end
 

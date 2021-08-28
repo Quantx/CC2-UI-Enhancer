@@ -20,6 +20,7 @@ g_is_vehicle_team_colors = true
 g_is_island_team_colors = true
 g_is_carrier_waypoint = false
 g_is_pip_enable = true
+g_is_render_grid = true
 
 g_blend_tick = 0
 g_prev_pos_x = 0
@@ -480,6 +481,7 @@ function render_selection_map(screen_w, screen_h)
 
         g_is_carrier_waypoint = ui:checkbox("SHOW CARRIER WAYPOINTS", g_is_carrier_waypoint)
         g_is_pip_enable = ui:checkbox("ENABLE CCTV FEED", g_is_pip_enable)
+        g_is_render_grid = ui:checkbox("SHOW GRID", g_is_render_grid)
 
         ui:spacer(5)
 
@@ -631,6 +633,43 @@ function update(screen_w, screen_h, ticks)
         is_render_islands = (g_camera_size < (64 * 1024))
 
         update_set_screen_background_is_render_islands(is_render_islands)
+
+        -- render grid squares
+        local grid_scale = 500
+        local grid_scale_size = g_camera_size
+
+        while grid_scale_size > 2000 and grid_scale < 16000 do
+            grid_scale_size = grid_scale_size / 2
+            grid_scale = grid_scale * 2
+        end
+
+        if g_is_render_grid then
+            local grid_color = color8(0, 123, 201, 64)
+
+            local grid_x, grid_y = get_world_from_screen(0, 0, g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
+
+            grid_x = math.ceil( grid_x / grid_scale ) * grid_scale
+            grid_y = math.floor( grid_y / grid_scale ) * grid_scale
+
+            -- Grid start coordinate
+            local screen_grid_x, screen_grid_y = get_screen_from_world(grid_x, grid_y, g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
+
+            -- Grid step coordinate
+            local screen_grid_w, screen_grid_h = get_screen_from_world(grid_x + grid_scale, grid_y - grid_scale, g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
+
+            screen_grid_w = screen_grid_w - screen_grid_x
+            screen_grid_h = screen_grid_h - screen_grid_y
+
+            -- Draw vertical grid lines
+            for i = screen_grid_x, screen_w, screen_grid_w do
+                update_ui_rectangle(i, 0, 1, screen_h, grid_color)
+            end
+
+            -- Draw horizontal grid lines
+            for i = screen_grid_y, screen_h, screen_grid_h do
+                update_ui_rectangle(0, i, screen_w, 1, grid_color)
+            end
+        end
 
         if is_render_islands == false then
             local island_count = update_get_tile_count()
@@ -1325,8 +1364,10 @@ function update(screen_w, screen_h, ticks)
             end
         end
 
+        local is_dragging = false
         local function render_drag_info(world_pos_drag_start)
             -- render bearing/position information
+            is_dragging = true
 
             local cy = screen_h - 55
             local cx = 15
@@ -1335,11 +1376,11 @@ function update(screen_w, screen_h, ticks)
             local text_col = color_grey_dark
 
             update_ui_text(cx, cy, "X", 100, 0, icon_col, 0)
-            update_ui_text(cx + 15, cy, string.format("%.0f", world_x), 100, 0, text_col, 0)
+            update_ui_text(cx + 15, cy, string.format("%.3f", world_x / 500), 100, 0, text_col, 0)
             cy = cy + 10
             
             update_ui_text(cx, cy, "Y", 100, 0, icon_col, 0)
-            update_ui_text(cx + 15, cy, string.format("%.0f", world_y), 100, 0, text_col, 0)
+            update_ui_text(cx + 15, cy, string.format("%.3f", world_y / 500), 100, 0, text_col, 0)
             cy = cy + 10
 
             local dist =  vec2_dist(world_pos_drag_start, vec2(world_x, world_y))
@@ -1444,6 +1485,32 @@ function update(screen_w, screen_h, ticks)
                     render_tooltip(10, 10, screen_w - 20, screen_h - 20, g_cursor_pos_x, g_cursor_pos_y, 128, 21, 10, function(w, h) render_vehicle_tooltip(w, h, highlighted_vehicle) end)
                 end
             end
+        end
+
+        if g_is_render_grid and get_is_selection() == false and not is_dragging then
+            local world_x, world_y = get_world_from_screen(g_cursor_pos_x, g_cursor_pos_y, g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
+            local cy = screen_h - 25
+            local cx = 15
+
+            local icon_col = color_grey_mid
+            local text_col = color_grey_dark
+
+            if grid_scale < 10000 then
+                update_ui_image(cx, cy, atlas_icons.column_distance, icon_col, 0)
+                update_ui_text(cx + 15, cy, string.format("%.0f ", grid_scale) .. update_get_loc(e_loc.acronym_meters), 100, 0, text_col, 0)
+            else
+                update_ui_image(cx, cy, atlas_icons.column_distance, icon_col, 0)
+                update_ui_text(cx + 15, cy, string.format("%.0f ", grid_scale / 1000) .. update_get_loc(e_loc.acronym_kilometers), 100, 0, text_col, 0)
+            end
+            cy = cy - 10
+
+            update_ui_text(cx, cy, "Y", 100, 0, icon_col, 0)
+            update_ui_text(cx + 15, cy, string.format("%.3f", world_y / 500), 100, 0, text_col, 0)
+            cy = cy - 10
+
+            update_ui_text(cx, cy, "X", 100, 0, icon_col, 0)
+            update_ui_text(cx + 15, cy, string.format("%.3f", world_x / 500), 100, 0, text_col, 0)
+            cy = cy - 10
         end
 
         if get_is_selection() == false and update_get_active_input_type() == e_active_input.gamepad then
