@@ -1473,16 +1473,26 @@ function update(screen_w, screen_h, ticks)
                     render_drag_info(vehicle_pos_xz)
                 end
             end
-        elseif g_highlighted_vehicle_id > 0 and g_highlighted_waypoint_id == 0 then
-            -- render highlighted tooltip
-
+        elseif g_highlighted_vehicle_id > 0 then
             local highlighted_vehicle = update_get_map_vehicle_by_id(g_highlighted_vehicle_id)
 
             if highlighted_vehicle:get() then
-                if get_vehicle_has_robot_dogs(highlighted_vehicle) then
-                    render_tooltip(10, 10, screen_w - 20, screen_h - 20, g_cursor_pos_x, g_cursor_pos_y, 128, 31, 10, function(w, h) render_vehicle_tooltip(w, h, highlighted_vehicle) end)
+                local vehicle_definition_index = highlighted_vehicle:get_definition_index()
+
+                if g_highlighted_waypoint_id > 0 then
+                    -- render waypoint tooltip
+                    local highlighted_waypoint = highlighted_vehicle:get_waypoint_by_id(g_highlighted_waypoint_id)
+
+                    if get_is_vehicle_air(vehicle_definition_index) then
+                        local alt_str = string.format( "%.0f ", highlighted_waypoint:get_altitude() ) .. update_get_loc(e_loc.acronym_meters)
+                        local alt_width = update_ui_get_text_size(alt_str, 10000, 0) + 4
+
+                        render_tooltip(10, 10, screen_w - 20, screen_h - 20, g_pointer_pos_x, g_pointer_pos_y, alt_width, 14, 10, function(w, h)    update_ui_text(2, 2, alt_str, w - 4, 0, color_white, 0) end)
+                    end
                 else
-                    render_tooltip(10, 10, screen_w - 20, screen_h - 20, g_cursor_pos_x, g_cursor_pos_y, 128, 21, 10, function(w, h) render_vehicle_tooltip(w, h, highlighted_vehicle) end)
+                    -- render vehicle tooltip
+                    local tool_height = iff( get_vehicle_has_robot_dogs(highlighted_vehicle), 31, 21 )
+                    render_tooltip(10, 10, screen_w - 20, screen_h - 20, g_pointer_pos_x, g_pointer_pos_y, 128, tool_height, 10, function(w, h) render_vehicle_tooltip(w, h, highlighted_vehicle) end)
                 end
             end
         end
