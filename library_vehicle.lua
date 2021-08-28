@@ -110,7 +110,7 @@ function get_attachment_data_by_definition_index(index)
         },
         [e_game_object_type.attachment_turret_carrier_main_gun] = {
             name = update_get_loc(e_loc.upp_naval_gun),
-            icon16 = atlas_icons.icon_attachment_16_none,
+            icon16 = atlas_icons.icon_attachment_16_turret_main_battle_cannon,
             name_short = update_get_loc(e_loc.upp_gun) .. " 160MM",
         },
         [e_game_object_type.attachment_turret_plane_chaingun] = {
@@ -140,27 +140,27 @@ function get_attachment_data_by_definition_index(index)
         },
         [e_game_object_type.attachment_turret_carrier_ciws] = {
             name = update_get_loc(e_loc.upp_naval_anti_air_cannon),
-            icon16 = atlas_icons.icon_attachment_16_none,
+            icon16 = atlas_icons.icon_attachment_16_turret_ciws,
             name_short = update_get_loc(e_loc.upp_a_msl),
         },
         [e_game_object_type.attachment_turret_carrier_missile] = {
             name = update_get_loc(e_loc.upp_naval_missile_array),
-            icon16 = atlas_icons.icon_attachment_16_none,
+            icon16 = atlas_icons.icon_attachment_16_turret_missile,
             name_short = update_get_loc(e_loc.upp_msl) .. " AA",
         },
         [e_game_object_type.attachment_turret_carrier_missile_silo] = {
             name = update_get_loc(e_loc.upp_naval_cruise_missile),
-            icon16 = atlas_icons.icon_attachment_16_none,
+            icon16 = atlas_icons.icon_attachment_16_turret_missile,
             name_short = "CRUISE MSL",
         },
         [e_game_object_type.attachment_turret_carrier_flare_launcher] = {
             name = update_get_loc(e_loc.upp_naval_flare_launcher),
-            icon16 = atlas_icons.icon_attachment_16_none,
+            icon16 = atlas_icons.icon_attachment_16_small_flare,
             name_short = "FLARE",
         },
         [e_game_object_type.attachment_turret_carrier_camera] = {
             name = update_get_loc(e_loc.upp_naval_camera),
-            icon16 = atlas_icons.icon_attachment_16_none,
+            icon16 = atlas_icons.icon_attachment_16_camera_large,
             name_short = "CAMERA",
         },
         [e_game_object_type.attachment_hardpoint_bomb_1] = {
@@ -477,25 +477,6 @@ function get_vehicle_capability(vehicle)
                capabilities[attachment_def] = get_attachment_data_by_definition_index(attachment_def)
                capabilities[attachment_def].definition = attachment_def
             end
---[[
-            if attachment_def == e_game_object_type.attachment_turret_15mm then
-                capabilities[1] = update_get_loc(e_loc.upp_gun) .. " 15MM"
-            elseif attachment_def == e_game_object_type.attachment_turret_30mm then
-                capabilities[2] = update_get_loc(e_loc.upp_gun) .. " 30MM"
-            elseif attachment_def == e_game_object_type.attachment_turret_40mm then
-                capabilities[3] = update_get_loc(e_loc.upp_gun) .. " 40MM"
-            elseif attachment_def == e_game_object_type.attachment_turret_heavy_cannon then
-                capabilities[4] = update_get_loc(e_loc.upp_gun) .. " HCAN"
-            elseif attachment_def == e_game_object_type.attachment_turret_artillery then
-                capabilities[5] = update_get_loc(e_loc.upp_gun) .. " ARTY"
-            elseif attachment_def == e_game_object_type.attachment_turret_battle_cannon then
-                capabilities[6] = update_get_loc(e_loc.upp_gun) .. " BCAN"
-            elseif attachment_def == e_game_object_type.attachment_turret_missile then
-                capabilities[7] = update_get_loc(e_loc.upp_msl)
-            elseif attachment_def == e_game_object_type.attachment_turret_ciws then
-                capabilities[8] = update_get_loc(e_loc.upp_a_msl)
-            end
---]]
         end
     end
 
