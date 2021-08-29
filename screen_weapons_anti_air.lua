@@ -96,7 +96,7 @@ function render_attachment_info(x, y, w, h, attachment, vehicle)
         update_ui_line(0, cy, w, cy, col)
         cy = cy + 2
 
-        render_health_bar(w - 5, cy - 1, 20, vehicle, col)
+        render_health_bar(w - 5, cy, 20, vehicle, col)
 
         local ammo_stock = vehicle:get_inventory_count_by_item_index(19) -- AA missile
 
@@ -218,13 +218,7 @@ function render_health_bar(x, y, h, map_vehicle, col)
     local step = h / segments
     
     for i = 1, segments - 1 do
-        if i % 4 == 0 then
-            update_ui_rectangle(-1, h - i * step, 1, 1, col)
-        elseif i % 2 == 0 then
-            update_ui_rectangle(-1, h - i * step, 1, 1, col)
-        else
-            update_ui_rectangle(-1, h - i * step, 1, 1, col)
-        end
+        update_ui_rectangle(-1, h - i * step, 1, 1, col)
     end
 
     local repair_color = bar_color
