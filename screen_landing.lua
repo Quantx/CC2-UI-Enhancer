@@ -82,6 +82,7 @@ function update(screen_w, screen_h, ticks)
                 update_ui_text(0, 4, "DOCKING QUEUE", 100, 1, dmc, 0)
                 update_ui_pop_offset()
 
+                update_ui_push_clip( left_w, 0, right_w, region_h )
                 update_ui_push_offset(right_w + 20, region_h / 2 - 8)
                 update_ui_image( -13, -7, atlas_icons.holomap_icon_carrier, g_colors.carrier, 3)
             
@@ -92,11 +93,12 @@ function update(screen_w, screen_h, ticks)
                     local vehicle_dock_state = vehicle:get_dock_state()
 
                     if vehicle_dock_state == e_vehicle_dock_state.dock_queue or vehicle_dock_state == e_vehicle_dock_state.docking then
-                        render_docking_vehicle_surface(this_vehicle, v.vehicle, -(right_w + 20) + (left_w - 1))
+                        render_docking_vehicle_surface(this_vehicle, v.vehicle)
                     end
                 end
                 
                 update_ui_pop_offset()
+                update_ui_pop_clip()
             elseif g_hovered_lmr == 2 then
                 local dmc = iff( g_hovered_lmr == g_locked_lmr, color_status_warning, color_grey_dark )
             
@@ -105,6 +107,7 @@ function update(screen_w, screen_h, ticks)
                 update_ui_text(0, 4, update_get_loc(e_loc.upp_holding_pattern), 100, 1, dmc, 0)
                 update_ui_pop_offset()
 
+                update_ui_push_clip( 0, 0, left_w - 2, region_h )
                 update_ui_push_offset(left_w / 2, region_h / 2 - 8)
                 render_landing_pattern()
             
@@ -116,14 +119,15 @@ function update(screen_w, screen_h, ticks)
 
                     if vehicle_dock_state == e_vehicle_dock_state.dock_queue or vehicle_dock_state == e_vehicle_dock_state.docking then
                         if v.is_wing then
-                            render_docking_vehicle_wing( this_vehicle, v.vehicle, -(left_w / 2) + (left_w - 1))
+                            render_docking_vehicle_wing( this_vehicle, v.vehicle)
                         elseif v.is_rotor then
-                            render_docking_vehicle_rotor(this_vehicle, v.vehicle, -(left_w / 2) + (left_w - 1))
+                            render_docking_vehicle_rotor(this_vehicle, v.vehicle)
                         end
                     end
                 end
                 
                 update_ui_pop_offset()
+                update_ui_pop_clip()
             end
         end
 
@@ -176,7 +180,7 @@ function render_vehicle_list( win_list, is_air )
 
     local blink = 30
     
-    local column_name = iff( g_animation_time % (blink * 2) > blink, update_get_loc(e_loc.upp_id), "NAME" )
+    local column_name = iff( g_animation_time % (blink * 2) > blink, update_get_loc(e_loc.upp_id), update_get_loc(e_loc.upp_acronym_vehicle_name_handle) )
 
     imgui_table_header(ui, {
         { w=column_widths[1], margin=column_margins[1], value=atlas_icons.column_transit },
@@ -428,7 +432,7 @@ function render_landing_pattern()
     update_ui_image(-22, -final_arc - 7, atlas_icons.holomap_icon_carrier, g_colors.carrier, 3)
 end
 
-function render_docking_vehicle_wing(vehicle_parent, vehicle, right_bound)
+function render_docking_vehicle_wing(vehicle_parent, vehicle)
     local run_length = g_landing_pattern.run_length
     local run_arc = g_landing_pattern.run_arc
     local final_arc = g_landing_pattern.final_arc
@@ -476,14 +480,12 @@ function render_docking_vehicle_wing(vehicle_parent, vehicle, right_bound)
     end
 
     local vehicle_icon, icon_offset = get_icon_data_by_definition_index(vehicle:get_definition_index())
-    if p0x + icon_offset < right_bound then
-        update_ui_image(p0x - icon_offset, p0z - icon_offset, vehicle_icon, col, 0)
-    end
+    update_ui_image(p0x - icon_offset, p0z - icon_offset, vehicle_icon, col, 0)
 end
 
 --TODO: this is the unchanged vanilla icon render function for helis on the holding pattern, it has two bugs at the moment, maybe fix this or just remove the pattern render for more drone-list-entry space
 -- 1) its relative range checks are not properly done at the moment so the icon will render at the wrong place or too early sometimes
-function render_docking_vehicle_rotor(vehicle_parent, vehicle, right_bound)
+function render_docking_vehicle_rotor(vehicle_parent, vehicle)
     local final_arc = g_landing_pattern.final_arc
     local vehicle_dock_state = vehicle:get_dock_state()
     local relative_position = update_get_map_vehicle_position_relate_to_parent_vehicle(vehicle_parent:get_id(), vehicle:get_id())
@@ -499,13 +501,11 @@ function render_docking_vehicle_rotor(vehicle_parent, vehicle, right_bound)
         end
         
         local vehicle_icon, icon_offset = get_icon_data_by_definition_index(vehicle:get_definition_index())
-        if p0x + icon_offset < right_bound then
-            update_ui_image(p0x - icon_offset, p0z - icon_offset, vehicle_icon, col, 0)
-        end
+        update_ui_image(p0x - icon_offset, p0z - icon_offset, vehicle_icon, col, 0)
     end
 end
 
-function render_docking_vehicle_surface(vehicle_parent, vehicle, left_bound)
+function render_docking_vehicle_surface(vehicle_parent, vehicle)
     local final_arc = g_landing_pattern.final_arc
     local vehicle_dock_state = vehicle:get_dock_state()
     local relative_position = update_get_map_vehicle_position_relate_to_parent_vehicle(vehicle_parent:get_id(), vehicle:get_id())
@@ -520,9 +520,7 @@ function render_docking_vehicle_surface(vehicle_parent, vehicle, left_bound)
     end
     
     local vehicle_icon, icon_offset = get_icon_data_by_definition_index(vehicle:get_definition_index())
-    if p0x - icon_offset > left_bound then
-        update_ui_image(p0x - icon_offset, p0z - icon_offset, vehicle_icon, col, 0)
-    end
+    update_ui_image(p0x - icon_offset, p0z - icon_offset, vehicle_icon, col, 0)
 end
 
 
