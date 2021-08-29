@@ -1129,6 +1129,9 @@ function get_node_tooltip_h(tooltip_w, id, type)
                 end
             end
         end
+
+    elseif type == g_link_types.barge then
+        return 45
     end
 
     return 23
@@ -1148,7 +1151,7 @@ function render_node_tooltip(w, h, id, type)
 
         if barge:get() then
             local cy = 3
-            update_ui_image(2, h / 2 - 8, atlas_icons.icon_chassis_16_barge, color, 0)
+            update_ui_image(2, cy, atlas_icons.icon_chassis_16_barge, color, 0)
             update_ui_text(18, cy, name .. " " .. tostring(id), 200, 0, color_white, 0)
             update_ui_image(w - 13, cy, atlas_icons.column_transit, color_highlight, 0)
 
@@ -1163,6 +1166,19 @@ function render_node_tooltip(w, h, id, type)
             update_ui_rectangle(60, cy + 3, bar_w, 3, color_grey_dark)
             update_ui_rectangle(60, cy + 3, bar_w * get_barge_transfer_progress(barge), 3, g_map_colors.progress)
             update_ui_image(w - 12, cy, atlas_icons.column_stock, color_grey_dark, 0)
+
+            local inv_count = 0
+            for i = 0, update_get_resource_inventory_item_count() - 1 do
+                if barge:get_inventory_count_by_item_index(i) > 0 and inv_count <= 5 then
+                    local item_data = g_item_data[i]
+                    update_ui_image(5 + 20 * inv_count, cy + 12 , item_data.icon, color_white, 0)
+                    inv_count = inv_count + 1
+                end
+            end
+            if inv_count == 0 then
+                update_ui_text(w / 2 - 12, cy + 15, "EMPTY", 200, 0, color_grey_dark, 0)
+            end
+
         end
     elseif type == g_link_types.tile then
         local tile = update_get_tile_by_id(id)
