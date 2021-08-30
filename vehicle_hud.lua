@@ -476,6 +476,17 @@ function render_map_details(x, y, w, h, screen_w, screen_h, screen_vehicle, atta
 
                 update_ui_image(screen_x - 4, screen_y - 4, atlas_icons.column_laser, color8(0, 255, 0, 255), 0)
             end
+        elseif def == e_game_object_type.attachment_turret_artillery then
+            local artillery_pos, is_valid_artillery_hit = attachment:get_artillery_hit_position()
+
+            if is_valid_artillery_hit then
+                local screen_x, screen_y = world_to_screen(artillery_pos:x(), artillery_pos:z())
+
+                screen_x = clamp( screen_x, x, x + w )
+                screen_y = clamp( screen_y, y, y + h )
+
+                update_ui_image(screen_x - 4, screen_y - 4, atlas_icons.column_laser, color8(0, 255, 0, 255), 0)
+            end
         end
     end
 
@@ -1453,12 +1464,8 @@ function render_attachment_hud_artillery(screen_w, screen_h, map_data, vehicle, 
     local hud_size = vec2(180, 89)
     local col = color8(0, 255, 0, 255)
 
+    render_turret_vehicle_direction(screen_w, screen_h, vehicle, attachment, col)
     render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachment)
-
-    local cam_pos = update_get_camera_position()
-    local hit_pos = attachment:get_hitscan_position()
-    local hit_dist = vec3_dist(cam_pos, hit_pos)
-    update_ui_text(hud_pos:x() + 50, hud_pos:y() + 50, string.format("%.0f", hit_dist) .. update_get_loc(e_loc.acronym_meters), 200, 0, col, 0)
 
     update_ui_image_rot(hud_pos:x() + 1, hud_pos:y() + 1, atlas_icons.hud_horizon_cursor, col, 0)
     render_atachment_projectile_cooldown(hud_pos, attachment, true, col)
@@ -1469,26 +1476,28 @@ function render_attachment_hud_artillery(screen_w, screen_h, map_data, vehicle, 
         local display_zoom = 2 ^ zoom_power
         update_ui_text(hud_pos:x() - 250, hud_pos:y() + 50, string.format("%.2fx", display_zoom), 200, 2, col, 0)
     end
-   
+
     local cam_side = update_get_camera_side()
-    local cam_side_xz = vec3_normal(vec3(cam_side:x(), 0, cam_side:z()))
     local artillery_pos, is_valid_artillery_hit = attachment:get_artillery_hit_position()
     local hit_accuracy = 0
 
-    local hit_pos_screen = update_world_to_screen(hit_pos)    
-    update_ui_image_rot(hit_pos_screen:x(), hit_pos_screen:y(), atlas_icons.hud_impact_marker, col, 0)
-
-    is_valid_artillery_hit = is_valid_artillery_hit
-
     if is_valid_artillery_hit then
+        local hit_pos = attachment:get_hitscan_position()
         local hit_pos_to_artillery_pos = vec3(artillery_pos:x() - hit_pos:x(), artillery_pos:y() - hit_pos:y(), artillery_pos:z() - hit_pos:z())
+
+        local cam_side_xz = vec3_normal(vec3(cam_side:x(), 0, cam_side:z()))
+
         local artillery_pos_distance = math.abs(vec3_dot(hit_pos_to_artillery_pos, cam_side_xz))
         artillery_pos_distance = math.max(artillery_pos_distance, math.abs(artillery_pos:y() - hit_pos:y()))
         hit_accuracy = (1 - clamp(artillery_pos_distance / 40, 0, 1)) * 100
+
+        local shot_dist = vec3_dist( vehicle:get_position(), artillery_pos )
+        update_ui_text(hud_pos:x() + 50, hud_pos:y() + 50, string.format("%.0f", shot_dist) .. update_get_loc(e_loc.acronym_meters), 200, 0, col, 0)
     end
 
     local roll = math.pi / 2 - math.acos(vec3_dot(cam_side, vec3(0, 1, 0)))
-    update_ui_text(hud_pos:x() + hud_size:x() / 2 - 110, hud_pos:y() + hud_size:y() / 2 - 10, "R " .. string.format("%5.2f", roll / math.pi * 180), 100, 2, col, 0)
+
+    update_ui_text(hud_pos:x() + hud_size:x() / 2 - 110, hud_pos:y() + hud_size:y() / 2 - 10, "R " .. string.format("%5.2f", math.deg(roll)), 100, 2, col, 0)
     update_ui_text(hud_pos:x() + hud_size:x() / 2 - 110, hud_pos:y() + hud_size:y() / 2 - 20, string.format("%.0f%%", hit_accuracy), 100, 2, col, 0)
 
     update_ui_line(hud_pos:x() - math.cos(roll) * 30, hud_pos:y() - math.sin(roll) * 30, hud_pos:x() - math.cos(roll) * 15, hud_pos:y() - math.sin(roll) * 15, col)
@@ -1497,11 +1506,11 @@ function render_attachment_hud_artillery(screen_w, screen_h, map_data, vehicle, 
     local is_blink_on = g_animation_time % 500 > 250
     local col_red = color8(255, 0, 0, 255)
 
-    if is_valid_artillery_hit == true then
-        if hit_accuracy > 1 then
-            local artillery_pos_screen = update_world_to_screen(artillery_pos)    
-            update_ui_image_rot(artillery_pos_screen:x(), artillery_pos_screen:y(), atlas_icons.hud_impact_marker, col, 0)
-        elseif is_blink_on then
+    if is_valid_artillery_hit then
+        local artillery_pos_screen = update_world_to_screen(artillery_pos)
+        update_ui_image_rot(artillery_pos_screen:x(), artillery_pos_screen:y(), atlas_icons.hud_impact_marker, col, 0)
+
+        if is_blink_on and math.abs(math.deg(roll)) > 1 then
             local text = update_get_loc(e_loc.upp_tilt)
             local text_w = update_ui_get_text_size(text, 200, 1)
             
