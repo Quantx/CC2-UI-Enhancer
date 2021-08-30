@@ -1402,8 +1402,8 @@ function render_attachment_hud_cannon(screen_w, screen_h, map_data, vehicle, att
 
     update_ui_image_rot(hud_pos:x() + 1, hud_pos:y() + 1, atlas_icons.hud_horizon_cursor, col, 0)
 
-    local is_heavy = def == e_game_object_type.attachment_turret_battle_cannon or def == e_game_object_type.attachment_turret_carrier_main_gun
-    render_atachment_projectile_cooldown(hud_pos, attachment, is_heavy, col)
+    local is_heavy = def == e_game_object_type.attachment_turret_battle_cannon or def == e_game_object_type.attachment_turret_heavy_cannon
+    render_atachment_projectile_cooldown(hud_pos, attachment, is_heavy or def == e_game_object_type.attachment_turret_carrier_main_gun, col)
 
     if attachment:get_is_zoom_capable() then
         local zoom_factor = attachment:get_zoom_factor()
@@ -1411,7 +1411,7 @@ function render_attachment_hud_cannon(screen_w, screen_h, map_data, vehicle, att
         local display_zoom = 2 ^ zoom_power
         update_ui_text(hud_pos:x() - 250, hud_pos:y() + 50, string.format("%.2fx", display_zoom), 200, 2, col, 0)
         
-        if def == e_game_object_type.attachment_turret_battle_cannon and display_zoom > 1 then
+        if is_heavy and display_zoom > 1 then
             local projectile_gravity = 50 / 30
             local projectile_speed = 600
             local projectile_velocity = update_get_camera_forward()
@@ -1420,42 +1420,11 @@ function render_attachment_hud_cannon(screen_w, screen_h, map_data, vehicle, att
             projectile_velocity:z(projectile_velocity:z() * projectile_speed)
 
             local step_amounts = { 1000, 500, 250, 100 }
+            if def == e_game_object_type.attachment_turret_heavy_cannon then step_amounts = { 800, 400, 200, 100 } end
             local step = step_amounts[math.floor(zoom_power) + 1]
 
-            for i = step, 1000, step do
-                if i > 0 then
-                    local travel_time = math.max(1, i) / (projectile_speed / 30)
-                    local drop_position = update_get_camera_position()
-                    drop_position:x(drop_position:x() + projectile_velocity:x() * travel_time)
-                    drop_position:y(drop_position:y() + projectile_velocity:y() * travel_time - 0.5 * projectile_gravity * travel_time * travel_time)
-                    drop_position:z(drop_position:z() + projectile_velocity:z() * travel_time)
-
-                    local screen_pos = update_world_to_screen(drop_position)
-
-                    if screen_pos:y() < hud_pos:y() + 60 then
-                        update_ui_line(screen_w / 2 - 3, screen_pos:y(), screen_w / 2 + 2, screen_pos:y(), color8(0, 255, 0, 255))
-
-                        if (i / step) % 2 == 0 then
-                            update_ui_text(screen_w / 2 + 4, screen_pos:y() - 5, string.format("%d", i) .. update_get_loc(e_loc.acronym_meters), 64, 0, color8(0, 255, 0, 255), 0)
-                        end
-                    end
-                end
-            end
-        end
-        
-        if def == e_game_object_type.attachment_turret_heavy_cannon and display_zoom > 1 then
-            local projectile_gravity = 50 / 30
-            local projectile_speed = 600
-            local projectile_velocity = update_get_camera_forward()
-            projectile_velocity:x(projectile_velocity:x() * projectile_speed)
-            projectile_velocity:y(projectile_velocity:y() * projectile_speed)
-            projectile_velocity:z(projectile_velocity:z() * projectile_speed)
-
-            local step_amounts = { 800, 400, 200, 100 }
-            local step = step_amounts[math.floor(zoom_power) + 1]
-
-            for i = step, 1600, step do
-                if i > 0 then
+            for i = step, step * 4, step do
+                if i > 0 and i <= step_amounts[1] * 2 then
                     local travel_time = math.max(1, i) / (projectile_speed / 30)
                     local drop_position = update_get_camera_position()
                     drop_position:x(drop_position:x() + projectile_velocity:x() * travel_time)
