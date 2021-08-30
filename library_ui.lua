@@ -2795,7 +2795,7 @@ function imgui_vehicle_inventory_table(ui, vehicle)
                     local stock_count = clamp(vehicle:get_inventory_count_by_item_index(item.index), -99999, 99999)
 
                     local columns = { 
-                        { w=column_widths[1], margin=column_margins[1], value=tostring(item.index) .. "|" .. item.name },
+                        { w=column_widths[1], margin=column_margins[1], value=item.name },
                         { w=column_widths[2], margin=column_margins[2], value=tostring(warehouse_count) },
                         { w=column_widths[3], margin=column_margins[3], value=string.format("%+d", order_count), col=iff(order_count > 0, color_status_ok, iff(order_count < 0, color_status_bad, color_grey_dark)) },
                         { w=column_widths[4], margin=column_margins[4], value=tostring(stock_count), col=iff(stock_count > 0, color_status_ok, color_status_bad) }
