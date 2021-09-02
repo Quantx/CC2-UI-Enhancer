@@ -180,6 +180,12 @@ function render_attachment_info(x, y, w, h, attachment, vehicle, team, name, ite
             end
 
             local handle, icon, handle_short = get_chassis_data_by_definition_index(definition_index)
+            local veh_str = handle_short .. string.format(" %d", target_vehicle_id)
+
+            -- Don't show ID for carrier
+            if definition_index == e_game_object_type.chassis_carrier then
+                veh_str = handle_short
+            end
 
             local target_name = "Altus Gage"
             
@@ -203,8 +209,13 @@ function render_attachment_info(x, y, w, h, attachment, vehicle, team, name, ite
             cx = cx - 16
 --          cx = cx - 3
 --          update_ui_image(cx, cy, icon, color_white, 0)
-            update_ui_text(cx + 16, cy - 2, handle_short, 200, 0, color_white, 0)
-            update_ui_image(cx + 38, cy - 2, atlas_icons.column_controlling_peer, iff(is_blink_on(5), color_grey_dark, color_status_ok), 0)
+            update_ui_text(cx + 16, cy - 2, veh_str, 200, 0, color_white, 0)
+
+            -- check that there's enough room for the icon
+            if utf8.len(veh_str) < 8 then
+                local veh_str_w = update_ui_get_text_size(veh_str, 200, 0) + 16
+                update_ui_image(cx + veh_str_w + 2, cy - 2, atlas_icons.column_controlling_peer, iff(is_blink_on(5), color_grey_dark, color_status_ok), 0)
+            end
 
             update_ui_text(cx + 16, cy + 8, target_name, 200, 0, color_white, 0)
         else                
