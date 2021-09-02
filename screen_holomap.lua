@@ -117,7 +117,8 @@ function begin()
     g_next_pos_y = parse_f32(g_next_pos_y)
     g_next_size = parse_f32(g_next_size)
 
-    g_startup_op_num = math.random(9999999999)
+    -- randomize this
+    g_startup_op_num = 3524418973
 end
 
 function update(screen_w, screen_h, ticks) 
@@ -1571,8 +1572,8 @@ function render_startup_sys( screen_w, screen_h )
 
     local team_id = update_get_screen_team_id()
     
-    local crew = {"Altus Gage"}
---[[
+    local crew = {}
+
     if update_get_is_multiplayer() then
         local peer_count = update_get_peer_count()
         for i = 0, peer_count - 1 do
@@ -1580,13 +1581,13 @@ function render_startup_sys( screen_w, screen_h )
             local team = update_get_peer_team(i)
             
             if team == team_id then
-                crew[#crew + 1] = name
+                table.insert( crew, name )
             end
         end
     else
         crew[1] = "Altus Gage"
     end
---]]
+
     local ui = g_ui
     
     local win_w = 256
@@ -1603,17 +1604,19 @@ function render_startup_sys( screen_w, screen_h )
     if anim > 37 then ui:stat("Registrant", "United Earth Coalition", color_white) end
     if anim > 42 then ui:stat("Vessel Name", e_vessel_names[team_id + 1], color_white) end
     if anim > 47 then ui:stat("Vessel Class", "Amphibious Assault Carrier", color_white) end
-    if anim > 52 then ui:stat("Operating Number", string.format( "%010.0f", g_startup_op_num), color_white) end
+    if anim > 52 then ui:stat("Operating Number", string.format("%010.0f", g_startup_op_num), color_white) end
     
     ui:end_window()
     
+    local crew_interval = 30
+
     if anim > 80 then
         local login_win = ui:begin_window("Crew Manifest", 128, 110, 256, 128, atlas_icons.column_pending, true, 2)
         
         for i = 1, #crew, 1 do
             local status = "Validating Credentials"
         
-            if anim > 90 + i * 20 then
+            if anim > 90 + i * crew_interval then
                 status = "Authenticated"
             end
             
@@ -1622,7 +1625,7 @@ function render_startup_sys( screen_w, screen_h )
         
         ui:end_window()
         
-        if anim > 120 + #crew * 20 then
+        if anim > 120 + #crew * crew_interval then
             g_startup_phase_anim = g_animation_time
             g_startup_phase = holomap_startup_phases.finish -- bypass manual stage
             --g_startup_phase = g_startup_phase + 1
