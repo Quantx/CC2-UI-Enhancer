@@ -179,25 +179,34 @@ function render_attachment_info(x, y, w, h, attachment, vehicle, team, name, ite
                 definition_index = target_vehicle:get_definition_index()
             end
 
-            local _, icon, handle = get_chassis_data_by_definition_index(definition_index)
+            local handle, icon, handle_short = get_chassis_data_by_definition_index(definition_index)
 
---[[        -- Not supported yet :(
-            local target_name = ""
+            local target_name = "Altus Gage"
             
             if update_get_is_multiplayer() then
                 local target_attachment = target_vehicle:get_attachment(target_attachment_index)
                 local target_peer = target_attachment:get_controlling_peer_id()
                 local peer_index = update_get_peer_index_by_id(target_peer)
-                local target_name = update_get_peer_name(peer_index)
+                target_name = update_get_peer_name(peer_index)
+
+                local max_text_chars = 8
+
+                if utf8.len(target_name) > max_text_chars then
+                    target_name = target_name:sub(1, utf8.offset(target_name, max_text_chars))
+                end
             end
---]]
+
             update_ui_rectangle(0, cy, w, 11, col)
             update_ui_text(0, cy + 1, update_get_loc(e_loc.upp_order), math.floor(w / 2) * 2, 1, color_black, 0)
             cy = cy + 15
 
-            update_ui_image(cx, cy, icon, color_white, 0)
-            update_ui_text(cx + 19, cy + 3, handle, 200, 0, color_white, 0)
-            update_ui_image(cx + 41, cy + 3, atlas_icons.column_controlling_peer, iff(is_blink_on(5), color_grey_dark, color_status_ok), 0)
+            cx = cx - 16
+--          cx = cx - 3
+--          update_ui_image(cx, cy, icon, color_white, 0)
+            update_ui_text(cx + 16, cy - 2, handle_short, 200, 0, color_white, 0)
+            update_ui_image(cx + 38, cy - 2, atlas_icons.column_controlling_peer, iff(is_blink_on(5), color_grey_dark, color_status_ok), 0)
+
+            update_ui_text(cx + 16, cy + 8, target_name, 200, 0, color_white, 0)
         else                
             update_ui_rectangle(0, cy, w, 11, color_grey_dark)
             update_ui_text(0, cy + 1, update_get_loc(e_loc.upp_order), math.floor(w / 2) * 2, 1, color_black, 0)
