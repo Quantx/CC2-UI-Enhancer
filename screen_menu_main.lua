@@ -125,11 +125,10 @@ function update(screen_w, screen_h, ticks)
             end
 
             local game_ver = update_get_version()
-            local uimod_ver = "v1.0.15"
-            if game_ver ~= uimod_ver then
+            if game_ver ~= uimod_version.game then
                 ui:divider()
-                ui:text_basic( "UI Enhancer might be out of date!" )
-                ui:text_basic( "Known compatible with " .. uimod_ver )
+                ui:text_basic( "UI Enhancer " .. uimod_version.mod .. " might be out of date!" )
+                ui:text_basic( "Known compatible with " .. uimod_version.game )
                 ui:text_basic( "Current game version " .. game_ver )
             end
     

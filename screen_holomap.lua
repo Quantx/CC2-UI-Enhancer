@@ -1290,7 +1290,7 @@ function render_vehicle_tooltip(w, h, vehicle)
     local display_id = ""
     if vehicle_definition_index == e_game_object_type.chassis_carrier then
         local team_id = vehicle:get_team() + 1
-        display_id = string.upper( e_vessel_names[team_id] )
+        display_id = string.upper( vessel_names[team_id] )
     else
         display_id = update_get_loc(e_loc.upp_id) .. string.format( " %.0f", vehicle:get_id() )
     end
@@ -1602,7 +1602,7 @@ function render_startup_sys( screen_w, screen_h )
     local reg_win = ui:begin_window(win_title, 128, 16, anim_win_w, anim_win_h, atlas_icons.column_pending, true, 2)
 
     if anim > 37 then ui:stat("Registrant", "United Earth Coalition", color_white) end
-    if anim > 42 then ui:stat("Vessel Name", e_vessel_names[team_id + 1], color_white) end
+    if anim > 42 then ui:stat("Vessel Name", vessel_names[team_id + 1], color_white) end
     if anim > 47 then ui:stat("Vessel Class", "Amphibious Assault Carrier", color_white) end
     if anim > 52 then ui:stat("Operating Number", string.format("%010.0f", g_startup_op_num), color_white) end
     

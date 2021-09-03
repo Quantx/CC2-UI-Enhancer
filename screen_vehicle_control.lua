@@ -2080,7 +2080,7 @@ function render_vehicle_tooltip(w, h, vehicle)
     local display_id = ""
     if vehicle_definition_index == e_game_object_type.chassis_carrier then
         local team_id = vehicle:get_team() + 1
-        display_id = string.upper( e_vessel_names[team_id] )
+        display_id = string.upper( vessel_names[team_id] )
     else
         display_id = update_get_loc(e_loc.upp_id) .. string.format( " %.0f", vehicle:get_id() )
     end

@@ -14,6 +14,33 @@ color_enemy = color8(255, 16, 16, 255)
 color_button_bg = color8(4, 12, 12, 255)
 color_button_bg_inactive = color8(7, 7, 7, 255)
 
+vessel_names = {
+    "Mu",
+
+    "Epsilon",
+    "Omega",
+
+    "Upsilon",
+    "Omicron",
+    "Sigma",
+    "Lambda",
+
+    "Alpha",
+    "Beta",
+    "Gamma",
+    "Delta",
+    "Zeta",
+    "Eta",
+    "Theta",
+    "Iota",
+    "Kappa"
+}
+
+uimod_version = {
+    game = "v1.0.15",
+    mod = "v8.0"
+}
+
 atlas_icons = {
     bay_marker = 0,
     icon_chassis_16_wheel_small = 0,
