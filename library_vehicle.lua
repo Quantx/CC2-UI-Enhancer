@@ -277,6 +277,13 @@ function get_is_vehicle_land(definition_index)
         or definition_index == e_game_object_type.chassis_land_turret
 end
 
+function get_is_vehicle_airliftable(definition_index)
+    return definition_index == e_game_object_type.chassis_land_wheel_heavy
+        or definition_index == e_game_object_type.chassis_land_wheel_medium
+        or definition_index == e_game_object_type.chassis_land_wheel_light
+        or definition_index == e_game_object_type.chassis_land_robot_dog
+end
+
 function get_attack_type_icon(attack_type)
     if attack_type == e_attack_type.none then
         return atlas_icons.icon_attack_type_any

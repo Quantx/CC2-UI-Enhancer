@@ -39,6 +39,7 @@ function update(screen_w, screen_h, ticks)
         update_ui_text(0, 4, update_get_loc(e_loc.upp_holding_pattern), 100, 1, color_grey_dark, 0)
         update_ui_pop_offset()
 
+        update_ui_push_clip(0, 0, left_w, region_h)
         update_ui_push_offset(left_w / 2, region_h / 2 - 8)
         render_landing_pattern()
 
@@ -58,6 +59,7 @@ function update(screen_w, screen_h, ticks)
         end
 
         update_ui_pop_offset()
+        update_ui_pop_clip()
 
         update_ui_rectangle(left_w - 1, 0, 1, region_h, color_white)
 
