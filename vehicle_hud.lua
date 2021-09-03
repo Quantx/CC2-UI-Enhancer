@@ -1289,6 +1289,8 @@ function render_attachment_hud_fuel_tank(screen_w, screen_h, attachment)
 end
 
 function render_attachment_hud_chaingun(screen_w, screen_h, map_data, tick_fraction, vehicle, attachment)
+    local hud_pos = vec2(screen_w / 2, screen_h / 2)
+    local col = color8(0, 255, 0, 255)
     render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachment)
     
     local gun_funnel_side_dist = 5
@@ -1296,26 +1298,26 @@ function render_attachment_hud_chaingun(screen_w, screen_h, map_data, tick_fract
     -- update_gun_funnel(tick_fraction, vehicle, gun_funnel_side_dist, gun_funnel_forward_dist)
     -- render_gun_funnel(tick_fraction, vehicle, gun_funnel_side_dist, gun_funnel_forward_dist, color8(0, 255, 0, 255))
 
-    -- This is completely broken
-    if g_selected_target_type == 1 and g_selected_target_id ~= 0 and false then
-        local selected_target = update_get_vehicle_by_id(g_selected_target_id)
+    if g_selected_target_type == 1 and g_selected_target_id ~= 0 then
+        local selected_target = update_get_map_vehicle_by_id(g_selected_target_id)
 
         if selected_target:get() then
             local lead_position = attachment:get_gun_lead_position(selected_target:get_position(), selected_target:get_linear_velocity())
             local lead_position_screen, is_clamped = update_world_to_screen(lead_position)
 
             if is_clamped == false then
-                local target_pos_screen = update_world_to_screen(selected_target:get_position())
+                local target_pos_screen, is_target_clamped = update_world_to_screen(selected_target:get_position())
 
-                lead_position_screen:x(target_pos_screen:x() - (lead_position_screen:x() - screen_w / 2))
-                lead_position_screen:y(target_pos_screen:y() - (lead_position_screen:y() - screen_h / 2))
-
-                update_ui_image_rot(lead_position_screen:x(), lead_position_screen:y(), atlas_icons.hud_gun_crosshair, color8(0, 255, 0, 255), 0)
+                if is_target_clamped == false then
+                    local lead_col = color8(255, 0, 0, 200)
+                    update_ui_line(target_pos_screen:x(), target_pos_screen:y(), lead_position_screen:x(), lead_position_screen:y(), lead_col)
+                    update_ui_image_rot(lead_position_screen:x(), lead_position_screen:y(), atlas_icons.crosshair, lead_col, 0)
+                end
             end
         end
-    else
-        update_ui_image_rot(screen_w / 2, screen_h / 2, atlas_icons.hud_gun_crosshair, color8(0, 255, 0, 255), 0)
     end
+
+    update_ui_image_rot(hud_pos:x() + 1, hud_pos:y() + 1, atlas_icons.hud_gun_crosshair, col, 0)
 
     return false
 end
@@ -1328,26 +1330,26 @@ function render_attachment_hud_ciws(screen_w, screen_h, map_data, vehicle, attac
     render_attachment_range(hud_pos, attachment)
     render_turret_vehicle_direction(screen_w, screen_h, vehicle, attachment, col)
 
-    -- This is completely broken
-    if g_selected_target_type == 1 and g_selected_target_id ~= 0 and false then
-        local selected_target = update_get_vehicle_by_id(g_selected_target_id)
+    if g_selected_target_type == 1 and g_selected_target_id ~= 0 then
+        local selected_target = update_get_map_vehicle_by_id(g_selected_target_id)
 
         if selected_target:get() then
             local lead_position = attachment:get_gun_lead_position(selected_target:get_position(), selected_target:get_linear_velocity())
             local lead_position_screen, is_clamped = update_world_to_screen(lead_position)
 
             if is_clamped == false then
-                local target_pos_screen = update_world_to_screen(selected_target:get_position())
+                local target_pos_screen, is_target_clamped = update_world_to_screen(selected_target:get_position())
 
-                lead_position_screen:x(target_pos_screen:x() - (lead_position_screen:x() - screen_w / 2))
-                lead_position_screen:y(target_pos_screen:y() - (lead_position_screen:y() - screen_h / 2))
-
-                update_ui_image_rot(lead_position_screen:x(), lead_position_screen:y(), atlas_icons.hud_gun_crosshair, col, 0)
+                if is_target_clamped == false then
+                    local lead_col = color8(255, 0, 0, 200)
+                    update_ui_line(target_pos_screen:x(), target_pos_screen:y(), lead_position_screen:x(), lead_position_screen:y(), lead_col)
+                    update_ui_image_rot(lead_position_screen:x(), lead_position_screen:y(), atlas_icons.crosshair, lead_col, 0)
+                end
             end
         end
-    else
-        update_ui_image_rot(hud_pos:x() + 1, hud_pos:y() + 1, atlas_icons.hud_horizon_cursor, col, 0)
     end
+
+    update_ui_image_rot(hud_pos:x() + 1, hud_pos:y() + 1, atlas_icons.hud_gun_crosshair, col, 0)
 
     if attachment:get_is_zoom_capable() then
         local zoom_factor = attachment:get_zoom_factor()
@@ -1413,8 +1415,11 @@ function render_attachment_hud_cannon(screen_w, screen_h, map_data, vehicle, att
 
     update_ui_image_rot(hud_pos:x() + 1, hud_pos:y() + 1, atlas_icons.hud_horizon_cursor, col, 0)
 
-    local is_heavy = def == e_game_object_type.attachment_turret_battle_cannon or def == e_game_object_type.attachment_turret_heavy_cannon
-    render_atachment_projectile_cooldown(hud_pos, attachment, is_heavy or def == e_game_object_type.attachment_turret_carrier_main_gun, col)
+    local is_heavy = def == e_game_object_type.attachment_turret_battle_cannon
+                  or def == e_game_object_type.attachment_turret_carrier_main_gun
+                  or def == e_game_object_type.attachment_turret_heavy_cannon
+
+    render_atachment_projectile_cooldown(hud_pos, attachment, is_heavy, col)
 
     if attachment:get_is_zoom_capable() then
         local zoom_factor = attachment:get_zoom_factor()
@@ -1422,7 +1427,7 @@ function render_attachment_hud_cannon(screen_w, screen_h, map_data, vehicle, att
         local display_zoom = 2 ^ zoom_power
         update_ui_text(hud_pos:x() - 250, hud_pos:y() + 50, string.format("%.2fx", display_zoom), 200, 2, col, 0)
         
-        if is_heavy and display_zoom > 1 then
+        if (def == e_game_object_type.attachment_turret_battle_cannon or def == e_game_object_type.attachment_turret_heavy_cannon) and display_zoom > 1 then
             local projectile_gravity = 50 / 30
             local projectile_speed = 600
             local projectile_velocity = update_get_camera_forward()
@@ -1431,7 +1436,7 @@ function render_attachment_hud_cannon(screen_w, screen_h, map_data, vehicle, att
             projectile_velocity:z(projectile_velocity:z() * projectile_speed)
 
             local step_amounts = { 1000, 500, 250, 100 }
-            if def == e_game_object_type.attachment_turret_heavy_cannon then step_amounts = { 800, 400, 200, 100 } end
+--            if def == e_game_object_type.attachment_turret_heavy_cannon then step_amounts = { 800, 400, 200, 100 } end
             local step = step_amounts[math.floor(zoom_power) + 1]
 
             for i = step, step * 4, step do
@@ -2742,7 +2747,7 @@ end
 
 -- toggle between no target and a specific target
 function toggle_vision_target(nearest_target, vehicle_team)
-    if g_selected_target_id == 0 and nearest_target and nearest_target.is_observed and nearest_target.team ~= vehicle_team then
+    if g_selected_target_id == 0 and nearest_target and nearest_target.is_observed then-- and nearest_target.team ~= vehicle_team then
         if g_is_input_cycle_target_next or g_is_input_cycle_target_prev then
             g_selected_target_id = nearest_target.id
             g_selected_target_type = 1
@@ -3003,7 +3008,7 @@ function get_stabilisation_mode_loc(stabilisation_mode)
 end
 
 function get_vehicle_attachment(vehicle_id, attachment_index)
-    local vehicle = update_get_vehicle_by_id(vehicle_id)
+    local vehicle = update_get_map_vehicle_by_id(vehicle_id)
 
     if vehicle:get() then
         local attachment = vehicle:get_attachment(attachment_index)
@@ -3105,7 +3110,7 @@ function iter_vehicles(filter)
         local vehicle = nil
 
         while index < vehicle_count do
-            vehicle = update_get_vehicle_by_index(index)
+            vehicle = update_get_map_vehicle_by_index(index)
             index = index + 1
 
             if skip(vehicle) then

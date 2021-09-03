@@ -1724,7 +1724,7 @@ function iter_vehicles(filter)
         local vehicle = nil
 
         while index < vehicle_count do
-            vehicle = update_get_vehicle_by_index(index)
+            vehicle = update_get_map_vehicle_by_index(index)
             index = index + 1
 
             if skip(vehicle) then

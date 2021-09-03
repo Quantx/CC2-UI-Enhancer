@@ -1873,7 +1873,7 @@ function input_event(event, action)
                                         local highlighted_vehicle_definition = highlighted_vehicle:get_definition_index()
 
                                         if highlighted_vehicle_team == update_get_screen_team_id() then
-                                            if g_drag_waypoint_id > 0 and vehicle_definition_index == e_game_object_type.chassis_air_rotor_heavy and get_is_vehicle_land(highlighted_vehicle_definition) then
+                                            if g_drag_waypoint_id > 0 and vehicle_definition_index == e_game_object_type.chassis_air_rotor_heavy and get_is_vehicle_airliftable(highlighted_vehicle_definition) then
                                                 -- toggle an "attack" target to perform airlift operation on friendly vehicle
 
                                                 local is_highlighted_vehicle_found = false
