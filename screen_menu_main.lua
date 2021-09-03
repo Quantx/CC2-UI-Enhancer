@@ -123,6 +123,15 @@ function update(screen_w, screen_h, ticks)
             if ui:list_item(update_get_loc(e_loc.upp_report_issue), true) then
                 update_ui_event("open_feedback_website")
             end
+
+            local game_ver = update_get_version()
+            local uimod_ver = "v1.0.15"
+            if game_ver ~= uimod_ver then
+                ui:divider()
+                ui:text_basic( "UI Enhancer might be out of date!" )
+                ui:text_basic( "Known compatible with " .. uimod_ver )
+                ui:text_basic( "Current game version " .. game_ver )
+            end
     
             ui:end_window()
         elseif g_screen_index == g_screens.new_game then
