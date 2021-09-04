@@ -2177,12 +2177,13 @@ function render_vehicle_tooltip(w, h, vehicle, peers)
         end
     end
 
-    cy = 21
+    cx = 2
+    cy = 20
     for i = 1, #peers do
         local peer = peers[i]
         local peer_name = peer.name
 
-        local max_text_chars = 10
+        local max_text_chars = 19
         local is_clipped = false
 
         if utf8.len(peer_name) > max_text_chars then
@@ -2190,16 +2191,16 @@ function render_vehicle_tooltip(w, h, vehicle, peers)
             is_clipped = true
         end
 
-        local text_render_w, text_render_h = update_ui_get_text_size(peer_name, w - 16, 0)
+        local text_render_w, text_render_h = update_ui_get_text_size(peer_name, w, 0)
 
         if peer.ctrl then
-            update_ui_image((cx - text_render_w / 2) - 12, cy, atlas_icons.column_controlling_peer, col, 0)
+            update_ui_image( cx, cy, atlas_icons.column_controlling_peer, color_white, 0)
         end
 
-        update_ui_text(cx - text_render_w / 2, cy, peer_name, text_render_w, 0, col, 0)
+        update_ui_text(cx + 10, cy, peer_name, text_render_w, 0, color_white, 0)
 
         if is_clipped then
-            update_ui_image(cx + text_render_w / 2, cy, atlas_icons.text_ellipsis, col, 0)
+            update_ui_image(cx + 10 + text_render_w, cy, atlas_icons.text_ellipsis, color_white, 0)
         end
 
         cy = cy + 10
