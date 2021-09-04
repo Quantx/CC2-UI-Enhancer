@@ -807,11 +807,13 @@ function update(screen_w, screen_h, ticks)
 
         update_ui_push_offset(label_x, label_y)
 
-        if g_button_mode > 0 then
-            update_ui_rectangle(0, 0, label_w, label_h, color_black)
-        end
+        update_ui_rectangle(0, 0, label_w, label_h, color_black)
 
-        if g_button_mode == 1 then
+        local now = update_get_logic_tick()
+
+        if g_button_mode == 0 then
+            update_ui_text(1, 1, "MISSION TIME: " .. format_time( now / 30 ), label_w, 0, color_white, 0)
+        elseif g_button_mode == 1 then
             update_ui_text(1, 1, string.format(update_get_loc(e_loc.upp_wind)..": %.2f", update_get_weather_wind_velocity(world_x, world_y)), label_w, 0, color_white, 0)
         elseif g_button_mode == 2 then
             update_ui_text(1, 1, string.format(update_get_loc(e_loc.upp_precipitation)..": %.0f%%", update_get_weather_precipitation_factor(world_x, world_y) * 100), label_w, 0, color_white, 0)
@@ -1417,6 +1419,14 @@ function get_team_drydock()
     end
     
     return nil, nil, nil
+end
+
+function format_time(time)
+    local seconds = math.floor(time) % 60
+    local minutes = math.floor(time / 60) % 60
+    local hours = math.min(math.floor(time / 60 / 60), 99)
+
+    return string.format("%02.f:%02.f:%02.f", hours, minutes, seconds)
 end
 
 function render_dashed_line(x0, y0, x1, y1, col)
