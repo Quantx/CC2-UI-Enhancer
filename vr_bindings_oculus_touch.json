@@ -46,6 +46,15 @@
             {
                "inputs" : {
                   "click" : {
+                     "output" : "/actions/cc/in/turn_right"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/right/input/a"
+            },
+            {
+               "inputs" : {
+                  "click" : {
                      "output" : "/actions/cc/in/back"
                   }
                },
@@ -55,37 +64,7 @@
             {
                "inputs" : {
                   "click" : {
-                     "output" : "/actions/cc/in/turn_right"
-                  },
-                  "double" : {
-                     "output" : "/actions/cc/in/cycle_mode"
-                  }
-               },
-               "mode" : "button",
-               "path" : "/user/hand/right/input/a"
-            },
-            {
-               "inputs" : {
-                  "click" : {
                      "output" : "/actions/cc/in/toggle_control"
-                  }
-               },
-               "mode" : "button",
-               "path" : "/user/hand/left/input/trackpad"
-            },
-            {
-               "inputs" : {
-                  "click" : {
-                     "output" : "/actions/cc/in/cycle_mode"
-                  }
-               },
-               "mode" : "button",
-               "path" : "/user/hand/right/input/trackpad"
-            },
-            {
-               "inputs" : {
-                  "click" : {
-                     "output" : "/actions/cc/in/recenter"
                   },
                   "position" : {
                      "output" : "/actions/cc/in/primary_stick"
@@ -97,7 +76,7 @@
             {
                "inputs" : {
                   "click" : {
-                     "output" : "/actions/cc/in/recenter"
+                     "output" : "/actions/cc/in/cycle_mode"
                   },
                   "position" : {
                      "output" : "/actions/cc/in/secondary_stick"
@@ -110,9 +89,6 @@
                "inputs" : {
                   "click" : {
                      "output" : "/actions/cc/in/turn_left"
-                  },
-                  "double" : {
-                     "output" : "/actions/cc/in/toggle_control"
                   }
                },
                "mode" : "button",
@@ -121,7 +97,7 @@
             {
                "inputs" : {
                   "click" : {
-                     "output" : "/actions/cc/in/back"
+                     "output" : "/actions/cc/in/recenter"
                   }
                },
                "mode" : "button",
