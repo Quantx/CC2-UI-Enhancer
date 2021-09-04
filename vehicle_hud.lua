@@ -2451,32 +2451,8 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
 
         local v = data.vehicle
 
-        -- don't show peers for carrier
-        if v:get_definition_index() == e_game_object_type.chassis_carrier then return end
-
         -- get all peers connected to the vehicle
-        local peers = {}
-
-        local a_count = v:get_attachment_count()
-        for i = 0, a_count - 1 do
-            local a = v:get_attachment(i)
-            if a:get() then
-                local peer_id = a:get_controlling_peer_id()
-
-                if peer_id ~= 0 then
-                    local peer_ctrl = a:get_control_mode() == "manual"
-
-                    local peer_index = update_get_peer_index_by_id(peer_id)
-                    local peer = {
-                        index = peer_index,
-                        name = update_get_peer_name(peer_index),
-                        ctrl = peer_ctrl
-                    }
-
-                    table.insert( peers, peer )
-                end
-            end
-        end
+        local peers = get_vehicle_controlling_peers(v)
 
         local cursor_y = pos:y() - 16
 

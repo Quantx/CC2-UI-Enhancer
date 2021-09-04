@@ -1491,8 +1491,10 @@ function update(screen_w, screen_h, ticks)
                     end
                 else
                     -- render vehicle tooltip
-                    local tool_height = iff( get_vehicle_has_robot_dogs(highlighted_vehicle), 31, 21 )
-                    render_tooltip(10, 10, screen_w - 20, screen_h - 20, g_pointer_pos_x, g_pointer_pos_y, 128, tool_height, 10, function(w, h) render_vehicle_tooltip(w, h, highlighted_vehicle) end)
+                    local peers = iff( highlighted_vehicle:get_team() == update_get_screen_team_id(), get_vehicle_controlling_peers(highlighted_vehicle), {} )
+                    local tool_height = 21 + (#peers * 10)
+
+                    render_tooltip(10, 10, screen_w - 20, screen_h - 20, g_pointer_pos_x, g_pointer_pos_y, 128, tool_height, 10, function(w, h) render_vehicle_tooltip(w, h, highlighted_vehicle, peers) end)
                 end
             end
         end
@@ -2042,7 +2044,7 @@ function input_pointer(is_hovered, x, y)
     end
 end
 
-function render_vehicle_tooltip(w, h, vehicle)
+function render_vehicle_tooltip(w, h, vehicle, peers)
     local screen_vehicle = update_get_screen_vehicle()
     local vehicle_pos_xz = vehicle:get_position_xz()
     local vehicle_definition_index = vehicle:get_definition_index()
@@ -2175,14 +2177,32 @@ function render_vehicle_tooltip(w, h, vehicle)
         end
     end
 
-    local has_robot_dogs, attachment_robot_dogs = get_vehicle_has_robot_dogs(vehicle)
-    if attachment_robot_dogs ~= nil then
-        cx = 12
-        cy = h - 2 - 10
-        local ammo_count = attachment_robot_dogs:get_ammo_remaining()
-        local virus_text = ammo_count .. " x " .. update_get_loc(e_loc.upp_control_bots)
+    cy = 21
+    for i = 1, #peers do
+        local peer = peers[i]
+        local peer_name = peer.name
 
-        update_ui_text(cx, cy, virus_text, w - 4, 0, iff(ammo_count > 0, color_status_ok, color_status_bad), 0)
+        local max_text_chars = 10
+        local is_clipped = false
+
+        if utf8.len(peer_name) > max_text_chars then
+            peer_name = peer_name:sub(1, utf8.offset(peer_name, max_text_chars) - 1)
+            is_clipped = true
+        end
+
+        local text_render_w, text_render_h = update_ui_get_text_size(peer_name, w - 16, 0)
+
+        if peer.ctrl then
+            update_ui_image((cx - text_render_w / 2) - 12, cy, atlas_icons.column_controlling_peer, col, 0)
+        end
+
+        update_ui_text(cx - text_render_w / 2, cy, peer_name, text_render_w, 0, col, 0)
+
+        if is_clipped then
+            update_ui_image(cx + text_render_w / 2, cy, atlas_icons.text_ellipsis, col, 0)
+        end
+
+        cy = cy + 10
     end
 end
 

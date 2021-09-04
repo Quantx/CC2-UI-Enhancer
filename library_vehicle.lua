@@ -423,6 +423,35 @@ function get_is_vehicle_type_waypoint_capable(vehicle_definition_index)
     return false
 end
 
+function get_vehicle_controlling_peers(vehicle)
+    local peers = {}
+
+    if not update_get_is_multiplayer() or vehicle:get_definition_index() == e_game_object_type.chassis_carrier then return peers end
+
+    local attachment_count = vehicle:get_attachment_count()
+    for i = 0, attachment_count - 1 do
+        local attachment = vehicle:get_attachment(i)
+        if attachment:get() then
+            local peer_id = attachment:get_controlling_peer_id()
+
+            if peer_id ~= 0 then
+                local peer_ctrl = attachment:get_control_mode() == "manual"
+
+                local peer_index = update_get_peer_index_by_id(peer_id)
+                table.insert( peers, {
+                    id = peer_id,
+                    name = update_get_peer_name(peer_index),
+                    ctrl = peer_ctrl,
+                    attachment_index = i
+                })
+            end
+        end
+    end
+
+    return peers
+end
+
+
 g_item_categories = {}
 g_item_data = {}
 g_item_count = 0
