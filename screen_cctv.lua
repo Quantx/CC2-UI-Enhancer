@@ -38,7 +38,49 @@ function update(screen_w, screen_h, ticks)
 
     g_render_camera_index_prev = render_camera_index
 
+    local docking_vehicle = nil
+
     if screen_vehicle:get() then
+        if render_camera_index == 0 then -- surface vehicle queue
+            for i = 0, 7 do
+                local id = screen_vehicle:get_attached_vehicle_id(i)
+                if id ~= 0 then
+                    local v = update_get_map_vehicle_by_id(id)
+                    if v:get() then
+                        local ds = v:get_dock_state()
+                        if ds == e_vehicle_dock_state.docking or ds == e_vehicle_dock_state.undocking then
+                            docking_vehicle = v
+                            break
+                        end
+                    end
+                end
+            end
+        elseif render_camera_index == 1 then -- air vehicle queue
+            for i = 8, 15 do
+                local id = screen_vehicle:get_attached_vehicle_id(i)
+                if id ~= 0 then
+                    local v = update_get_map_vehicle_by_id(id)
+                    if v:get() then
+                        local ds = v:get_dock_state()
+                        if ds == e_vehicle_dock_state.docking or ds == e_vehicle_dock_state.undocking then
+                            docking_vehicle = v
+                            break
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    if docking_vehicle ~= nil and docking_vehicle:get() then
+        update_set_screen_background_type(9)
+        update_set_screen_camera_attach_vehicle(docking_vehicle:get_id(), 0)
+
+        update_set_screen_camera_cull_distance(1000)
+        update_set_screen_camera_lod_level(0)
+        update_set_screen_camera_render_attached_vehicle(true)
+        update_set_screen_camera_is_render_ocean(true)
+    elseif screen_vehicle:get() then
         update_set_screen_background_type(9)
         update_set_screen_camera_attach_vehicle(screen_vehicle:get_id(), render_camera_index)
 
@@ -68,8 +110,18 @@ function update(screen_w, screen_h, ticks)
         end
 
         local logic_tick = update_get_logic_tick()
-        update_ui_rectangle(2, 2, 22, 11, color_black)
-        update_ui_text(4, 3, (render_camera_index + 1) .. "/2", region_w - 4, 0, color_grey_mid, 0)
+        if docking_vehicle ~= nil and docking_vehicle:get() then
+            local name = get_chassis_data_by_definition_index(docking_vehicle:get_definition_index())
+
+            local title = name .. " " .. update_get_loc(e_loc.upp_id) .. " " .. tostring(docking_vehicle:get_id())
+            local title_w = update_ui_get_text_size( title, 10000, 0 ) + 4
+
+            update_ui_rectangle(2, 2, title_w, 11, color_black)
+            update_ui_text(4, 3, title, title_w, 0, color_grey_mid, 0)
+        else
+            update_ui_rectangle(2, 2, 22, 11, color_black)
+            update_ui_text(4, 3, (render_camera_index + 1) .. "/2", region_w - 4, 0, color_grey_mid, 0)
+        end
 
         update_ui_rectangle(0, region_h - 18, region_w, 18, color_black)
         update_ui_rectangle(0, region_h - 18, region_w, 1, color_white)
