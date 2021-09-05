@@ -813,6 +813,33 @@ function update(screen_w, screen_h, ticks)
 
         if g_button_mode == 0 then
             update_ui_text(1, 1, "MISSION TIME: " .. format_time( now / 30 ), label_w, 0, color_white, 0)
+
+            -- draw timeline
+            local timeline_w = 100
+
+            update_ui_rectangle( label_w - timeline_w - 1, 1, timeline_w, 8, color_white )
+            update_ui_rectangle( label_w - timeline_w, 1, timeline_w - 2, 8, color_black )
+            update_ui_rectangle( label_w - timeline_w, label_h / 2 - 1, timeline_w - 2, 2, color_white )
+            update_ui_rectangle( label_w - timeline_w / 2, 1, 1, 8, color_white )
+
+            update_ui_push_clip( label_w - timeline_w, 0, timeline_w - 2, 10 )
+
+            local day_len = 54000 -- 30 minutes in ticks
+            local time = now - 8100 -- Time since midnight on the first day
+            local timeline_pos = label_w - ((timeline_w / day_len) * (time % day_len))
+
+            local cy = label_h / 2 - 4
+
+            local color_sun = color8( 255, 255, 0, 255 )
+            local color_moon = color8( 0, 0, 255, 255 )
+
+            update_ui_image(timeline_pos + timeline_w,     cy, atlas_icons.map_icon_surface, color_moon, 0)
+            update_ui_image(timeline_pos + timeline_w / 2, cy, atlas_icons.map_icon_surface, color_sun,  0)
+            update_ui_image(timeline_pos,                  cy, atlas_icons.map_icon_surface, color_moon, 0)
+            update_ui_image(timeline_pos - timeline_w / 2, cy, atlas_icons.map_icon_surface, color_sun,  0)
+            update_ui_image(timeline_pos - timeline_w,     cy, atlas_icons.map_icon_surface, color_moon, 0)
+
+            update_ui_pop_clip()
         elseif g_button_mode == 1 then
             update_ui_text(1, 1, string.format(update_get_loc(e_loc.upp_wind)..": %.2f", update_get_weather_wind_velocity(world_x, world_y)), label_w, 0, color_white, 0)
         elseif g_button_mode == 2 then
