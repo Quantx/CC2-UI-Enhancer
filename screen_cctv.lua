@@ -109,19 +109,16 @@ function update(screen_w, screen_h, ticks)
             update_ui_rectangle(0, region_h * transition_factor, region_w, region_h, color_black)
         end
 
-        local logic_tick = update_get_logic_tick()
+		local title = iff(render_camera_index == 0, update_get_loc(e_loc.upp_surface), update_get_loc(e_loc.upp_air)) .. " HANGAR"
+
         if docking_vehicle ~= nil and docking_vehicle:get() then
             local name = get_chassis_data_by_definition_index(docking_vehicle:get_definition_index())
+            title = name .. " " .. update_get_loc(e_loc.upp_id) .. " " .. tostring(docking_vehicle:get_id())
+		end
 
-            local title = name .. " " .. update_get_loc(e_loc.upp_id) .. " " .. tostring(docking_vehicle:get_id())
-            local title_w = update_ui_get_text_size( title, 10000, 0 ) + 4
-
-            update_ui_rectangle(2, 2, title_w, 11, color_black)
-            update_ui_text(4, 3, title, title_w, 0, color_grey_mid, 0)
-        else
-            update_ui_rectangle(2, 2, 22, 11, color_black)
-            update_ui_text(4, 3, (render_camera_index + 1) .. "/2", region_w - 4, 0, color_grey_mid, 0)
-        end
+		local title_w = update_ui_get_text_size( title, 10000, 0 ) + 4
+		update_ui_rectangle(2, 2, title_w, 11, color_black)
+		update_ui_text(4, 3, title, title_w, 0, color_grey_mid, 0)
 
         local button_h = 18
 
