@@ -123,10 +123,12 @@ function update(screen_w, screen_h, ticks)
             update_ui_text(4, 3, (render_camera_index + 1) .. "/2", region_w - 4, 0, color_grey_mid, 0)
         end
 
-        update_ui_rectangle(0, region_h - 18, region_w, 18, color_black)
-        update_ui_rectangle(0, region_h - 18, region_w, 1, color_white)
+        local button_h = 18
 
-        window.cy = region_h - 18 + 3
+        update_ui_rectangle(0, region_h - button_h, region_w, button_h, color_black)
+        update_ui_rectangle(0, region_h - button_h, region_w, 1, color_white)
+
+        window.cy = region_h - button_h + 3
         local button_action = ui:button_group({ "<", "", "", "", "", ">" }, true)
 
         if button_action == 0 then
@@ -140,7 +142,7 @@ function update(screen_w, screen_h, ticks)
         local cam_names = { update_get_loc(e_loc.upp_auto), update_get_loc(e_loc.upp_surface), update_get_loc(e_loc.upp_air) }
         local cam_cols = { color_grey_dark, color_grey_mid, color_grey_mid }
 
-        update_ui_text(0, region_h - 18 + 5, cam_names[g_camera_index + 1], region_w, 1, cam_cols[g_camera_index + 1], 0)
+        update_ui_text(0, region_h - button_h + 5, cam_names[g_camera_index + 1], region_w, 1, cam_cols[g_camera_index + 1], 0)
     ui:end_window()
 
     ui:end_ui()

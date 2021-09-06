@@ -720,6 +720,8 @@ function update_screen_overrides(screen_w, screen_h, ticks)
         return true
     elseif update_self_destruct_override(screen_w, screen_h) then
         return true
+    elseif update_access_denied(screen_w, screen_h, ticks) then
+        return true
     end
 
     return false
@@ -791,6 +793,37 @@ function update_self_destruct_override(screen_w, screen_h)
 
         cursor = cursor + 16
     end
+
+    return true
+end
+
+g_denied_anim = 0
+function update_access_denied(screen_w, screen_h, ticks)
+    if true or not update_get_is_multiplayer() then return false end
+
+--[[ The following is not implemented yet so abort
+    local peer_id = update_get_screen_peer_id()
+    local peer_index = update_get_peer_index_by_id(peer_id)
+    if update_get_peer_team(peer_index) ~= update_get_screen_team_id() then return false end
+--]]
+
+    g_denied_anim = g_denied_anim + ticks
+
+    local msg = "ACCESS DENIED"
+
+    local msg_w, msg_h = update_ui_get_text_size(msg, screen_w, 0)
+
+    local cx = (screen_w / 2) - (msg_w / 2)
+    local cy = (screen_h / 2) - (msg_h / 2)
+
+    local rate = 10
+    local blink_on = g_denied_anim % (2 * rate) > rate
+
+    update_ui_rectangle( cx - 3, cy - 2, msg_w + 5, msg_h + 4, color_status_bad )
+
+    update_ui_rectangle( cx - 2, cy - 1, msg_w + 3, msg_h + 2, iff(blink_on, color_status_bad, color_black) )
+
+    update_ui_text(cx, cy, msg, msg_w, msg_h, iff(blink_on, color_black, color_status_bad), 0)
 
     return true
 end

@@ -1502,6 +1502,9 @@ function holomap_override( screen_w, screen_h, ticks )
     if update_self_destruct_override(screen_w, screen_h) then
         g_is_render_holomap = false
         g_override = true
+    elseif update_access_denied(screen_w, screen_h, ticks) then
+        g_is_render_holomap = false
+        g_override = true
     elseif holomap_override_startup ( screen_w, screen_h, ticks ) then
         g_override = true
     elseif render_selection(screen_w, screen_h) then
