@@ -124,12 +124,15 @@ function update(screen_w, screen_h, ticks)
                 update_ui_event("open_feedback_website")
             end
 
+            ui:divider()
+
             local game_ver = update_get_version()
             if game_ver ~= uimod_version.game then
-                ui:divider()
                 ui:text_basic( "UI Enhancer " .. uimod_version.mod .. " might be out of date!" )
                 ui:text_basic( "Known compatible with " .. uimod_version.game )
                 ui:text_basic( "Current game version " .. game_ver )
+            else
+                ui:text_basic( "UI Enhancer " .. uimod_version.mod )
             end
     
             ui:end_window()
