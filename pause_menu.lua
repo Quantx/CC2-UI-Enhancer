@@ -594,7 +594,10 @@ function tab_game_render(screen_w, screen_h, x, y, w, h, delta_time, is_tab_acti
     local is_mouse_active = g_is_mouse_mode and g_is_pointer_hovered and g_hovered_screen == g_screens.active_tab
 
     if g_tab_game.screen_index == 0 then
-        ui:begin_window("##main", 5, 5, w - 10, h - 15, atlas_icons.column_pending, is_active or is_mouse_active, 0, true, is_active)
+        local tick = update_get_logic_tick()
+        local title = format_time(tick / 30)
+
+        ui:begin_window(title .. "##main", 5, 5, w - 10, h - 15, atlas_icons.column_pending, is_active or is_mouse_active, 0, true, is_active)
         
         if ui:list_item(update_get_loc(e_loc.upp_return_to_bridge), true, update_get_is_respawn_menu_option_available()) then
             update_ui_event("character_return_to_bridge")

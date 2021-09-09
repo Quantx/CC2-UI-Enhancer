@@ -80,10 +80,10 @@ function update(screen_w, screen_h, ticks)
         local impact_distance = lerp(93, 0, get_timing_factor(timing_travel) ^ 1.4)
 
         if get_timing_active(timing_travel) then
-            ui:stat(atlas_icons.column_time, format_time(impact_time), color_grey_mid)
+            ui:stat(atlas_icons.column_time, format_impact_time(impact_time), color_grey_mid)
             ui:stat(atlas_icons.column_distance, string.format("%.1f", impact_distance) .. update_get_loc(e_loc.acronym_kilometers), iff(get_timing_active(timing_impact), color_status_bad, color_grey_mid))
         else
-            ui:stat(atlas_icons.column_time, "--:--", color_grey_dark)
+            ui:stat(atlas_icons.column_time, "--.--", color_grey_dark)
             ui:stat(atlas_icons.column_distance, string.format("%.1f", impact_distance) .. update_get_loc(e_loc.acronym_kilometers), color_grey_dark)
         end
     ui:end_window()
@@ -185,10 +185,10 @@ function blink(rate, col1, col2)
     end
 end
 
-function format_time(time)
+function format_impact_time(time)
     local milliseconds = math.floor(time * 100) % 100
     local seconds = math.floor(time) % 60
-    return string.format("%02.f:%02.f", seconds, milliseconds)
+    return string.format("%02.f.%02.f", seconds, milliseconds)
 end
 
 function pulse(rate, col1, col2)

@@ -152,14 +152,6 @@ function input_scroll(dy)
     g_ui:input_scroll(dy)
 end
 
-function format_time(time)
-    local seconds = math.floor(time) % 60
-    local minutes = math.floor(time / 60) % 60
-    local hours = math.min(math.floor(time / 60 / 60), 99)
-
-    return string.format("%02.f:%02.f:%02.f", hours, minutes, seconds)
-end
-
 function pulse(rate, col1, col2)
     local factor = math.sin(update_get_logic_tick() * rate) * 0.5 + 0.5
     return color8_lerp(col1, col2, factor)

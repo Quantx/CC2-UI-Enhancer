@@ -150,14 +150,6 @@ function imgui_notification_log(ui, log, column_widths, column_margins, is_read)
     end
 end
 
-function format_time(time)
-    local seconds = math.floor(time) % 60
-    local minutes = math.floor(time / 60) % 60
-    local hours = math.min(math.floor(time / 60 / 60), 99)
-
-    return string.format("%02.f:%02.f:%02.f", hours, minutes, seconds)
-end
-
 function get_tile_name(id)
     local tile = update_get_tile_by_id(id)
 

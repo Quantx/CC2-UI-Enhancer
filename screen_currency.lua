@@ -199,14 +199,6 @@ function input_axis(x, y, z, w)
     g_ui:input_scroll_gamepad(w)
 end
 
-function format_time(time)
-    local seconds = math.floor(time) % 60
-    local minutes = math.floor(time / 60) % 60
-    local hours = math.min(math.floor(time / 60 / 60), 99)
-
-    return string.format("%02.f:%02.f:%02.f", hours, minutes, seconds)
-end
-
 function currency_col(amount, is_highlight) 
     if amount > 0 then
         return iff(is_highlight, color_status_ok, color8(8, 32, 20, 255))

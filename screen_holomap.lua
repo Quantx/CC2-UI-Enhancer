@@ -1448,14 +1448,6 @@ function get_team_drydock()
     return nil, nil, nil
 end
 
-function format_time(time)
-    local seconds = math.floor(time) % 60
-    local minutes = math.floor(time / 60) % 60
-    local hours = math.min(math.floor(time / 60 / 60), 99)
-
-    return string.format("%02.f:%02.f:%02.f", hours, minutes, seconds)
-end
-
 function render_dashed_line(x0, y0, x1, y1, col)
     local line_length = math.max(vec2_dist(vec2(x0, y0), vec2(x1, y1)), 1)
     local normal = vec2((x1 - x0) / line_length, (y1 - y0) / line_length)

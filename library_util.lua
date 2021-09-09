@@ -841,3 +841,11 @@ function table_count(t)
 
     return i
 end
+
+function format_time(time)
+    local seconds = math.floor(time) % 60
+    local minutes = math.floor(time / 60) % 60
+    local hours = math.min(math.floor(time / 60 / 60), 99)
+
+    return string.format("%02.f:%02.f:%02.f", hours, minutes, seconds)
+end
