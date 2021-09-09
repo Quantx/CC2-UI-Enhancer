@@ -116,9 +116,6 @@ function begin()
     g_next_pos_x = parse_f32(g_next_pos_x)
     g_next_pos_y = parse_f32(g_next_pos_y)
     g_next_size = parse_f32(g_next_size)
-
-    -- randomize this
-    g_startup_op_num = 3524418973
 end
 
 function update(screen_w, screen_h, ticks) 
@@ -1518,8 +1515,11 @@ function holomap_override( screen_w, screen_h, ticks )
 end
 
 function holomap_override_startup( screen_w, screen_h, ticks )
-
     local screen_vehicle = update_get_screen_vehicle()
+
+    if g_startup_op_num == 0 then
+        g_startup_op_num = math.random(9999999999)
+    end
 
     if g_startup_phase == holomap_startup_phases.finish then
         return false
