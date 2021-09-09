@@ -205,6 +205,11 @@ function update(screen_w, screen_h, ticks)
     if g_is_map_pos_initialised == false then
         g_is_map_pos_initialised = true
         if screen_vehicle:get() and screen_vehicle:get_dock_state() == e_vehicle_dock_state.docked then
+            local pos = screen_vehicle:get_position_xz()
+            g_map_x = pos:x()
+            g_map_z = pos:y()
+            g_map_size = 5000
+
             focus_world()
         end
     end
@@ -1518,7 +1523,7 @@ function holomap_override_startup( screen_w, screen_h, ticks )
 
     if g_startup_phase == holomap_startup_phases.finish then
         return false
-    elseif screen_vehicle:get() and screen_vehicle:get_dock_state() ~= e_vehicle_dock_state.docked then
+    elseif g_is_map_pos_initialised or (screen_vehicle:get() and screen_vehicle:get_dock_state() ~= e_vehicle_dock_state.docked) then
         g_startup_phase = holomap_startup_phases.finish
         return false
     end
