@@ -369,6 +369,7 @@ function render_selection_attack_target(screen_w, screen_h)
                 local selected_vehicle_pos_xz = selected_vehicle:get_position_xz()
 
                 selected_vehicle:clear_waypoints()
+                selected_vehicle:clear_attack_target()
                 g_selection_waypoint_id = selected_vehicle:add_waypoint(selected_vehicle_pos_xz:x(), selected_vehicle_pos_xz:y())
                 selected_vehicle:set_waypoint_attack_target_target_id(g_selection_waypoint_id, g_selection_attack_target_vehicle_id)
             end
@@ -1617,6 +1618,7 @@ function input_event(event, action)
                         
                         if child_vehicle:get() then
                             child_vehicle:clear_waypoints()
+                            child_vehicle:clear_attack_target()
                             child_vehicle:add_waypoint(world_x, world_y)
                         end
 
@@ -1743,6 +1745,7 @@ function input_event(event, action)
                             
                                                         local world_x, world_y = get_world_from_screen(g_cursor_pos_x, g_cursor_pos_y, g_camera_pos_x, g_camera_pos_y, g_camera_size, 256, 256)
                                                         drag_vehicle:clear_waypoints()
+                                                        drag_vehicle:clear_attack_target()
                                                         drag_vehicle:add_waypoint(world_x, world_y)
                                                     end
                                                 else
@@ -1754,6 +1757,7 @@ function input_event(event, action)
                                                         drag_vehicle:set_target_vehicle(support_waypoint_id, g_highlighted_vehicle_id)
                                                     else
                                                         drag_vehicle:clear_waypoints()
+                                                        drag_vehicle:clear_attack_target()
                                                         local support_waypoint_id = drag_vehicle:add_waypoint(highlighted_vehicle:get_position_xz():x(), highlighted_vehicle:get_position_xz():y())
                                                         drag_vehicle:set_target_vehicle(support_waypoint_id, g_highlighted_vehicle_id)
                                                     end
@@ -1812,6 +1816,7 @@ function input_event(event, action)
             
                                         local world_x, world_y = get_world_from_screen(g_cursor_pos_x, g_cursor_pos_y, g_camera_pos_x, g_camera_pos_y, g_camera_size, 256, 256)
                                         drag_vehicle:clear_waypoints()
+                                        drag_vehicle:clear_attack_target()
                                         drag_vehicle:add_waypoint(world_x, world_y)
                                     end
                                 end
