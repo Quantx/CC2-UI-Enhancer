@@ -2111,7 +2111,7 @@ function update_gun_funnel(tick_fraction, vehicle, side_dist, forward_dist)
 
     local projectile_speed = 10
 
-    local tick = update_get_tick()
+    local tick = update_get_logic_tick()
 
     if tick - g_gun_funnel_sample_time > sample_interval_ticks then
         g_gun_funnel_sample_time = tick
@@ -2160,7 +2160,7 @@ function render_gun_funnel(tick_fraction, vehicle, side_dist, forward_dist, col)
         )
     end
 
-    local tick = update_get_tick()
+    local tick = update_get_logic_tick()
 
     local prev = {
         time = tick,

@@ -453,6 +453,7 @@ g_message_box = {
         local appear_duration = 500
         local key_duration_millis = 500
         local is_block_input = false
+        local is_pause_simulation = false
 
         if self.is_visible then
             if self.anim_appear < 1 then
@@ -485,6 +486,13 @@ g_message_box = {
             end
         end
 
+        if self.is_visible then
+            if self.type ~= e_message_box_type.none then
+                is_pause_simulation = true
+            end
+        end
+
+        update_set_is_pause_simulation(is_pause_simulation)
         update_set_is_block_input(is_block_input)
     end,
 
