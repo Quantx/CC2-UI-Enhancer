@@ -121,7 +121,7 @@ function imgui_notification_log(ui, log, column_widths, column_margins, is_read)
         log_message = update_get_loc(e_loc.island_captured) .. " - " .. get_tile_name(log:get_tile_id())
         text_col = color_status_ok
     elseif log_type == e_map_notification_type.island_lost then
-        log_message = update_get_loc(e_loc.island_lost) .. " - " get_tile_name(log:get_tile_id())
+        log_message = update_get_loc(e_loc.island_lost) .. " - " .. get_tile_name(log:get_tile_id())
         text_col = color_status_bad
     elseif log_type == e_map_notification_type.blueprint_unlocked then
         local blueprints = log:get_blueprints()

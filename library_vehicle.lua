@@ -161,7 +161,7 @@ function get_attachment_data_by_definition_index(index)
         [e_game_object_type.attachment_turret_carrier_camera] = {
             name = update_get_loc(e_loc.upp_naval_camera),
             icon16 = atlas_icons.icon_attachment_16_camera_large,
-            name_short = "CAMERA",
+            name_short = "OBS CAM",
         },
         [e_game_object_type.attachment_turret_carrier_torpedo] = {
             name = update_get_loc(e_loc.upp_torpedo),
@@ -225,8 +225,8 @@ function get_attachment_data_by_definition_index(index)
         },
         [e_game_object_type.attachment_camera] = {
             name = update_get_loc(e_loc.upp_actuated_camera),
-            icon16 = atlas_icons.icon_attachment_16_camera_large,
-            name_short = "CAMERA",
+            icon16 = atlas_icons.icon_attachment_16_small_camera_obs,
+            name_short = "VIEW CAM",
         },
         [e_game_object_type.attachment_camera_vehicle_control] = {
             name = update_get_loc(e_loc.upp_fixed_camera),
@@ -236,12 +236,12 @@ function get_attachment_data_by_definition_index(index)
         [e_game_object_type.attachment_camera_plane] = {
             name = update_get_loc(e_loc.upp_gimbal_camera),
             icon16 = atlas_icons.icon_attachment_16_camera_aircraft,
-            name_short = "CAMERA",
+            name_short = "OBS CAM",
         },
         [e_game_object_type.attachment_camera_observation] = {
             name = update_get_loc(e_loc.upp_observation_camera),
-            icon16 = atlas_icons.icon_attachment_16_small_camera_obs,
-            name_short = "CAMERA",
+            icon16 = atlas_icons.icon_attachment_16_camera_large,
+            name_short = "OBS CAM",
         },
         [e_game_object_type.attachment_radar_awacs] = {
             name = update_get_loc(e_loc.upp_awacs_radar_system),

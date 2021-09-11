@@ -37,8 +37,8 @@ vessel_names = {
 }
 
 uimod_version = {
-    game = "v1.0.16",
-    mod = "v8.2"
+    game = "v1.0.17",
+    mod = "v8.3"
 }
 
 atlas_icons = {
@@ -437,10 +437,10 @@ function get_attachment_icons(definition_index)
         [e_game_object_type.attachment_hardpoint_torpedo_noisemaker] = { atlas_icons.icon_attachment_air_torpedo_noisemaker, atlas_icons.icon_attachment_16_air_torpedo_noisemaker },
         [e_game_object_type.attachment_hardpoint_torpedo_decoy] = { atlas_icons.icon_attachment_air_torpedo_decoy, atlas_icons.icon_attachment_16_air_torpedo_decoy },
         [e_game_object_type.attachment_hardpoint_missile_tv] = { atlas_icons.icon_attachment_air_missile_tv, atlas_icons.icon_attachment_16_air_missile_tv },
-        [e_game_object_type.attachment_camera] = { atlas_icons.icon_attachment_camera_large, atlas_icons.icon_attachment_16_camera_large },
+        [e_game_object_type.attachment_camera_observation] = { atlas_icons.icon_attachment_camera_large, atlas_icons.icon_attachment_16_camera_large },
         [e_game_object_type.attachment_camera_vehicle_control] = { atlas_icons.icon_attachment_small_camera, atlas_icons.icon_attachment_16_small_camera },
         [e_game_object_type.attachment_camera_plane] = { atlas_icons.icon_attachment_camera_aircraft, atlas_icons.icon_attachment_16_camera_aircraft },
-        [e_game_object_type.attachment_camera_observation] = { atlas_icons.icon_attachment_small_camera_obs, atlas_icons.icon_attachment_16_small_camera_obs },
+        [e_game_object_type.attachment_camera] = { atlas_icons.icon_attachment_small_camera_obs, atlas_icons.icon_attachment_16_small_camera_obs },
         [e_game_object_type.attachment_radar_awacs] = { atlas_icons.icon_attachment_air_radar, atlas_icons.icon_attachment_16_air_radar },
         [e_game_object_type.attachment_fuel_tank_plane] = { atlas_icons.icon_attachment_air_fuel, atlas_icons.icon_attachment_16_air_fuel },
         [e_game_object_type.attachment_flare_launcher] = { atlas_icons.icon_attachment_small_flare, atlas_icons.icon_attachment_16_small_flare },

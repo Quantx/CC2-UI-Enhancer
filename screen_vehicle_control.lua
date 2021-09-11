@@ -1837,6 +1837,12 @@ function input_event(event, action)
                     if g_drag_vehicle_id == g_highlighted_vehicle_id and g_drag_waypoint_id == g_highlighted_waypoint_id and g_selected_child_vehicle_index == -1 then
                         -- tap
 
+                        local drag_threshold = 3
+
+                        if update_get_is_vr() then
+                            drag_threshold = 20
+                        end
+
                         if event == e_input.action_a or g_is_pointer_hovered then
                             if g_drag_waypoint_id > 0 then
                                 g_selection_vehicle_id = g_drag_vehicle_id
@@ -1850,7 +1856,7 @@ function input_event(event, action)
                                 g_selection_attack_target_index = -1
                                 g_selection_attack_target_vehicle_id = 0
                                 g_is_selection_map = false
-                            elseif g_highlighted_vehicle_id == 0 and g_drag_distance < 3 then
+                            elseif g_highlighted_vehicle_id == 0 and g_drag_distance < drag_threshold then
                                 g_selection_vehicle_id = 0
                                 g_selection_waypoint_id = 0
                                 g_selection_attack_target_index = -1
