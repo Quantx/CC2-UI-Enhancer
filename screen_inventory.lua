@@ -789,7 +789,7 @@ function render_map_ui(screen_w, screen_h, x, y, w, h, screen_vehicle, is_tab_ac
             if facility_tile:get() and facility_tile:get_team_control() == screen_vehicle:get_team() then
                 local category_data = g_item_categories[facility_tile:get_facility_category()]
                 
-                if category_data.index ~= 0 then
+                if category_data.index ~= 0 and g_tab_map.selected_panel < 2 then
                     local left_w = w - 75
                     local right_w = w - left_w
 
@@ -804,9 +804,12 @@ function render_map_ui(screen_w, screen_h, x, y, w, h, screen_vehicle, is_tab_ac
                     end
 
                     local window = ui:begin_window(category_data.name .. "##facility", 5, y, left_w - 5, h - 5, category_data.icon, is_windows_active and g_tab_map.selected_panel == 0, 2)
-
                         if ui:list_item(update_get_loc(e_loc.upp_queue), true) then
                             g_tab_map.selected_panel = 1
+                        end
+
+                        if ui:list_item(update_get_loc(e_loc.upp_inventory), true) then
+                            g_tab_map.selected_panel = 2
                         end
 
                         local items_unlocked = {}
