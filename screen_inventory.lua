@@ -63,7 +63,7 @@ g_screens = {
     active_tab = 1,
 }
 
-g_focused_screen = g_screens.menu
+g_focused_screen = g_screens.active_tab
 g_active_tab = g_tabs.stock
 g_hovered_tab = -1
 
@@ -321,7 +321,7 @@ function input_event(event, action)
 end
 
 function exit_screen()
-    g_focused_screen = g_screens.menu
+    g_focused_screen = g_screens.active_tab
     g_hovered_tab = -1
     update_set_screen_state_exit()
 end
@@ -372,7 +372,8 @@ function tab_barges_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen
         table.insert(barges, barge)
     end
 
-    ui:begin_window("##barges", 5, 0, w - 10, h, nil, is_tab_active and g_tab_barges.selected_item == -1, 1)
+    local is_local = update_get_is_focus_local()
+    ui:begin_window("##barges", 5, 0, w - 10, h, nil, is_tab_active and g_tab_barges.selected_item == -1, 1, is_local)
         local selected_item = imgui_barge_table(ui, barges)
         ui:divider(0, 3)
         ui:divider(0, 10)
@@ -532,8 +533,11 @@ function imgui_barge_table(ui, barges)
             text_action = update_get_loc(e_loc.upp_idle)
         end
 
-        if dist_to_target > 0 then
-            text_dist = string.format("%.0fm", math.min(99999, dist_to_target))
+
+        if dist_to_target >= 10000 then
+            text_dist = string.format("%.0f", dist_to_target / 1000) ..  update_get_loc(e_loc.acronym_kilometers)
+        elseif dist_to_target > 0 then
+            text_dist = string.format("%.0f", dist_to_target) .. update_get_loc(e_loc.acronym_meters)
         end
 
         local columns = { 
@@ -1270,9 +1274,7 @@ function get_tile_blueprint_unlocks(tile)
 end
 
 function update_map_cursor_state(screen_w, screen_h)
-    if update_get_is_focus_local() == false then return end
-    
-    if update_get_active_input_type() == e_active_input.keyboard then
+    if update_get_active_input_type() == e_active_input.keyboard and update_get_is_focus_local() then
         g_tab_map.cursor_pos_x = g_pointer_pos_x
         g_tab_map.cursor_pos_y = g_pointer_pos_y
     else
@@ -1585,7 +1587,8 @@ function tab_stock_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_
     g_tab_stock.is_overlay = false
     render_inventory_stats(0, 0, w, 10, screen_vehicle)
 
-    local window = ui:begin_window("##inventory", 5, 10, w - 10, h - 10, nil, is_tab_active and g_tab_stock.selected_item == -1, 1)
+    local is_local = update_get_is_focus_local()
+    local window = ui:begin_window("##inventory", 5, 10, w - 10, h - 10, nil, is_tab_active and g_tab_stock.selected_item == -1, 1, is_local)
         local selected_item, selected_row, selected_col, sx, sy, sw, sh = imgui_vehicle_inventory_table(ui, screen_vehicle)
         ui:divider(0, 3)
         ui:divider(0, 10)
