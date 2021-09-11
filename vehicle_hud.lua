@@ -2718,6 +2718,7 @@ function get_is_vision_reveal_targets(attachment_def)
         or attachment_def == e_game_object_type.attachment_turret_heavy_cannon
         or attachment_def == e_game_object_type.attachment_turret_missile
         or attachment_def == e_game_object_type.attachment_turret_ciws
+        or attachment_def == e_game_object_type.attachment_camera
 end
 
 

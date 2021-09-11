@@ -184,8 +184,8 @@ function get_attachment_data_by_definition_index(index)
             name = update_get_loc(e_loc.upp_missile_tv),
             icon16 = atlas_icons.icon_attachment_16_air_missile_tv,
         },
-        [e_game_object_type.attachment_camera] = {
-            name = update_get_loc(e_loc.upp_actuated_camera),
+        [e_game_object_type.attachment_camera_observation] = {
+            name = update_get_loc(e_loc.upp_observation_camera),
             icon16 = atlas_icons.icon_attachment_16_camera_large,
         },
         [e_game_object_type.attachment_camera_vehicle_control] = {
@@ -196,8 +196,8 @@ function get_attachment_data_by_definition_index(index)
             name = update_get_loc(e_loc.upp_gimbal_camera),
             icon16 = atlas_icons.icon_attachment_16_camera_aircraft,
         },
-        [e_game_object_type.attachment_camera_observation] = {
-            name = update_get_loc(e_loc.upp_observation_camera),
+        [e_game_object_type.attachment_camera] = {
+            name = update_get_loc(e_loc.upp_actuated_camera),
             icon16 = atlas_icons.icon_attachment_16_small_camera_obs,
         },
         [e_game_object_type.attachment_radar_awacs] = {
