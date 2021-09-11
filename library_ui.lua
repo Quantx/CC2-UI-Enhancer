@@ -2895,15 +2895,20 @@ function imgui_facility_inventory_table(ui, tile)
     
     for _, category in pairs(g_item_categories) do
         if #category.items > 0 then
+            local is_added_header = false
+
             local header_columns = {
                 { w=column_widths[1], margin=column_margins[1], value=category.name },
                 { w=column_widths[2], margin=column_margins[2], value=atlas_icons.column_stock },
             }
-
-            imgui_table_header(ui, header_columns)
             
             for _, item in pairs(category.items) do
                 if update_get_resource_item_hidden(item.index) == false then
+                    if not is_added_header then
+                        imgui_table_header(ui, header_columns)
+                        is_added_header = true
+                    end
+
                     local stock_count = tile:get_facility_inventory_count(item.index)
 
                     local columns = { 
