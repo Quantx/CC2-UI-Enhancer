@@ -804,7 +804,7 @@ function render_map_ui(screen_w, screen_h, x, y, w, h, screen_vehicle, is_tab_ac
                     end
 
                     local window = ui:begin_window(category_data.name .. "##facility", 5, y, left_w - 5, h - 5, category_data.icon, is_windows_active and g_tab_map.selected_panel == 0, 2)
-                        if ui:list_item(update_get_loc(e_loc.upp_queue), true) then
+                        if ui:list_item(update_get_loc(e_loc.upp_queue), true) and not g_is_mouse_mode then
                             g_tab_map.selected_panel = 1
                         end
 
@@ -1392,10 +1392,14 @@ function tab_map_input_event(input, action)
                 elseif g_tab_map.selected_facility_item ~= -1 then
                     g_tab_map.selected_facility_item = -1
                 elseif g_is_mouse_mode then
-                    g_tab_map.selected_panel = 0
-                    g_tab_map.selected_facility_id = 0
+                    if g_tab_map.selected_panel == 2 then
+                        g_tab_map.selected_panel = 0
+                    else
+                        g_tab_map.selected_panel = 0
+                        g_tab_map.selected_facility_id = 0
+                    end
                 else
-                    if g_tab_map.selected_panel == 1 then
+                    if g_tab_map.selected_panel > 0 then
                         g_tab_map.selected_panel = 0
                     else
                         g_tab_map.selected_facility_id = 0
