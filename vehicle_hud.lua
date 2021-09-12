@@ -2723,7 +2723,7 @@ end
 
 -- toggle between no target and a specific target
 function toggle_vision_target(nearest_target, vehicle_team)
-    if g_selected_target_id == 0 and nearest_target and nearest_target.is_observed then-- and nearest_target.team ~= vehicle_team then
+    if g_selected_target_id == 0 and nearest_target and nearest_target.is_observed and nearest_target.team ~= vehicle_team then
         if g_is_input_cycle_target_next or g_is_input_cycle_target_prev then
             g_selected_target_id = nearest_target.id
             g_selected_target_type = 1
