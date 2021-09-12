@@ -48,7 +48,6 @@ function update(screen_w, screen_h, ticks)
 
     if g_locked_lmr == 1 then
         update_add_ui_interaction("pin view", e_game_input.interact_a)
-        update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_ud)
         update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_lr)
     else
         update_add_ui_interaction("unpin view", e_game_input.interact_a)
@@ -420,6 +419,8 @@ function render_vehicle_list( win_list, is_air )
                 g_hovered_vehicle_id = id
             end
         end
+
+        update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_ud)
     else
         ui:spacer(3)
         update_ui_text(0, win_list.cy, "---", list_region_w, 1, color_grey_dark, 0)
