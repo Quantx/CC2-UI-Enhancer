@@ -25,6 +25,12 @@ g_tab_map = {
     selected_facility_queue_item = -1,
     selected_barge_id = 0,
     selected_panel = 0,
+
+    panel_scroll_pos = {
+        [0] = 0,
+        [1] = 0,
+        [2] = 0,
+    },
 }
 
 g_tab_stock = {
@@ -33,6 +39,7 @@ g_tab_stock = {
     input_event = nil,
     input_pointer = nil,
     input_scroll = nil,
+    scroll_pos = 0,
     is_overlay = false,
 
     selected_item = -1,
@@ -44,6 +51,7 @@ g_tab_barges = {
     input_event = nil,
     input_pointer = nil,
     input_scroll = nil,
+    scroll_pos = 0,
     is_overlay = false,
 
     selected_item = -1,
@@ -108,6 +116,7 @@ g_is_mouse_mode = false
 function parse()
     g_focused_screen = parse_s32("", g_focused_screen)
     g_active_tab = parse_s32("active_tab", g_active_tab)
+
     g_tab_map.is_map_pos_initialised = parse_bool("is_map_init", g_tab_map.is_map_pos_initialised)
     g_tab_map.camera_pos_x = parse_f32("map_x", g_tab_map.camera_pos_x)
     g_tab_map.camera_pos_y = parse_f32("map_y", g_tab_map.camera_pos_y)
@@ -118,8 +127,16 @@ function parse()
     g_tab_map.selected_facility_item = parse_s32("", g_tab_map.selected_facility_item)
     g_tab_map.selected_facility_queue_item = parse_s32("", g_tab_map.selected_facility_queue_item)
     g_tab_map.selected_panel = parse_s32("", g_tab_map.selected_panel)
+
+    g_tab_map.panel_scroll_pos[0] = parse_f32("", g_tab_map.panel_scroll_pos[0])
+    g_tab_map.panel_scroll_pos[1] = parse_f32("", g_tab_map.panel_scroll_pos[1])
+    g_tab_map.panel_scroll_pos[2] = parse_f32("", g_tab_map.panel_scroll_pos[2])
+
     g_tab_stock.selected_item = parse_s32("", g_tab_stock.selected_item)
+    g_tab_stock.scroll_pos = parse_f32("", g_tab_stock.scroll_pos)
+
     g_tab_barges.selected_item = parse_s32("", g_tab_barges.selected_item)
+    g_tab_barges.scroll_pos = parse_f32("", g_tab_barges.scroll_pos)
 end
 
 function begin()
@@ -373,7 +390,13 @@ function tab_barges_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen
     end
 
     local is_local = update_get_is_focus_local()
-    ui:begin_window("##barges", 5, 0, w - 10, h, nil, is_tab_active and g_tab_barges.selected_item == -1, 1, is_local)
+    local barge_window = ui:begin_window("##barges", 5, 0, w - 10, h, nil, is_tab_active and g_tab_barges.selected_item == -1, 1, is_local)
+        if is_local then
+            g_tab_barges.scroll_pos = barge_window.scroll_y
+        else
+            barge_window.scroll_y = g_tab_barges.scroll_pos
+        end
+
         local selected_item = imgui_barge_table(ui, barges)
         ui:divider(0, 3)
         ui:divider(0, 10)
@@ -753,6 +776,8 @@ end
 function render_map_ui(screen_w, screen_h, x, y, w, h, screen_vehicle, is_tab_active)
     local ui = g_ui
 
+    local is_local = update_get_is_focus_local()
+
     if is_tab_active then
         if g_tab_map.selected_barge_id ~= 0 then
             g_tab_map.is_overlay = true
@@ -804,6 +829,12 @@ function render_map_ui(screen_w, screen_h, x, y, w, h, screen_vehicle, is_tab_ac
                     end
 
                     local window = ui:begin_window(category_data.name .. "##facility", 5, y, left_w - 5, h - 5, category_data.icon, is_windows_active and g_tab_map.selected_panel == 0, 2)
+                        if is_local then
+                            g_tab_map.panel_scroll_pos[0] = window.scroll_y
+                        else
+                            window.scroll_y = g_tab_map.panel_scroll_pos[0]
+                        end
+
                         if ui:list_item(update_get_loc(e_loc.upp_queue), true) and not g_is_mouse_mode then
                             g_tab_map.selected_panel = 1
                         end
@@ -884,7 +915,13 @@ function render_map_ui(screen_w, screen_h, x, y, w, h, screen_vehicle, is_tab_ac
                         render_map_facility_queue(5, 3, region_w - 10, region_h, facility_tile)
                     ui:end_window()
 
-                    ui:begin_window(update_get_loc(e_loc.upp_queue).."##facilityqueue", left_w, y + 24, right_w - 5, h - 29, atlas_icons.column_pending, is_windows_active and g_tab_map.selected_panel == 1, 2)
+                    window = ui:begin_window(update_get_loc(e_loc.upp_queue).."##facilityqueue", left_w, y + 24, right_w - 5, h - 29, atlas_icons.column_pending, is_windows_active and g_tab_map.selected_panel == 1, 2)
+                        if is_local then
+                            g_tab_map.panel_scroll_pos[1] = window.scroll_y
+                        else
+                            window.scroll_y = g_tab_map.panel_scroll_pos[1]
+                        end
+
                         local queue_count = facility_tile:get_facility_production_queue_count()
 
                         for i = 0, queue_count - 1 do
@@ -987,7 +1024,13 @@ function render_map_ui(screen_w, screen_h, x, y, w, h, screen_vehicle, is_tab_ac
                         end
                     end
                 else
-                    ui:begin_window(category_data.name .. "##warehouse", x + 15, y + 5, w - 30, h - 15, category_data.icon, is_tab_active, 2)
+                    local window = ui:begin_window(category_data.name .. "##warehouse", x + 15, y + 5, w - 30, h - 15, category_data.icon, is_tab_active, 2)
+                        if is_local then
+                            g_tab_map.panel_scroll_pos[2] = window.scroll_y
+                        else
+                            window.scroll_y = g_tab_map.panel_scroll_pos[2]
+                        end
+
                         imgui_facility_inventory_table(ui, facility_tile)
                         ui:divider(0, 3)
                         ui:divider(0, 10)
@@ -1596,6 +1639,12 @@ function tab_stock_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_
 
     local is_local = update_get_is_focus_local()
     local window = ui:begin_window("##inventory", 5, 10, w - 10, h - 10, nil, is_tab_active and g_tab_stock.selected_item == -1, 1, is_local)
+        if is_local then
+            g_tab_stock.scroll_pos = window.scroll_y
+        else
+            window.scroll_y = g_tab_stock.scroll_pos
+        end
+
         local selected_item, selected_row, selected_col, sx, sy, sw, sh = imgui_vehicle_inventory_table(ui, screen_vehicle)
         ui:divider(0, 3)
         ui:divider(0, 10)

@@ -24,13 +24,20 @@ g_is_pointer_pressed = false
 g_is_pointer_hovered = false
 g_pointer_pos_x = 0
 g_pointer_pos_y = 0
+g_is_mouse_mode = false
+
+function parse()
+    g_hovered_lmr = parse_s32("", g_hovered_lmr)
+    g_locked_lmr = parse_s32("view", g_locked_lmr)
+end
 
 function begin()
     begin_load()
     g_ui = lib_imgui:create_ui()
 end
 
-function update(screen_w, screen_h, ticks) 
+function update(screen_w, screen_h, ticks)
+    g_is_mouse_mode = update_get_active_input_type() == e_active_input.keyboard
     g_animation_time = g_animation_time + ticks
     if update_screen_overrides(screen_w, screen_h, ticks)  then return end
 
@@ -39,8 +46,14 @@ function update(screen_w, screen_h, ticks)
     local is_local = update_get_is_focus_local()
     local this_vehicle = update_get_screen_vehicle()
 
-    if not (is_local and g_is_pointer_hovered) then g_hovered_lmr = g_locked_lmr end
-    g_hovered_vehicle_id = 0
+    if g_locked_lmr == 1 then
+        update_add_ui_interaction("pin view", e_game_input.interact_a)
+        update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_ud)
+        update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_lr)
+    else
+        update_add_ui_interaction("unpin view", e_game_input.interact_a)
+        g_hovered_lmr = g_locked_lmr
+    end
 
     local title = ""
     
@@ -50,14 +63,12 @@ function update(screen_w, screen_h, ticks)
 
     ui:begin_ui()
 
-    update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_ud)
-
     ui:begin_window(title, 5, 5, screen_w - 10, screen_h - 10, atlas_icons.column_controlling_peer, false, 0, true, true)
         local region_w, region_h = ui:get_region()
         local left_w = 125
         local right_w = region_w - left_w
 
-        if is_local and g_is_pointer_hovered and g_locked_lmr == 1 then
+        if is_local and g_is_mouse_mode and g_is_pointer_hovered and g_locked_lmr == 1 then
             g_hovered_lmr = iff( g_pointer_pos_x < left_w, 0, 2 )
         end
 
@@ -141,13 +152,19 @@ function input_event(event, action)
     g_ui:input_event(event, action)
 
     if action == e_input_action.release and event == e_input.back then
+        g_hovered_lmr = 1
+        g_hovered_vehicle_id = 0
         update_set_screen_state_exit()
-    elseif event == e_input.pointer_1 then
+    elseif event == e_input.action_a or event == e_input.pointer_1 then
         g_is_pointer_pressed = action == e_input_action.press
         
-        if g_is_pointer_hovered and action == e_input_action.press then
+        if (not g_is_mouse_mode or g_is_pointer_hovered) and g_is_pointer_pressed then
             g_locked_lmr = iff( g_locked_lmr == g_hovered_lmr, 1, g_hovered_lmr )
         end
+    elseif event == e_input.left and action == e_input_action.press and not g_is_mouse_mode then
+        g_hovered_lmr = 0
+    elseif event == e_input.right and action == e_input_action.press and not g_is_mouse_mode then
+        g_hovered_lmr = 2
     end
 end
 

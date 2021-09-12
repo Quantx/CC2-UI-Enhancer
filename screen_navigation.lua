@@ -27,6 +27,7 @@ function parse()
     g_map_render_mode = parse_s32("mode", g_map_render_mode)
     g_is_vehicle_team_colors = parse_bool("is_vehicle_team_colors", g_is_vehicle_team_colors)
     g_is_island_team_colors = parse_bool("is_island_team_colors", g_is_island_team_colors)
+    g_is_island_names = parse_bool("is_island_names", g_is_island_names)
 end
 
 function begin()
