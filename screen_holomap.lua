@@ -132,16 +132,22 @@ function update(screen_w, screen_h, ticks)
 
     local drydock, waypoint_mouse, waypoint_options = get_team_drydock()
     
-    if is_local and g_is_pointer_hovered then
-        world_x, world_y = get_world_from_holomap( g_pointer_pos_x, g_pointer_pos_y, screen_w, screen_h )
+    if is_local then
+        if not g_is_mouse_mode then
+            g_pointer_pos_x = screen_w / 2
+            g_pointer_pos_y = screen_h / 2
+        end
         
-        if drydock ~= nil then
-            drydock:clear_waypoints()
-            drydock:add_waypoint(world_x, world_y)
-            drydock:add_waypoint(g_selection_vehicle_id, iff(g_is_ruler, 1, 0))
+        if not g_is_mouse_mode or g_is_pointer_hovered then
+            world_x, world_y = get_world_from_holomap( g_pointer_pos_x, g_pointer_pos_y, screen_w, screen_h )
+            if drydock ~= nil then
+                drydock:clear_waypoints()
+                drydock:add_waypoint(world_x, world_y)
+                drydock:add_waypoint(g_selection_vehicle_id, iff(g_is_ruler, 1, 0))
 
-            waypoint_mouse = nil
-            waypoint_options = nil
+                waypoint_mouse = nil
+                waypoint_options = nil
+            end
         end
     elseif waypoint_mouse ~= nil then
         local waypoint_pos = waypoint_mouse:get_position_xz()
@@ -397,7 +403,7 @@ function update(screen_w, screen_h, ticks)
             if vehicle:get() and vehicle:get_team() == screen_team then
                 g_selection_vehicle_id = g_highlighted_vehicle_id
             end
-        elseif g_is_pointer_hovered then
+        elseif (not g_is_mouse_mode or g_is_pointer_hovered) then
             g_highlighted_vehicle_id = -1
             g_highlighted_waypoint_id = -1
             local highlighted_distance_best = 4 * math.max( 1, 2000 / map_zoom )
@@ -681,12 +687,12 @@ function update(screen_w, screen_h, ticks)
         end
 
         if g_is_ruler then
-            if g_is_pointer_hovered then
+            if (not g_is_mouse_mode or g_is_pointer_hovered) then
                 g_ruler_end_x = world_x
                 g_ruler_end_y = world_y
             end
             
-            if not g_is_ruler_set and g_is_pointer_hovered then
+            if not g_is_ruler_set and (not g_is_mouse_mode or g_is_pointer_hovered) then
                 g_ruler_beg_x = g_ruler_end_x
                 g_ruler_beg_y = g_ruler_end_y
                 
@@ -868,7 +874,7 @@ function update(screen_w, screen_h, ticks)
         g_notification_time = 0
     end
 
-    if g_is_pointer_hovered then
+    if (not g_is_mouse_mode or g_is_pointer_hovered) then
         g_pointer_pos_x_prev = g_pointer_pos_x
         g_pointer_pos_y_prev = g_pointer_pos_y
     end
@@ -885,13 +891,19 @@ function input_event(event, action)
     g_ui:input_event(event, action)
     
     local screen_vehicle = update_get_screen_vehicle()
+
+    if not g_is_mouse_mode then
+        g_pointer_pos_x = 256
+        g_pointer_pos_y = 128
+    end
+
     local world_x, world_y = get_world_from_holomap(g_pointer_pos_x, g_pointer_pos_y, 512, 256)
 
     if event == e_input.action_a then
         g_is_dismiss_pressed = action == e_input_action.press
         g_is_ruler = action == e_input_action.press
     elseif event == e_input.action_b then
-        if action == e_input_action.press and g_is_pointer_hovered and screen_vehicle:get() and screen_vehicle:get_dock_state() ~= e_vehicle_dock_state.docked then
+        if action == e_input_action.press and (not g_is_mouse_mode or g_is_pointer_hovered) and screen_vehicle:get() and screen_vehicle:get_dock_state() ~= e_vehicle_dock_state.docked then
             local waypoint_count = screen_vehicle:get_waypoint_count()
             -- Delete waypoint
             if g_highlighted_vehicle_id == screen_vehicle:get_id() and g_highlighted_waypoint_id >= 0 then
