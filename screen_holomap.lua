@@ -181,7 +181,9 @@ function update(screen_w, screen_h, ticks)
     end
     
     if holomap_override(screen_w, screen_h, ticks) then
-        render_cursor(world_x, world_y, screen_w, screen_h)
+        if g_is_mouse_mode then
+            render_cursor(world_x, world_y, screen_w, screen_h)
+        end
         return
     end
 
@@ -222,10 +224,17 @@ function update(screen_w, screen_h, ticks)
 
     update_add_ui_interaction("map tool", e_game_input.interact_a)
     if screen_vehicle:get() and screen_vehicle:get_dock_state() ~= e_vehicle_dock_state.docked then
-        if g_highlighted_vehicle_id == screen_vehicle:get_id() then
+        if not g_is_mouse_mode and g_highlighted_vehicle_id >= 0 and g_highlighted_waypoint_id == -1 then
+            local vehicle = update_get_map_vehicle_by_id(g_highlighted_vehicle_id)
+            if g_highlighted_vehicle_id == screen_vehicle:get_id() then
+                update_add_ui_interaction(update_get_loc(e_loc.interaction_carrier), e_game_input.interact_b)
+            elseif vehicle:get() and vehicle:get_team() == screen_team then
+                update_add_ui_interaction(update_get_loc(e_loc.interaction_vehicle), e_game_input.interact_b)
+            end
+        elseif g_highlighted_vehicle_id == screen_vehicle:get_id() then
             if g_highlighted_waypoint_id >= 0 then
                 update_add_ui_interaction("remove carrier waypoint", e_game_input.interact_b)
-            else
+            elseif g_is_mouse_mode then
                 update_add_ui_interaction("remove all carrier waypoints", e_game_input.interact_b)
             end
         else
@@ -903,36 +912,38 @@ function input_event(event, action)
         g_is_dismiss_pressed = action == e_input_action.press
         g_is_ruler = action == e_input_action.press
     elseif event == e_input.action_b then
-        if action == e_input_action.press and (not g_is_mouse_mode or g_is_pointer_hovered) and screen_vehicle:get() and screen_vehicle:get_dock_state() ~= e_vehicle_dock_state.docked then
-            local waypoint_count = screen_vehicle:get_waypoint_count()
-            -- Delete waypoint
-            if g_highlighted_vehicle_id == screen_vehicle:get_id() and g_highlighted_waypoint_id >= 0 then
-                local waypoint_path = {}
-                
-                for i = 0, waypoint_count - 1, 1 do
-                    local waypoint = screen_vehicle:get_waypoint(i)
-                    if waypoint:get_id() ~= g_highlighted_waypoint_id then
-                        waypoint_path[#waypoint_path + 1] = waypoint:get_position_xz()
+        if action == e_input_action.press then
+            if (not g_is_mouse_mode) and g_highlighted_vehicle_id >= 0 and g_highlighted_waypoint_id == -1 then
+                local vehicle = update_get_map_vehicle_by_id(g_highlighted_vehicle_id)
+
+                if vehicle:get() and vehicle:get_team() == screen_vehicle:get_team() then
+                    g_selection_vehicle_id = g_highlighted_vehicle_id
+                end
+            elseif (not g_is_mouse_mode or g_is_pointer_hovered) and screen_vehicle:get() and screen_vehicle:get_dock_state() ~= e_vehicle_dock_state.docked then
+                local waypoint_count = screen_vehicle:get_waypoint_count()
+                -- Delete waypoint
+                if g_highlighted_vehicle_id == screen_vehicle:get_id() and g_highlighted_waypoint_id >= 0 then
+                    local waypoint_path = {}
+                    
+                    for i = 0, waypoint_count - 1, 1 do
+                        local waypoint = screen_vehicle:get_waypoint(i)
+                        if waypoint:get_id() ~= g_highlighted_waypoint_id then
+                            waypoint_path[#waypoint_path + 1] = waypoint:get_position_xz()
+                        end
                     end
-                end
-                    
-                screen_vehicle:clear_waypoints()
-                    
-                for i = 1, #waypoint_path, 1 do
-                    screen_vehicle:add_waypoint(waypoint_path[i]:x(), waypoint_path[i]:y())
-                end
-            else
-                -- Add new waypoint
-                local screen_vehicle_pos = screen_vehicle:get_position_xz()
-                local carrier_pos_x, carrier_pos_y = get_holomap_from_world(screen_vehicle_pos:x(), screen_vehicle_pos:y(), 512, 256)
-            
-                local carrier_screen_size = 16 * math.max( 1, 2000 / (g_map_size + g_map_size_offset) )
-                local carrier_screen_dist = vec2_dist( vec2(carrier_pos_x, carrier_pos_y), vec2(g_pointer_pos_x, g_pointer_pos_y ) )
-                
-                if carrier_screen_dist <= carrier_screen_size then
+
                     screen_vehicle:clear_waypoints()
-                elseif waypoint_count < 20 then
-                    screen_vehicle:add_waypoint(world_x, world_y)
+
+                    for i = 1, #waypoint_path, 1 do
+                        screen_vehicle:add_waypoint(waypoint_path[i]:x(), waypoint_path[i]:y())
+                    end
+                elseif g_is_mouse_mode or g_highlighted_vehicle_id == -1 then
+                    -- Add new waypoint
+                    if g_highlighted_vehicle_id == screen_vehicle:get_id() then
+                        screen_vehicle:clear_waypoints()
+                    elseif waypoint_count < 20 then
+                        screen_vehicle:add_waypoint(world_x, world_y)
+                    end
                 end
             end
         end
