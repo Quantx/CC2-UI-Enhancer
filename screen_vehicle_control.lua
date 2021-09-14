@@ -23,6 +23,7 @@ g_is_pip_enable = true
 g_is_render_grid = true
 
 g_map_window_scroll = 0
+g_selected_bay_index = -1
 
 g_blend_tick = 0
 g_prev_pos_x = 0
@@ -161,7 +162,7 @@ end
 function render_selection_carrier(screen_w, screen_h, carrier_vehicle)
     local ui = g_ui
     
-    local selected_bay_index = -1
+    g_selected_bay_index = -1
     local is_undock = false
     local loadout_w = 74
     local left_w = screen_w - loadout_w - 25
@@ -177,15 +178,15 @@ function render_selection_carrier(screen_w, screen_h, carrier_vehicle)
         update_ui_line(region_w / 2, 0, region_w / 2, region_h, color_white)
 
         window.cy = window.cy + 5
-        selected_bay_index, is_undock = imgui_carrier_docking_bays(ui, carrier_vehicle, 8, 22, g_animation_time)
-        selected_vehicle = update_get_map_vehicle_by_id(carrier_vehicle:get_attached_vehicle_id(selected_bay_index))
+        g_selected_bay_index, is_undock = imgui_carrier_docking_bays(ui, carrier_vehicle, 8, 22, g_animation_time)
+        selected_vehicle = update_get_map_vehicle_by_id(carrier_vehicle:get_attached_vehicle_id(g_selected_bay_index))
 
         if selected_vehicle ~= nil and selected_vehicle:get() then
             update_add_ui_interaction(update_get_loc(e_loc.interaction_deploy), e_game_input.interact_a)
         end
 
         if is_undock and selected_vehicle ~= nil and selected_vehicle:get() then
-            undock_by_bay_index(carrier_vehicle, selected_bay_index)
+            undock_by_bay_index(carrier_vehicle, g_selected_bay_index)
         end
     ui:end_window()
     
@@ -196,7 +197,7 @@ function render_selection_carrier(screen_w, screen_h, carrier_vehicle)
     window = ui:begin_window(update_get_loc(e_loc.upp_loadout), 10 + left_w + 5, 10, 74, 84, atlas_icons.column_stock, false, 2)
         region_w, region_h = ui:get_region()
         window.cy = region_h / 2 - 32
-        imgui_vehicle_chassis_loadout(ui, selected_vehicle, selected_bay_index)
+        imgui_vehicle_chassis_loadout(ui, selected_vehicle, g_selected_bay_index)
     ui:end_window()
 end
 
@@ -567,6 +568,7 @@ function parse()
     g_is_pip_enable = parse_bool("is_show_cctv", g_is_pip_enable)
     g_is_render_grid = parse_bool("is_show_grid", g_is_render_grid)
     g_map_window_scroll = parse_f32("", g_map_window_scroll)
+    g_selected_bay_index = parse_s32("", g_selected_bay_index)
     g_viewing_vehicle_id = parse_s32("", g_viewing_vehicle_id)
 end
 

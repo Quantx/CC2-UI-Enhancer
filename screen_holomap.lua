@@ -83,6 +83,7 @@ g_ruler_end_y = 0
 g_highlighted_waypoint_id = -1
 g_highlighted_vehicle_id = -1
 g_selection_vehicle_id = -1
+g_selected_bay_index = -1
 
 g_color_attack_order = color_status_dark_red
 g_color_airlift_order = color_status_ok
@@ -106,6 +107,9 @@ function parse()
     g_next_pos_x = parse_f32("map_x", g_next_pos_x)
     g_next_pos_y = parse_f32("map_y", g_next_pos_y)
     g_next_size = parse_f32("map_size", g_next_size)
+    g_selection_vehicle_id = parse_s32("", g_selection_vehicle_id)
+    g_is_ruler = parse_s32("", g_is_ruler)
+    g_selected_bay_index = parse_s32("", g_selected_bay_index)
 end
 
 function begin()
@@ -130,7 +134,7 @@ function update(screen_w, screen_h, ticks)
     local world_x = 0
     local world_y = 0
 
-    local drydock, waypoint_mouse, waypoint_options = get_team_drydock()
+    local drydock, waypoint = get_team_drydock()
     
     if is_local then
         if not g_is_mouse_mode then
@@ -143,27 +147,15 @@ function update(screen_w, screen_h, ticks)
             if drydock ~= nil then
                 drydock:clear_waypoints()
                 drydock:add_waypoint(world_x, world_y)
-                drydock:add_waypoint(g_selection_vehicle_id, iff(g_is_ruler, 1, 0))
 
-                waypoint_mouse = nil
-                waypoint_options = nil
+                waypoint = nil
             end
         end
     elseif waypoint_mouse ~= nil then
-        local waypoint_pos = waypoint_mouse:get_position_xz()
+        local waypoint_pos = waypoint:get_position_xz()
                     
         world_x = waypoint_pos:x()
         world_y = waypoint_pos:y()
-        
-        if waypoint_options ~= nil then
-            local opts = waypoint_options:get_position_xz()
-            
-            g_selection_vehicle_id = opts:x()
-            g_is_ruler = opts:y() > 0
-        else
-            g_selection_vehicle_id = -1
-            g_is_ruler = false
-        end
         
         g_pointer_pos_x, g_pointer_pos_y = get_holomap_from_world( world_x, world_y, screen_w, screen_h )
         g_is_pointer_hovered = (g_pointer_pos_x > 0 and g_pointer_pos_y > 0 and g_pointer_pos_x < screen_w and g_pointer_pos_y < screen_h)
@@ -955,13 +947,12 @@ function input_event(event, action)
         else
             g_is_ruler = false
         
-            local drydock, waypoint_mouse, waypoint_options = get_team_drydock()
+            local drydock, waypoint = get_team_drydock()
 
-            if waypoint_options ~= nil then
-                local waypoint_pos = waypoint_mouse:get_position_xz()
+            if waypoint ~= nil then
+                local waypoint_pos = waypoint:get_position_xz()
                 drydock:clear_waypoints()
                 drydock:add_waypoint(waypoint_pos:x(), waypoint_pos:y())
-                drydock:add_waypoint(0, 0)
             end
         
             update_set_screen_state_exit()
@@ -1455,22 +1446,18 @@ function get_team_drydock()
         local vehicle = update_get_map_vehicle_by_index(i)
         
         if vehicle:get() and vehicle:get_definition_index() == e_game_object_type.drydock and vehicle:get_team() == update_get_screen_team_id() then
-            local waypoint_mouse = nil
-            local waypoint_ruler = nil
+            local waypoint = nil
             
-            local waypoint_count = vehicle:get_waypoint_count()
-            if waypoint_count > 0 then
-                waypoint_mouse = vehicle:get_waypoint(0)
-                if waypoint_count > 1 then
-                    waypoint_ruler = vehicle:get_waypoint(1)
-                end
+            local waypoint = vehicle:get_waypoint_count()
+            if waypoint > 0 then
+                waypoint = vehicle:get_waypoint(0)
             end
             
-            return vehicle, waypoint_mouse, waypoint_ruler
+            return vehicle, waypoint_mouse
         end
     end
     
-    return nil, nil, nil
+    return nil, nil
 end
 
 function render_dashed_line(x0, y0, x1, y1, col)
@@ -1801,7 +1788,7 @@ end
 function render_selection_carrier(screen_w, screen_h, carrier_vehicle)
     local ui = g_ui
     
-    local selected_bay_index = -1
+    g_selected_bay_index = -1
     local is_undock = false
     local loadout_w = 74
     local left_w = (screen_w / 2) - loadout_w - 25
@@ -1816,8 +1803,8 @@ function render_selection_carrier(screen_w, screen_h, carrier_vehicle)
         update_ui_line(region_w / 2, 0, region_w / 2, region_h, color_white)
 
         window.cy = window.cy + 5
-        selected_bay_index, is_undock = imgui_carrier_docking_bays(ui, carrier_vehicle, 8, 22, g_animation_time)
-        selected_vehicle = update_get_map_vehicle_by_id(carrier_vehicle:get_attached_vehicle_id(selected_bay_index))
+        g_selected_bay_index, is_undock = imgui_carrier_docking_bays(ui, carrier_vehicle, 8, 22, g_animation_time)
+        selected_vehicle = update_get_map_vehicle_by_id(carrier_vehicle:get_attached_vehicle_id(g_selected_bay_index))
 
     ui:end_window()
     
@@ -1828,7 +1815,7 @@ function render_selection_carrier(screen_w, screen_h, carrier_vehicle)
     window = ui:begin_window(update_get_loc(e_loc.upp_loadout), 10 + (screen_w / 4) + left_w + 5, 10, 74, 84, atlas_icons.column_stock, false, 2)
         region_w, region_h = ui:get_region()
         window.cy = region_h / 2 - 32
-        imgui_vehicle_chassis_loadout(ui, selected_vehicle, selected_bay_index)
+        imgui_vehicle_chassis_loadout(ui, selected_vehicle, g_selected_bay_index)
     ui:end_window()
 end
 
