@@ -17,6 +17,7 @@ g_is_deploy_carrier_triggered = false
 g_dock_state_prev = nil
 g_color_waypoint = color8(0, 255, 255, 8)
 g_animation_time = 0
+g_map_window_scroll = 0
 
 function parse()
     g_is_camera_pos_initialised = parse_bool("is_map_init", g_is_camera_pos_initialised)
@@ -28,6 +29,7 @@ function parse()
     g_is_vehicle_team_colors = parse_bool("is_vehicle_team_colors", g_is_vehicle_team_colors)
     g_is_island_team_colors = parse_bool("is_island_team_colors", g_is_island_team_colors)
     g_is_island_names = parse_bool("is_island_names", g_is_island_names)
+    g_map_window_scroll = parse_f32("", g_map_window_scroll)
 end
 
 function begin()
@@ -294,7 +296,13 @@ function update(screen_w, screen_h, ticks)
         update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_ud)
         update_add_ui_interaction(update_get_loc(e_loc.interaction_back), e_game_input.back)
 
+        local is_local = update_get_is_focus_local()
         local window = ui:begin_window(update_get_loc(e_loc.upp_map), 10, 10, screen_w - 20, screen_h - 20, atlas_icons.column_pending, true, 2)
+            if is_local then
+                g_map_window_scroll = window.scroll_y
+            else
+                window.scroll_y = g_map_window_scroll
+            end
             window.label_bias = 0.9
             
             ui:header(update_get_loc(e_loc.upp_map_mode))

@@ -22,6 +22,8 @@ g_is_carrier_waypoint = false
 g_is_pip_enable = true
 g_is_render_grid = true
 
+g_map_window_scroll = 0
+
 g_blend_tick = 0
 g_prev_pos_x = 0
 g_prev_pos_y = 0
@@ -430,7 +432,15 @@ function render_selection_map(screen_w, screen_h)
 
     update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_ud)
 
+    local is_local = update_get_is_focus_local()
+
     local window = ui:begin_window(update_get_loc(e_loc.upp_map), 30, 30, screen_w - 60, screen_h - 60, atlas_icons.column_pending, true, 2)
+        if is_local then
+            g_map_window_scroll = window.scroll_y
+        else
+            window.scroll_y = g_map_window_scroll
+        end
+
         window.label_bias = 0.8    
 
         ui:header(update_get_loc(e_loc.upp_actions))
@@ -556,6 +566,7 @@ function parse()
     g_is_carrier_waypoint = parse_bool("is_show_carrier_waypoints", g_is_carrier_waypoint)
     g_is_pip_enable = parse_bool("is_show_cctv", g_is_pip_enable)
     g_is_render_grid = parse_bool("is_show_grid", g_is_render_grid)
+    g_map_window_scroll = parse_f32("", g_map_window_scroll)
     g_viewing_vehicle_id = parse_s32("", g_viewing_vehicle_id)
 end
 
@@ -1529,20 +1540,47 @@ function update(screen_w, screen_h, ticks)
             cy = cy - 10
         end
 
-        if get_is_selection() == false and update_get_active_input_type() == e_active_input.gamepad then
-            local crosshair_color = color8(255, 255, 255, 255)
+        if get_is_selection() == false then
+            if update_get_active_input_type() == e_active_input.gamepad then
+                local crosshair_color = color8(255, 255, 255, 255)
 
-            if g_highlighted_vehicle_id > 0 or g_highlighted_waypoint_id > 0 then
-                crosshair_color = color8(0, 0, 0, 255)
+                if g_highlighted_vehicle_id > 0 or g_highlighted_waypoint_id > 0 then
+                    crosshair_color = color8(0, 0, 0, 255)
+                end
+
+                update_ui_rectangle(g_cursor_pos_x, g_cursor_pos_y + 2, 1, 4, crosshair_color)
+                update_ui_rectangle(g_cursor_pos_x, g_cursor_pos_y - 5, 1, 4, crosshair_color)
+                update_ui_rectangle(g_cursor_pos_x + 2, g_cursor_pos_y, 4, 1, crosshair_color)
+                update_ui_rectangle(g_cursor_pos_x - 5, g_cursor_pos_y, 4, 1, crosshair_color)
             end
 
-            update_ui_rectangle(g_cursor_pos_x, g_cursor_pos_y + 2, 1, 4, crosshair_color)
-            update_ui_rectangle(g_cursor_pos_x, g_cursor_pos_y - 5, 1, 4, crosshair_color)
-            update_ui_rectangle(g_cursor_pos_x + 2, g_cursor_pos_y, 4, 1, crosshair_color)
-            update_ui_rectangle(g_cursor_pos_x - 5, g_cursor_pos_y, 4, 1, crosshair_color)
-        end
+            local vehicle_count = update_get_map_vehicle_count()
+            for i = 0, vehicle_count - 1, 1 do
+                local vehicle = update_get_map_vehicle_by_index(i)
+                local waypoint_count = vehicle:get_waypoint_count()
 
-        if get_is_selection() == false then
+                if vehicle:get() and vehicle:get_definition_index() == e_game_object_type.drydock and vehicle:get_team() == update_get_screen_team_id() and waypoint_count > 0 then
+                    local waypoint = vehicle:get_waypoint(0)
+                    local waypoint_pos = waypoint:get_position_xz()
+
+                    local waypoint_x = waypoint_pos:x()
+                    local waypoint_y = waypoint_pos:y()
+
+                    local cursor_x, cursor_y = get_screen_from_world( waypoint_x, waypoint_y, g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
+
+                    if waypoint_x ~= g_holomap_last_x or waypoint_y ~= g_holomap_last_y then
+                        g_holomap_last_x = waypoint_x
+                        g_holomap_last_y = waypoint_y
+                        g_holomap_last_anim = g_animation_time
+                    end
+
+                                    local fade = math.max( 255 - math.floor(g_animation_time - g_holomap_last_anim), 0 )
+                        update_ui_image_rot(cursor_x, cursor_y, atlas_icons.map_icon_crosshair, color8(255, 255, 255, fade), math.pi / 4)
+
+                    break
+                end
+            end
+
             local sample_x, sample_y = get_world_from_screen(g_cursor_pos_x, g_cursor_pos_y, g_camera_pos_x, g_camera_pos_y, g_camera_size, 256, 256)
 
             local label_x = 24
@@ -1609,33 +1647,6 @@ function update(screen_w, screen_h, ticks)
             
             update_ui_pop_clip()
             update_ui_pop_offset()
-        end
-        
-        local vehicle_count = update_get_map_vehicle_count()
-        for i = 0, vehicle_count - 1, 1 do
-            local vehicle = update_get_map_vehicle_by_index(i)
-            local waypoint_count = vehicle:get_waypoint_count()
-
-            if vehicle:get() and vehicle:get_definition_index() == e_game_object_type.drydock and vehicle:get_team() == update_get_screen_team_id() and waypoint_count > 0 then
-                local waypoint = vehicle:get_waypoint(0)
-                local waypoint_pos = waypoint:get_position_xz()
-
-                local waypoint_x = waypoint_pos:x()
-                local waypoint_y = waypoint_pos:y()
-
-                local cursor_x, cursor_y = get_screen_from_world( waypoint_x, waypoint_y, g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
-
-                if waypoint_x ~= g_holomap_last_x or waypoint_y ~= g_holomap_last_y then
-                    g_holomap_last_x = waypoint_x
-                    g_holomap_last_y = waypoint_y
-                    g_holomap_last_anim = g_animation_time
-                end
-
-                                local fade = math.max( 255 - math.floor(g_animation_time - g_holomap_last_anim), 0 )
-                    update_ui_image_rot(cursor_x, cursor_y, atlas_icons.map_icon_crosshair, color8(255, 255, 255, fade), math.pi / 4)
-
-                break
-            end
         end
     elseif g_screen_index == 1 then
         update_set_screen_background_type(0)
