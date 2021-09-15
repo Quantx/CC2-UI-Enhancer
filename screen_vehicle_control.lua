@@ -1576,8 +1576,8 @@ function update(screen_w, screen_h, ticks)
                         g_holomap_last_anim = g_animation_time
                     end
 
-                                    local fade = math.max( 255 - math.floor(g_animation_time - g_holomap_last_anim), 0 )
-                        update_ui_image_rot(cursor_x, cursor_y, atlas_icons.map_icon_crosshair, color8(255, 255, 255, fade), math.pi / 4)
+                    local fade = math.max( 255 - math.floor(g_animation_time - g_holomap_last_anim), 0 )
+                    update_ui_image_rot(cursor_x, cursor_y, atlas_icons.map_icon_crosshair, color8(255, 255, 255, fade), math.pi / 4)
 
                     break
                 end
