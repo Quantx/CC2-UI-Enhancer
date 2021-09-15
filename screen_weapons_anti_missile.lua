@@ -92,11 +92,11 @@ function render_attachment_info(x, y, w, h, attachment, vehicle, zone_name)
         local cx = 2
 
         update_ui_image(cx, cy, icon, col, 0)
-        update_ui_line(cx + 18, 0, cx + 18, 19, col)
+        update_ui_rectangle(cx + 18, 0, 1, 19, col)
         update_ui_text(cx + 21, cy + 4, update_get_loc(e_loc.upp_a_msl), 200, 0, col, 0)
         cy = cy + 17
 
-        update_ui_line(0, cy, w, cy, col)
+        update_ui_rectangle(0, cy, w, 1, col)
         cy = cy + 2
 
         render_health_bar(w - 5, cy, 20, vehicle, zone_name, col)

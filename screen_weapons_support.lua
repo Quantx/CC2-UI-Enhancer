@@ -108,11 +108,11 @@ function render_attachment_info(x, y, w, h, attachment, vehicle, team, name, ite
         local cx = 2
 
         update_ui_image(cx, cy, icon, col, 0)
-        update_ui_line(cx + 18, 0, cx + 18, 19, col)
+        update_ui_rectangle(cx + 18, 0, 1, 19, col)
         update_ui_text(cx + 21, cy + 4, name, 200, 0, col, 0)
         cy = cy + 17
 
-        update_ui_line(0, cy, w, cy, col)
+        update_ui_rectangle(0, cy, w, 1, col)
         cy = cy + 2
 
         render_health_bar(w - 5, cy, 20, vehicle, col)
@@ -168,7 +168,7 @@ function render_attachment_info(x, y, w, h, attachment, vehicle, team, name, ite
             update_ui_pop_offset()
         end
 
-        update_ui_line(0, cy, w, cy, col)
+        update_ui_rectangle(0, cy, w, 1, col)
         cy = cy + 1
 
         if target_vehicle_id ~= 0 then
@@ -228,15 +228,12 @@ function render_attachment_info(x, y, w, h, attachment, vehicle, team, name, ite
 
         local y = h - 37
 
+        update_ui_rectangle(0, y - 1, w, 1, col)
         if definition_index == e_game_object_type.attachment_turret_carrier_missile_silo then
-            update_ui_line(0, y - 1, w, y - 1, col)
-
             for i = 0, 5 do
                 render_missile(1 + i * 9, y, ammo_remaining > i, ammo_remaining == i + 1 and target_id ~= 0)
             end
         else
-            update_ui_line(0, y - 1, w, y - 1, col)
-
             for i = 0, 9 do
                 render_shell(3 + i * 5, y, ammo_remaining > i, ammo_remaining == i + 1 and target_id ~= 0)
                 render_shell(3 + i * 5, y + 10, ammo_remaining > i + 10, ammo_remaining == i + 11 and target_id ~= 0)

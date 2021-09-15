@@ -89,11 +89,11 @@ function render_attachment_info(x, y, w, h, attachment, vehicle)
         local cx = 2
 
         update_ui_image(cx, cy, icon, col, 0)
-        update_ui_line(cx + 18, 0, cx + 18, 19, col)
+        update_ui_rectangle(cx + 18, 0, 1, 19, col)
         update_ui_text(cx + 21, cy + 4, update_get_loc(e_loc.upp_a_air), 200, 0, col, 0)
         cy = cy + 17
 
-        update_ui_line(0, cy, w, cy, col)
+        update_ui_rectangle(0, cy, w, 1, col)
         cy = cy + 2
 
         render_health_bar(w - 5, cy, 20, vehicle, col)
@@ -125,7 +125,7 @@ function render_attachment_info(x, y, w, h, attachment, vehicle)
             render_status_label(2, h - 15, w - 4, 13, update_get_loc(e_loc.upp_empty), color_status_bad, true)
         end
 
-        update_ui_line(0, cy, w, cy, col)
+        update_ui_rectangle(0, cy, w, 1, col)
         cy = cy + 2
 
         local function render_missile(x, y, is_ammo, is_tracking)
@@ -143,10 +143,10 @@ function render_attachment_info(x, y, w, h, attachment, vehicle)
 
         update_ui_image(cx + 9, cy + 12, atlas_icons.screen_weapon_aa, color_grey_dark, 0)
 
-        update_ui_line(cx + 13, cy + 9, cx + 38, cy + 9, color_grey_dark)
-        update_ui_line(cx + 13, cy + 44, cx + 38, cy + 44, color_grey_dark)
-        update_ui_line(cx + 26, cy + 9, cx + 26, cy + 14, color_grey_dark)
-        update_ui_line(cx + 26, cy + 44, cx + 26, cy + 39, color_grey_dark)
+        update_ui_rectangle(cx + 13, cy + 9, 25, 1, color_grey_dark)
+        update_ui_rectangle(cx + 13, cy + 44, 25, 1, color_grey_dark)
+        update_ui_rectangle(cx + 25, cy + 9, 1, 5, color_grey_dark)
+        update_ui_rectangle(cx + 25, cy + 44, 1, -5, color_grey_dark)
 
         render_missile(cx + 2, cy + 3, ammo_remaining > 0, ammo_remaining == 1 and target_id ~= 0)
         render_missile(cx + 38, cy + 3, ammo_remaining > 1, ammo_remaining == 2 and target_id ~= 0)
