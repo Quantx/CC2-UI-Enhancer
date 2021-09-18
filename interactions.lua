@@ -420,6 +420,7 @@ g_message_box = {
     text = "",
     title = "",
     title_col = color_white,
+    is_block_input = false,
 
     update = function(self, delta_time)
         local type = update_get_message_box_type()
@@ -452,25 +453,25 @@ g_message_box = {
         local delay_duration_millis = 1000
         local appear_duration = 500
         local key_duration_millis = 500
-        local is_block_input = false
         local is_pause_simulation = false
+        self.is_block_input = false
 
         if self.is_visible then
             if self.anim_appear < 1 then
                 self.anim_appear = math.min(self.anim_appear + delta_time / appear_duration, 1)
-                is_block_input = true
+                self.is_block_input = true
             elseif self.anim_delay < 1 then
                 self.anim_delay = math.min(self.anim_delay + delta_time / delay_duration_millis, 1)
-                is_block_input = true
+                self.is_block_input = true
             elseif self.anim_fade < 1 then
                 self.anim_fade = math.min(self.anim_fade + delta_time / fade_in_duration_millis, 1)
-                is_block_input = true
+                self.is_block_input = true
             elseif self.anim_text < 1 then
                 self.anim_text = math.min(self.anim_text + delta_time / text_duration_millis, 1)
-                is_block_input = true
+                self.is_block_input = true
             elseif self.input_cooldown > 0 then
                 self.input_cooldown = math.max(self.input_cooldown - delta_time, 0)
-                is_block_input = true
+                self.is_block_input = true
             elseif self.anim_key < 1 then
                 self.anim_key = math.min(self.anim_key + delta_time / key_duration_millis, 1)
             end
@@ -493,7 +494,6 @@ g_message_box = {
         end
 
         update_set_is_pause_simulation(is_pause_simulation)
-        update_set_is_block_input(is_block_input)
     end,
 
     set_type = function(self, type)
@@ -510,6 +510,35 @@ g_message_box = {
     end,
 }
 
+g_server_timeout = {
+	factor = 0,
+	timeout = 0,
+	is_block_input = false,
+
+	update = function(self, delta_time)
+		local is_multiplayer, is_host = update_get_is_multiplayer()
+		local app_state = update_get_application_state()
+		self.is_block_input = false
+
+		if is_multiplayer and is_host == false and app_state == e_game_state.main_simulation and update_get_is_loading() == false then
+			local network_time_since_recv = update_get_network_time_since_recv() / 1000
+			local fade_duration = 500
+
+			if network_time_since_recv > 5 then
+				self.factor = math.min(self.factor + delta_time / fade_duration, 1)
+				self.is_block_input = true
+			else
+				self.factor = math.max(self.factor - delta_time / fade_duration, 0)
+			end
+
+			self.timeout = math.max(math.floor(30 - network_time_since_recv + 0.5), 0)
+		else
+			self.timeout = 0
+			self.factor = 0
+		end
+	end
+}
+
 g_tooltip = {
     sx = 0,
     sy = 0,
@@ -518,6 +547,7 @@ g_tooltip = {
     anim_factor = 0,
 }
 
+g_is_debug = false
 g_is_render_crosshair = false
 g_crosshair_color = color_white
 g_is_transmitting_voice = false
@@ -543,6 +573,7 @@ function update(screen_w, screen_h, delta_time)
     g_objectives:update(delta_time)
     g_voice_chat:update(delta_time)
     g_message_box:update(delta_time)
+    g_server_timeout:update(delta_time)
 
     g_ui_scale = update_get_ui_scale()
 
@@ -567,13 +598,16 @@ function update(screen_w, screen_h, delta_time)
         render_tooltip(screen_w, screen_h, delta_time)
     end
 
-    if g_is_render_crosshair and g_message_box.is_visible == false then
+    if get_is_render_crosshair() then
         render_crosshair(screen_w, screen_h)
     end
 
     update_ui_push_scale(g_ui_scale)
     render_message_box(ui_screen_w, ui_screen_h, delta_time)
+    render_server_timeout(ui_screen_w, ui_screen_h)
     update_ui_pop_scale()
+    
+    update_set_is_block_input(g_message_box.is_block_input or g_server_timeout.is_block_input)
 
     -- test_voice_chat(delta_time)
     -- test_objectives(delta_time)
@@ -639,7 +673,7 @@ function test_subtitles(delta_time)
 end
 
 function on_add_interaction(text, input, special)
-    if update_get_message_box_type() == e_message_box_type.none then
+    if get_is_render_interactions() then
         if get_is_special_interaction_type_multiline(special) then
             -- split interactions with multiline formatting into separate interactions;
             -- first split by line breaks, then ensure lines don't exceed max length
@@ -1411,9 +1445,85 @@ end
 
 --------------------------------------------------------------------------------
 --
+-- SERVER TIMEOUT
+--
+--------------------------------------------------------------------------------
+
+function render_server_timeout(screen_w, screen_h)
+	if g_server_timeout.factor > 0 then
+		local factor = g_server_timeout.factor
+		local timeout = g_server_timeout.timeout
+
+		update_ui_rectangle(0, 0, screen_w, screen_h, color8(0, 0, 0, math.floor(200 * factor)))
+
+		local cy = screen_h / 2 - 15
+		update_ui_push_clip(0, cy, screen_w, math.floor(40 * factor))
+
+		update_ui_rectangle(screen_w / 2 - 90, cy, 180, 40, color_black)
+		cy = cy + 5
+
+		update_ui_text(screen_w / 2 - 200, cy, update_get_loc(e_loc.network_waiting_for_server), 400, 1, color_white, 0)
+		cy = cy + 10
+
+		update_ui_text(screen_w / 2 - 200, cy, update_get_loc(e_loc.network_connection_timeout_in) .. " " .. timeout .. "s", 400, 1, color_grey_dark, 0)
+		cy = cy + 15
+
+		local anim = g_animation_time * 0.001
+		local bound_left = screen_w / 2 - 32
+		local bound_right = bound_left + 64
+		local left = bound_left + (bound_right - bound_left) * math.abs(math.sin((anim - math.pi / 2) % (math.pi / 2))) ^ 4
+		local right = left + (bound_right - left) * math.abs(math.sin(anim % (math.pi / 2)))
+
+		update_ui_rectangle(left, cy, right - left, 5, color_status_ok)
+		update_ui_rectangle_outline(screen_w / 2 - 32, cy, 64, 5, color_grey_mid)
+
+		update_ui_pop_clip()
+	end
+end
+
+
+--------------------------------------------------------------------------------
+--
+-- DEBUG
+--
+--------------------------------------------------------------------------------
+
+function render_debug(screen_w, screen_h)
+	local cy = 10
+
+	local app_state, simulation_state = update_get_application_state()
+	update_ui_text(10, cy, "app state: " .. app_state, 200, 0, color_white, 0)
+	cy = cy + 10
+	update_ui_text(10, cy, "simulation state: " .. simulation_state, 200, 0, color_white, 0)
+	cy = cy + 10
+
+	local is_multiplayer, is_host = update_get_is_multiplayer()
+	update_ui_text(10, cy, "multiplayer: " .. tostring(is_multiplayer), 200, 0, color_white, 0)
+	cy = cy + 10
+	update_ui_text(10, cy, "host: " .. tostring(is_host), 200, 0, color_white, 0)
+	cy = cy + 10
+
+	update_ui_text(10, cy, "render buffer age: " .. update_get_render_buffer_age() .. "ms", screen_w, 0, color_white, 0)
+	cy = cy + 10
+
+	update_ui_text(10, cy, "network time since recv: " .. update_get_network_time_since_recv() .. "ms", screen_w, 0, color_white, 0)
+	cy = cy + 10
+end
+
+
+--------------------------------------------------------------------------------
+--
 -- UTILITY FUNCTIONS
 --
 --------------------------------------------------------------------------------
+
+function get_is_render_crosshair()
+	return g_is_render_crosshair and g_message_box.is_visible == false and g_server_timeout.factor <= 0
+end
+
+function get_is_render_interactions()
+	return update_get_message_box_type() == e_message_box_type.none and g_server_timeout.factor <= 0
+end
 
 function clip_string(str, factor, is_randomise_last_char)
 

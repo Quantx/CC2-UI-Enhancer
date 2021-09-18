@@ -37,7 +37,7 @@ vessel_names = {
 }
 
 uimod_version = {
-    game = "v1.0.17",
+    game = "v1.0.18",
     mod = "v8.5"
 }
 

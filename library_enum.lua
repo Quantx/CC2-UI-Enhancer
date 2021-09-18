@@ -1527,8 +1527,10 @@ e_loc = {
     upp_stall = 1387,
     upp_settings_gameplay = 1388,
     eyes_level_with_horizon = 1389,
+    network_waiting_for_server = 1390,
+	network_connection_timeout_in = 1391,
 
-    count = 1390,
+    count = 1392,
 }
 
 e_resource_node_type = {
@@ -1772,4 +1774,14 @@ e_barge_action = {
 e_network_connect_type = {
     steam_id = 0,
     token = 1,
+}
+
+e_game_state = {
+	main_menu = 0,
+	main_simulation = 1,
+}
+
+e_simulation_screen_state = {
+	game = 0,
+	vehicle_camera = 1,
 }
