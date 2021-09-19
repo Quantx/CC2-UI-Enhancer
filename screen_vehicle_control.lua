@@ -162,7 +162,9 @@ end
 function render_selection_carrier(screen_w, screen_h, carrier_vehicle)
     local ui = g_ui
     
-    g_selected_bay_index = -1
+    local is_local = update_get_is_focus_local()
+
+    local selected_bay_index = -1
     local is_undock = false
     local loadout_w = 74
     local left_w = screen_w - loadout_w - 25
@@ -178,7 +180,12 @@ function render_selection_carrier(screen_w, screen_h, carrier_vehicle)
         update_ui_line(region_w / 2, 0, region_w / 2, region_h, color_white)
 
         window.cy = window.cy + 5
-        g_selected_bay_index, is_undock = imgui_carrier_docking_bays(ui, carrier_vehicle, 8, 22, g_animation_time)
+        selected_bay_index, is_undock = imgui_carrier_docking_bays(ui, carrier_vehicle, 8, 22, g_animation_time)
+
+        if is_local then
+            g_selected_bay_index = selected_bay_index
+        end
+
         selected_vehicle = update_get_map_vehicle_by_id(carrier_vehicle:get_attached_vehicle_id(g_selected_bay_index))
 
         if selected_vehicle ~= nil and selected_vehicle:get() then
