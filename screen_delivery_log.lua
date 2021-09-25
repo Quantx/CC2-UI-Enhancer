@@ -74,7 +74,7 @@ function update(screen_w, screen_h, ticks)
                     elseif log_type == e_map_notification_type.barge_collection then
                         local columns = { 
                             { w=column_widths[1], margin=column_margins[1], value=format_time(log:get_time()), col=color_grey_dark },
-                            { w=column_widths[2], margin=column_margins[2], value=tostring(barge_id), col=color_grey_dark },
+                            { w=column_widths[2], margin=column_margins[2], value=tostring(barge_id % 1000), col=color_grey_dark },
                             { w=column_widths[3], margin=column_margins[3], value=item_name, col=color_grey_dark },
                             { w=column_widths[4], margin=column_margins[4], value="-" .. delivery_amount, col=color_status_bad },
                         }
