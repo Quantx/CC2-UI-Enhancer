@@ -1529,8 +1529,9 @@ e_loc = {
     eyes_level_with_horizon = 1389,
     network_waiting_for_server = 1390,
 	network_connection_timeout_in = 1391,
+    virus_bot_retired = 1392,
 
-    count = 1392,
+    count = 1393,
 }
 
 e_resource_node_type = {
@@ -1577,6 +1578,7 @@ e_map_notification_type = {
     currency_captured_islands = 11,
     currency_refunded_production = 12,
     currency_spend_on_production = 13,
+    team_virus_bot_retired = 14,
 }
 
 e_game_input = {

@@ -138,6 +138,8 @@ function imgui_notification_log(ui, log, column_widths, column_margins, is_read)
         log_message = update_get_loc(e_loc.crew_joined) .. " - "  .. log:get_name()
     elseif log_type == e_map_notification_type.team_player_left then
         log_message = update_get_loc(e_loc.crew_left) .. " - "  .. log:get_name()
+    elseif log_type == e_map_notification_type.team_virus_bot_retired then
+        log_message = update_get_loc(e_loc.virus_bot_retired)
     end
 
     if #log_message > 0 then
