@@ -106,6 +106,8 @@ function parse()
     g_next_pos_y = parse_f32("map_y", g_next_pos_y)
     g_next_size = parse_f32("map_size", g_next_size)
     
+    -- End of original parse calls
+    
     g_is_mouse_mode = parse_bool("", g_is_mouse_mode)
 
     g_is_ruler = parse_bool("", g_is_ruler)

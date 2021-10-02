@@ -116,7 +116,6 @@ g_is_mouse_mode = false
 function parse()
     g_focused_screen = parse_s32("", g_focused_screen)
     g_active_tab = parse_s32("active_tab", g_active_tab)
-
     g_tab_map.is_map_pos_initialised = parse_bool("is_map_init", g_tab_map.is_map_pos_initialised)
     g_tab_map.camera_pos_x = parse_f32("map_x", g_tab_map.camera_pos_x)
     g_tab_map.camera_pos_y = parse_f32("map_y", g_tab_map.camera_pos_y)
@@ -127,15 +126,16 @@ function parse()
     g_tab_map.selected_facility_item = parse_s32("", g_tab_map.selected_facility_item)
     g_tab_map.selected_facility_queue_item = parse_s32("", g_tab_map.selected_facility_queue_item)
     g_tab_map.selected_panel = parse_s32("", g_tab_map.selected_panel)
+    g_tab_stock.selected_item = parse_s32("", g_tab_stock.selected_item)
+    g_tab_barges.selected_item = parse_s32("", g_tab_barges.selected_item)
+
+    -- End of original parse calls
 
     g_tab_map.panel_scroll_pos[0] = parse_f32("", g_tab_map.panel_scroll_pos[0])
     g_tab_map.panel_scroll_pos[1] = parse_f32("", g_tab_map.panel_scroll_pos[1])
     g_tab_map.panel_scroll_pos[2] = parse_f32("", g_tab_map.panel_scroll_pos[2])
 
-    g_tab_stock.selected_item = parse_s32("", g_tab_stock.selected_item)
     g_tab_stock.scroll_pos = parse_f32("", g_tab_stock.scroll_pos)
-
-    g_tab_barges.selected_item = parse_s32("", g_tab_barges.selected_item)
     g_tab_barges.scroll_pos = parse_f32("", g_tab_barges.scroll_pos)
 end
 

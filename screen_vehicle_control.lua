@@ -570,13 +570,16 @@ function parse()
     g_cursor_pos_x = parse_f32("", g_cursor_pos_x)
     g_cursor_pos_y = parse_f32("", g_cursor_pos_y)
     g_is_vehicle_team_colors = parse_bool("is_vehicle_team_colors", g_is_vehicle_team_colors)
+    g_viewing_vehicle_id = parse_s32("", g_viewing_vehicle_id)
     g_is_island_team_colors = parse_bool("is_island_team_colors", g_is_island_team_colors)
+    
+    -- End of original parse calls
+    
     g_is_carrier_waypoint = parse_bool("is_show_carrier_waypoints", g_is_carrier_waypoint)
     g_is_pip_enable = parse_bool("is_show_cctv", g_is_pip_enable)
     g_is_render_grid = parse_bool("is_show_grid", g_is_render_grid)
     g_map_window_scroll = parse_f32("", g_map_window_scroll)
     g_selected_bay_index = parse_s32("", g_selected_bay_index)
-    g_viewing_vehicle_id = parse_s32("", g_viewing_vehicle_id)
 end
 
 function begin()
