@@ -2,7 +2,6 @@ g_animation_time = 0
 g_is_beep = false
 g_beep_next = 0
 
-g_last_target_id = 0
 g_salvo = 0
 
 function begin()
@@ -237,17 +236,26 @@ function render_attachment_info(x, y, w, h, attachment, vehicle, team, name, ite
                 render_missile(1 + i * 9, y, ammo_remaining > i, ammo_remaining == i + 1 and target_id ~= 0)
             end
         else
-            if g_last_target_id ~= target_id and target_id ~= 0 then
+--[[
+            local acc = attachment:get_target_accuracy()
+            if target_id ~= 0 and acc > 0 and acc < 255 then
                 g_salvo = math.max( ammo_remaining - 5, 0 )
+            else
+                g_salvo = 20
             end
+            
+            --update_ui_text(0, cy + 10, tostring(g_last_target_id) .. "|" .. tostring(target_id), 128, 0, color_grey_dark, 0)
         
             for i = 0, 9 do
-                render_shell(3 + i * 5, y,      ammo_remaining > i,      g_salvo <= i      and target_id ~= 0)
-                render_shell(3 + i * 5, y + 10, ammo_remaining > i + 10, g_salvo <= i + 10 and target_id ~= 0)
+                render_shell(3 + i * 5, y,      ammo_remaining > i,      g_salvo <= i     )
+                render_shell(3 + i * 5, y + 10, ammo_remaining > i + 10, g_salvo <= i + 10)
+            end
+]]--
+            for i = 0, 9 do
+                render_shell(3 + i * 5, y, ammo_remaining > i, ammo_remaining == i + 1 and target_id ~= 0)
+                render_shell(3 + i * 5, y + 10, ammo_remaining > i + 10, ammo_remaining == i + 11 and target_id ~= 0)
             end
         end
-        
-        g_last_target_id = target_id
     end
 
     update_ui_rectangle_outline(0, 0, w, h, col)
