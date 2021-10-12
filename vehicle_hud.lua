@@ -2497,8 +2497,12 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
 
             if def ~= e_game_object_type.chassis_carrier and def ~= e_game_object_type.chassis_sea_barge then
                 local capabilities = get_vehicle_capability(data.vehicle)
-                local capability_index = (math.floor( g_animation_time / 1000 ) % (#capabilities)) + 1
-                capability_name = capabilities[capability_index].name_short
+                if #capabilities > 0 then
+                    local capability_index = (math.floor( g_animation_time / 1000 ) % (#capabilities)) + 1
+                    capability_name = capabilities[capability_index].name_short
+                else
+                    capability_name = "NONE"
+                end
             end
 
             if data.team == vehicle_team then
