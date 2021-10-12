@@ -13,8 +13,15 @@ g_max_scan_distance = 400
 g_depth_data = {}
 g_scan_cursor = 1
 
+g_is_mute = false
+
 function arc_position(x, y, radius, angle)
     return (x + (radius * math.cos(angle - (math.pi * 0.5)))), (y + (radius * math.sin(angle - (math.pi * 0.5))))
+end
+
+function parse()
+    -- End of original parse calls
+    g_is_mute = parse_bool("is_mute", g_is_mute)
 end
 
 function begin()
@@ -95,6 +102,17 @@ function update(screen_w, screen_h, ticks)
     local ax, ay = arc_position(64, 64, g_radius, scan_angle)
     update_ui_line(64, 64, ax, ay, color_white)
 
+    local mx = 14
+    local my = 114
+
+    update_ui_image_rot(mx, my, atlas_icons.hud_audio, color_white, 0)
+    if g_is_mute then
+        local ms = 7
+    
+        update_ui_line(mx - ms, my - ms, mx + ms, my + ms, color8(255, 0, 0, 255))
+        update_ui_line(mx - ms, my + ms, mx + ms, my - ms, color8(255, 0, 0, 255))
+    end
+
     local warning_blink_rate = iff(min_distance < 50, 10, 30)
     local is_pulse_warning = g_tick % warning_blink_rate == math.floor(warning_blink_rate / 2)
     local is_blink_warning = g_tick % warning_blink_rate > math.floor(warning_blink_rate / 2)
@@ -107,7 +125,7 @@ function update(screen_w, screen_h, ticks)
             update_ui_text(0, 108, update_get_loc(e_loc.upp_collision), 128, 1, color_black, 0)
         end
 
-        if is_pulse_warning then
+        if is_pulse_warning and g_is_mute then
             update_play_sound(warning_sound)
         end
     elseif min_distance < 100 then
@@ -116,7 +134,7 @@ function update(screen_w, screen_h, ticks)
             update_ui_text(0, 108, update_get_loc(e_loc.upp_warning), 128, 1, color_black, 0)
         end
 
-        if is_pulse_warning then
+        if is_pulse_warning and g_is_mute then
             update_play_sound(warning_sound)
         end
     end
@@ -126,6 +144,8 @@ function input_event(event, action)
     if action == e_input_action.release then
         if event == e_input.back then
             update_set_screen_state_exit()
+        elseif event == e_input.action_a or event == e_input.pointer_1 then
+            g_is_mute = not g_is_mute
         end
     end
 end
