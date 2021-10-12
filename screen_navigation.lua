@@ -95,6 +95,10 @@ function update(screen_w, screen_h, ticks)
     update_set_screen_background_type(g_map_render_mode)
 
     if g_screen_index == 0 then
+        if not g_is_follow_carrier then
+            update_add_ui_interaction_special(update_get_loc(e_loc.interaction_pan), e_ui_interaction_special.map_pan)
+        end
+        
         update_add_ui_interaction_special(update_get_loc(e_loc.interaction_zoom), e_ui_interaction_special.map_zoom)
         update_add_ui_interaction(update_get_loc(e_loc.interaction_map_options), e_game_input.interact_a)
 
@@ -500,6 +504,11 @@ end
 
 function input_axis(x, y, z, w)
     input_camera_zoom(1 - w * 0.1)
+    
+    if not g_is_follow_carrier then
+        g_camera_pos_x = g_camera_pos_x + x * g_camera_size * 0.05
+        g_camera_pos_y = g_camera_pos_y + y * g_camera_size * 0.05
+    end
 end
 
 function input_camera_zoom(factor)
