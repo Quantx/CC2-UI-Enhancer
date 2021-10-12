@@ -28,7 +28,7 @@ function update(screen_w, screen_h, ticks)
     
         update_ui_image_rot(102, 26, atlas_icons.screen_compass_tilt_front_pivot, color_white, -this_vehicle_pitch)
 
-        update_ui_text(0, 30, string.format("%.0f", this_vehicle_bearing * (360 / (math.pi * 2))), 128, 1, color_white, 0)
+        update_ui_text(0, 30, string.format("%.0f", math.floor(math.deg( this_vehicle_bearing )) % 360), 128, 1, color_white, 0)
         
         local waypoint_count = this_vehicle:get_waypoint_count()
         
@@ -47,7 +47,7 @@ function update(screen_w, screen_h, ticks)
             update_ui_rectangle(50, 14, 28, 12, g_color_waypoint)
             update_ui_rectangle(51, 15, 26, 10, color_black)
 
-            update_ui_text(0, 16, string.format("%.0f", math.deg(waypoint_angle)), 128, 1, g_color_waypoint, 0)
+            update_ui_text(0, 16, string.format("%.0f", math.floor(math.deg( waypoint_angle )) % 360), 128, 1, g_color_waypoint, 0)
             
             local dir = (waypoint_angle - this_vehicle_bearing) + (math.pi / 2)
             local dir_x = math.cos(dir) * -38
