@@ -7,9 +7,13 @@ g_camera_size_min = 4 * 1024
 g_screen_index = 2
 g_map_render_mode = 1
 g_ui = nil
+g_is_pointer_pressed = false
 g_is_pointer_hovered = false
 g_pointer_pos_x = 0
 g_pointer_pos_y = 0
+g_pointer_pos_x_prev = 0
+g_pointer_pos_y_prev = 0
+g_drag_distance = 0
 g_is_vehicle_team_colors = true
 g_is_island_team_colors = true
 g_is_island_names = true
@@ -19,6 +23,7 @@ g_color_waypoint = color8(0, 255, 255, 8)
 g_animation_time = 0
 g_map_window_scroll = 0
 g_is_vehicle_links = true
+g_is_follow_carrier = true
 
 function parse()
     g_is_camera_pos_initialised = parse_bool("is_map_init", g_is_camera_pos_initialised)
@@ -35,6 +40,7 @@ function parse()
     g_is_island_names = parse_bool("is_island_names", g_is_island_names)
     g_map_window_scroll = parse_f32("", g_map_window_scroll)
     g_is_vehicle_links = parse_bool("is_vehicle_links", g_is_vehicle_links)
+    g_is_follow_carrier = parse_bool("is_follow_carrier", g_is_follow_carrier)
 end
 
 function begin()
@@ -95,8 +101,21 @@ function update(screen_w, screen_h, ticks)
         if this_vehicle:get() then
             local this_vehicle_pos = this_vehicle:get_position_xz()
 
-            g_camera_pos_x = this_vehicle_pos:x()
-            g_camera_pos_y = this_vehicle_pos:y()
+            if g_is_follow_carrier then
+                g_camera_pos_x = this_vehicle_pos:x()
+                g_camera_pos_y = this_vehicle_pos:y()
+            elseif is_local and g_is_pointer_pressed and g_is_pointer_hovered then
+                local pos_dx = g_pointer_pos_x - g_pointer_pos_x_prev
+                local pos_dy = g_pointer_pos_y - g_pointer_pos_y_prev
+            
+                local drag_threshold = iff( update_get_is_vr(), 20, 3 )
+                g_drag_distance = g_drag_distance + math.abs(pos_dx) + math.abs(pos_dy)
+
+                if g_drag_distance >= drag_threshold then
+                    g_camera_pos_x = g_camera_pos_x - (pos_dx * g_camera_size * 0.005)
+                    g_camera_pos_y = g_camera_pos_y + (pos_dy * g_camera_size * 0.005)
+                end
+            end
 
             local carrier_x, carrier_y = get_screen_from_world(this_vehicle_pos:x(), this_vehicle_pos:y(), g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
 
@@ -204,10 +223,10 @@ function update(screen_w, screen_h, ticks)
             end
  
             -- render carrier direction indicator
-            update_ui_image(64 - 5, 64 - 5, atlas_icons.map_icon_circle_9, color_white, 0)
+            update_ui_image(carrier_x - 5, carrier_y - 5, atlas_icons.map_icon_circle_9, color_white, 0)
 
             local this_vehicle_dir = this_vehicle:get_direction()
-            update_ui_line(64, 64, 64 + (this_vehicle_dir:x() * 20), 64 + (this_vehicle_dir:y() * -20), color_white)
+            update_ui_line(carrier_x, carrier_y, carrier_x + (this_vehicle_dir:x() * 20), carrier_y + (this_vehicle_dir:y() * -20), color_white)
 
             -- render carrier waypoints
             local waypoint_count = this_vehicle:get_waypoint_count()
@@ -357,6 +376,7 @@ function update(screen_w, screen_h, ticks)
 
             ui:divider()
 
+            g_is_follow_carrier = ui:checkbox("FOLLOW CARRIER", g_is_follow_carrier)
             g_is_vehicle_team_colors = ui:checkbox(update_get_loc(e_loc.upp_vehicle_team_colors), g_is_vehicle_team_colors)
             g_is_island_team_colors = ui:checkbox(update_get_loc(e_loc.upp_island_team_colors), g_is_island_team_colors)
             g_is_island_names = ui:checkbox("ISLAND NAMES", g_is_island_names)
@@ -413,6 +433,11 @@ function update(screen_w, screen_h, ticks)
     end
     
     ui:end_ui()
+    
+    if g_is_pointer_hovered then
+        g_pointer_pos_x_prev = g_pointer_pos_x
+        g_pointer_pos_y_prev = g_pointer_pos_y
+    end
 end
 
 function input_event(event, action)
@@ -424,7 +449,13 @@ function input_event(event, action)
                 update_set_screen_state_exit()
             end
         elseif action == e_input_action.release then
-            if event == e_input.action_a or event == e_input.pointer_1 then
+            local pos_dx = g_pointer_pos_x - g_pointer_pos_x_prev
+            local pos_dy = g_pointer_pos_y - g_pointer_pos_y_prev
+        
+            local drag_threshold = iff( update_get_is_vr(), 20, 3 )
+            g_drag_distance = g_drag_distance + math.abs(pos_dx) + math.abs(pos_dy)
+        
+            if event == e_input.action_a or (event == e_input.pointer_1 and g_drag_distance < drag_threshold) then
                 if g_boot_counter <= 0 then
                     g_screen_index = 1 
                 end
@@ -441,6 +472,13 @@ function input_event(event, action)
             if event == e_input.back then
                 update_set_screen_state_exit()
             end
+        end
+    end
+    
+    if event == e_input.pointer_1 then
+        g_is_pointer_pressed = action == e_input_action.press
+        if not g_is_pointer_pressed then
+            g_drag_distance = 0
         end
     end
 end

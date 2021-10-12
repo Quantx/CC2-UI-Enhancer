@@ -103,6 +103,7 @@ g_pointer_pos_y = 0
 g_pointer_pos_x_prev = 0
 g_pointer_pos_y_prev = 0
 g_is_pointer_pressed = false
+g_is_hovered = false
 g_pointer_scroll = 0
 g_is_mouse_mode = false
 
@@ -229,8 +230,11 @@ function update(screen_w, screen_h, ticks)
     render_currency_display(screen_w - 10, 5, g_tab_map.selected_facility_id ~= 0 and g_tab_map.selected_facility_item ~= -1)
 
     g_pointer_scroll = 0
-    g_pointer_pos_x_prev = g_pointer_pos_x
-    g_pointer_pos_y_prev = g_pointer_pos_y
+    
+    if g_is_hovered then
+        g_pointer_pos_x_prev = g_pointer_pos_x
+        g_pointer_pos_y_prev = g_pointer_pos_y
+    end
 end
 
 function set_active_tab(tab)
@@ -488,6 +492,7 @@ end
 
 function tab_barges_input_pointer(is_hovered, x, y)
     g_ui:input_pointer(is_hovered, x, y)
+    g_is_hovered = is_hovered
 end
 
 function tab_barges_input_scroll(dy)
@@ -612,7 +617,7 @@ function render_map_details(screen_vehicle, screen_w, screen_h, is_tab_active)
         g_tab_map.camera_pos_y = g_tab_map.camera_pos_y + (g_input_axis.y * g_tab_map.camera_size * 0.01)
         input_map_zoom_camera(1 - (g_input_axis.w * 0.1))
 
-        if g_is_mouse_mode then
+        if g_is_mouse_mode and g_is_hovered then
             if g_tab_map.is_drag_pan_map then
                 g_tab_map.camera_pos_x = g_tab_map.camera_pos_x - ((g_pointer_pos_x - g_pointer_pos_x_prev) * g_tab_map.camera_size * 0.005)
                 g_tab_map.camera_pos_y = g_tab_map.camera_pos_y + ((g_pointer_pos_y - g_pointer_pos_y_prev) * g_tab_map.camera_size * 0.005)
@@ -1487,6 +1492,7 @@ end
 
 function tab_map_input_pointer(is_hovered, x, y)
     g_ui:input_pointer(is_hovered, x, y)
+    g_is_hovered = is_hovered
 end
 
 function tab_map_input_scroll(dy)
@@ -1765,6 +1771,7 @@ end
 
 function tab_stock_input_pointer(is_hovered, x, y)
     g_ui:input_pointer(is_hovered, x, y)
+    g_is_hovered = is_hovered
 end
 
 function tab_stock_input_scroll(dy)
