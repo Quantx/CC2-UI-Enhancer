@@ -551,3 +551,15 @@ function join_strings(strings, delim)
 
     return str
 end
+
+-- This basically checks if the heli is inside a 3D box behind the carrier's runway
+function rotor_landed_carrier(vehicle)
+    local vehicle_parent = update_get_screen_vehicle()
+    local relative_position = update_get_map_vehicle_position_relate_to_parent_vehicle(vehicle_parent:get_id(), vehicle:get_id())
+    local relative_position_z = relative_position:z()
+    local relative_position_x = relative_position:x()
+    local relative_position_y = relative_position:y()
+
+    --TODO: rough 3D box size of the heli landing slope
+    return relative_position_z > -230 and relative_position_z < 20 and relative_position_x > -100 and relative_position_x < 15 and relative_position_y < 150
+end

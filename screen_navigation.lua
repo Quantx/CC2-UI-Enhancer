@@ -18,6 +18,7 @@ g_dock_state_prev = nil
 g_color_waypoint = color8(0, 255, 255, 8)
 g_animation_time = 0
 g_map_window_scroll = 0
+g_is_vehicle_links = true
 
 function parse()
     g_is_camera_pos_initialised = parse_bool("is_map_init", g_is_camera_pos_initialised)
@@ -33,6 +34,7 @@ function parse()
     
     g_is_island_names = parse_bool("is_island_names", g_is_island_names)
     g_map_window_scroll = parse_f32("", g_map_window_scroll)
+    g_is_vehicle_links = parse_bool("is_vehicle_links", g_is_vehicle_links)
 end
 
 function begin()
@@ -62,6 +64,7 @@ function update(screen_w, screen_h, ticks)
     g_animation_time = g_animation_time + ticks
 
     local this_vehicle = update_get_screen_vehicle()
+    local screen_team = update_get_local_team_id()
     update_set_screen_background_type(0)
 
     if g_is_deploy_carrier_triggered and this_vehicle:get_dock_state() ~= e_vehicle_dock_state.docked then
@@ -94,6 +97,8 @@ function update(screen_w, screen_h, ticks)
 
             g_camera_pos_x = this_vehicle_pos:x()
             g_camera_pos_y = this_vehicle_pos:y()
+
+            local carrier_x, carrier_y = get_screen_from_world(this_vehicle_pos:x(), this_vehicle_pos:y(), g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
 
             update_set_screen_map_position_scale(g_camera_pos_x, g_camera_pos_y, g_camera_size)
 
@@ -134,6 +139,43 @@ function update(screen_w, screen_h, ticks)
 
             local vehicle_count = update_get_map_vehicle_count()
 
+            -- render vehicle links to the map
+            if g_is_vehicle_links then
+                for i = 0, vehicle_count - 1, 1 do
+                    local vehicle = update_get_map_vehicle_by_index(i)
+
+                    if vehicle:get() then
+                        local vehicle_team = vehicle:get_team()
+                        local vehicle_attached_parent_id = vehicle:get_attached_parent_id(i)
+
+                        if vehicle_team == screen_team and vehicle_attached_parent_id == 0 then
+                            local def = vehicle:get_definition_index()
+                            
+                            local veh_pos = vehicle:get_position_xz()
+                            local veh_x, veh_y = get_screen_from_world(veh_pos:x(), veh_pos:y(), g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
+                            
+                            if def == e_game_object_type.chassis_sea_barge then
+                                local action, destination_id, destination_type = vehicle:get_barge_state_data()
+                                
+                                if destination_type == 1 then -- The destination of this barge is the carrier
+                                    render_dashed_line(veh_x, veh_y, carrier_x, carrier_y, color8(0, 255, 64, 255))
+                                end
+                            elseif def ~= e_game_object_type.chassis_spaceship and def ~= e_game_object_type.drydock then
+                                local is_rotor = (def == e_game_object_type.chassis_air_rotor_light or def == e_game_object_type.chassis_air_rotor_heavy)
+                
+                                local dock_state = vehicle:get_dock_state()
+                                
+                                if dock_state == e_vehicle_dock_state.docking or (is_rotor and dock_state == e_vehicle_dock_state.dock_queue and rotor_landed_carrier(vehicle)) then
+                                    render_dashed_line(veh_x, veh_y, carrier_x, carrier_y, color8(205, 8, 8, 255))
+                                elseif dock_state == e_vehicle_dock_state.dock_queue then
+                                    render_dashed_line(veh_x, veh_y, carrier_x, carrier_y, color8(205, 8, 246, 255))
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+
             -- render vehicles to the map
 
             for i = 0, vehicle_count - 1, 1 do 
@@ -143,22 +185,19 @@ function update(screen_w, screen_h, ticks)
                     local vehicle_team = vehicle:get_team()
                     local vehicle_attached_parent_id = vehicle:get_attached_parent_id(i)
 
-                    if vehicle:get_is_visible() and vehicle:get_is_observation_revealed() then
-                        if vehicle_attached_parent_id == 0 and i ~= this_vehicle_index then
-                            -- render vehicle icon
+                    if vehicle:get_is_visible() and vehicle:get_is_observation_revealed() and vehicle_attached_parent_id == 0 then
+                        -- render vehicle icon
+                        local vehicle_definition_index = vehicle:get_definition_index()
+                        
+                        if vehicle_definition_index ~= e_game_object_type.chassis_spaceship and vehicle_definition_index ~= e_game_object_type.drydock then
 
-                            local vehicle_definition_index = vehicle:get_definition_index()
-                            
-                            if vehicle_definition_index ~= e_game_object_type.chassis_spaceship and vehicle_definition_index ~= e_game_object_type.drydock then
+                            local vehicle_pos_xz = vehicle:get_position_xz()
+                            local screen_pos_x, screen_pos_y = get_screen_from_world(vehicle_pos_xz:x(), vehicle_pos_xz:y(), g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
 
-                                local vehicle_pos_xz = vehicle:get_position_xz()
-                                local screen_pos_x, screen_pos_y = get_screen_from_world(vehicle_pos_xz:x(), vehicle_pos_xz:y(), g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
-
-                                local region_vehicle_icon, icon_offset = get_icon_data_by_definition_index(vehicle_definition_index)
-                                local element_color = get_vehicle_team_color(vehicle_team)
-                
-                                update_ui_image(screen_pos_x - icon_offset, screen_pos_y - icon_offset, region_vehicle_icon, element_color, 0)
-                            end
+                            local region_vehicle_icon, icon_offset = get_icon_data_by_definition_index(vehicle_definition_index)
+                            local element_color = get_vehicle_team_color(vehicle_team)
+            
+                            update_ui_image(screen_pos_x - icon_offset, screen_pos_y - icon_offset, region_vehicle_icon, element_color, 0)
                         end
                     end
                 end
@@ -211,7 +250,7 @@ function update(screen_w, screen_h, ticks)
                     end
 
                     local is_timer_running = missile:get_timer() > 0
-                    local is_own_team = missile:get_team() == update_get_local_team_id()
+                    local is_own_team = missile:get_team() == screen_team
 
                     local color_missile = color_white
 
@@ -321,6 +360,7 @@ function update(screen_w, screen_h, ticks)
             g_is_vehicle_team_colors = ui:checkbox(update_get_loc(e_loc.upp_vehicle_team_colors), g_is_vehicle_team_colors)
             g_is_island_team_colors = ui:checkbox(update_get_loc(e_loc.upp_island_team_colors), g_is_island_team_colors)
             g_is_island_names = ui:checkbox("ISLAND NAMES", g_is_island_names)
+            g_is_vehicle_links = ui:checkbox("VEHICLE LINKS", g_is_vehicle_links)
 
             ui:spacer(5)
     
@@ -447,5 +487,20 @@ function get_island_team_color(team)
         return color_friendly
     else
         return color_enemy
+    end
+end
+
+function render_dashed_line(x0, y0, x1, y1, col)
+    local line_length = math.max(vec2_dist(vec2(x0, y0), vec2(x1, y1)), 1)
+    local normal = vec2((x1 - x0) / line_length, (y1 - y0) / line_length)
+    local segment_length = 3
+    local segment_spacing = 3
+    local step = segment_length + segment_spacing
+    local offset = (g_animation_time / 2) % step
+
+    for cursor = offset, line_length, step do
+        local length = math.min(segment_length, line_length - cursor)
+
+        update_ui_line(x0 + normal:x() * cursor, y0 + normal:y() * cursor, x0 + normal:x() * (cursor + length), y0 + normal:y() * (cursor + length), col)
     end
 end
