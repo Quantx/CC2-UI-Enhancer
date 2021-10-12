@@ -103,7 +103,7 @@ function update(screen_w, screen_h, ticks)
     update_ui_line(64, 64, ax, ay, color_white)
 
     local mx = 14
-    local my = 114
+    local my = 14
 
     update_ui_image_rot(mx, my, atlas_icons.hud_audio, color_white, 0)
     if g_is_mute then
@@ -125,7 +125,7 @@ function update(screen_w, screen_h, ticks)
             update_ui_text(0, 108, update_get_loc(e_loc.upp_collision), 128, 1, color_black, 0)
         end
 
-        if is_pulse_warning and g_is_mute then
+        if is_pulse_warning and not g_is_mute then
             update_play_sound(warning_sound)
         end
     elseif min_distance < 100 then
@@ -134,7 +134,7 @@ function update(screen_w, screen_h, ticks)
             update_ui_text(0, 108, update_get_loc(e_loc.upp_warning), 128, 1, color_black, 0)
         end
 
-        if is_pulse_warning and g_is_mute then
+        if is_pulse_warning and not g_is_mute then
             update_play_sound(warning_sound)
         end
     end
