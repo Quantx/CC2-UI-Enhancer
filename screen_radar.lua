@@ -60,6 +60,8 @@ function update(screen_w, screen_h, ticks)
 
     if update_screen_overrides(screen_w, screen_h, ticks)  then return end
 
+    update_add_ui_interaction(iff( g_is_mute, "unmute", "mute"), e_game_input.interact_a)
+
     local this_vehicle = update_get_screen_vehicle()
     if this_vehicle:get() then
         local this_vehicle_object = update_get_vehicle_by_id(this_vehicle:get_id())
