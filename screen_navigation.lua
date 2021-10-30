@@ -508,6 +508,9 @@ function input_axis(x, y, z, w)
     if not g_is_follow_carrier then
         g_camera_pos_x = g_camera_pos_x + x * g_camera_size * 0.05
         g_camera_pos_y = g_camera_pos_y + y * g_camera_size * 0.05
+        -- Set pointer to middle of screen
+        g_pointer_pos_x = 64
+        g_pointer_pos_y = 64
     end
 end
 
