@@ -39,36 +39,21 @@ function update(screen_w, screen_h, ticks)
     g_render_camera_index_prev = render_camera_index
 
     local docking_vehicle = nil
-    local dv_z = -1e309;
 
     if screen_vehicle:get() then
-        if render_camera_index == 0 then -- surface vehicle queue
-            for i = 0, 7 do
-                local id = screen_vehicle:get_attached_vehicle_id(i)
-                if id ~= 0 then
-                    local v = update_get_map_vehicle_by_id(id)
-                    if v:get() then
-                        local rp = update_get_map_vehicle_position_relate_to_parent_vehicle(screen_vehicle:get_id(), v:get_id())
-                        local ds = v:get_dock_state()
-                        if (ds == e_vehicle_dock_state.docking or ds == e_vehicle_dock_state.undocking) and rp:z() > dv_z then
-                            docking_vehicle = v
-                            dv_z = rp:z()
-                        end
-                    end
-                end
-            end
-        elseif render_camera_index == 1 then -- air vehicle queue
-            for i = 8, 15 do
-                local id = screen_vehicle:get_attached_vehicle_id(i)
-                if id ~= 0 then
-                    local v = update_get_map_vehicle_by_id(id)
-                    if v:get() then
-                        local rp = update_get_map_vehicle_position_relate_to_parent_vehicle(screen_vehicle:get_id(), v:get_id())
-                        local ds = v:get_dock_state()
-                        if (ds == e_vehicle_dock_state.docking or ds == e_vehicle_dock_state.undocking) and rp:z() > dv_z then
-                            docking_vehicle = v
-                            dv_z = rp:z()
-                        end
+        local dv_z = -1e309;
+
+        local sf = render_camera_index == 0
+        for i = iff(sf, 0,  8), iff(sf, 7, 15) do
+            local id = screen_vehicle:get_attached_vehicle_id(i)
+            if id ~= 0 then
+                local v = update_get_map_vehicle_by_id(id)
+                if v:get() then
+                    local rp = update_get_map_vehicle_position_relate_to_parent_vehicle(screen_vehicle:get_id(), v:get_id())
+                    local ds = v:get_dock_state()
+                    if (ds == e_vehicle_dock_state.docking or ds == e_vehicle_dock_state.undocking) and rp:z() > dv_z then
+                        docking_vehicle = v
+                        dv_z = rp:z()
                     end
                 end
             end
