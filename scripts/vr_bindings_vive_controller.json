@@ -1,0 +1,137 @@
+{
+    "action_manifest_version" : 0,
+    "alias_info" : {},
+    "app_key" : "steam.app.1657900",
+    "bindings" : {
+       "/actions/cc" : {
+          "haptics" : [
+             {
+                "output" : "/actions/cc/out/haptic_right",
+                "path" : "/user/hand/right/output/haptic"
+             },
+             {
+                "output" : "/actions/cc/out/haptic_left",
+                "path" : "/user/hand/left/output/haptic"
+             }
+          ],
+          "poses" : [
+             {
+                "output" : "/actions/cc/in/hand_left",
+                "path" : "/user/hand/left/pose/raw"
+             },
+             {
+                "output" : "/actions/cc/in/hand_right",
+                "path" : "/user/hand/right/pose/raw"
+             }
+          ],
+          "sources" : [
+             {
+                "inputs" : {
+                   "click" : {
+                      "output" : "/actions/cc/in/interact"
+                   }
+                },
+                "mode" : "button",
+                "path" : "/user/hand/left/input/trigger"
+             },
+             {
+                "inputs" : {
+                   "click" : {
+                      "output" : "/actions/cc/in/interact"
+                   }
+                },
+                "mode" : "button",
+                "path" : "/user/hand/right/input/trigger"
+             },
+             {
+                "inputs" : {
+                   "click" : {
+                      "output" : "/actions/cc/in/back"
+                   },
+                   "double" : {
+                      "output" : "/actions/cc/in/turn_left"
+                   }
+                },
+                "mode" : "button",
+                "path" : "/user/hand/left/input/grip"
+             },
+             {
+                "inputs" : {
+                   "click" : {
+                      "output" : "/actions/cc/in/back"
+                   },
+                   "double" : {
+                      "output" : "/actions/cc/in/turn_right"
+                   }
+                },
+                "mode" : "button",
+                "path" : "/user/hand/right/input/grip"
+             },
+             {
+                "inputs" : {
+                   "click" : {
+                      "output" : "/actions/cc/in/recenter"
+                   },
+                   "position" : {
+                      "output" : "/actions/cc/in/primary_stick"
+                   }
+                },
+                "mode" : "trackpad",
+                "path" : "/user/hand/left/input/trackpad"
+             },
+             {
+                "inputs" : {
+                   "click" : {
+                      "output" : "/actions/cc/in/recenter"
+                   },
+                   "position" : {
+                      "output" : "/actions/cc/in/secondary_stick"
+                   }
+                },
+                "mode" : "trackpad",
+                "path" : "/user/hand/right/input/trackpad"
+             },
+             {
+                "inputs" : {
+                   "click" : {
+                      "output" : "/actions/cc/in/toggle_control"
+                   }
+                },
+                "mode" : "button",
+                "path" : "/user/hand/left/input/application_menu"
+             },
+             {
+                "inputs" : {
+                   "click" : {
+                      "output" : "/actions/cc/in/cycle_mode"
+                   }
+                },
+                "mode" : "button",
+                "path" : "/user/hand/right/input/application_menu"
+             },
+             {
+                "inputs" : {},
+                "mode" : "none",
+                "path" : "/user/hand/left/input/trackpad"
+             },
+             {
+                "inputs" : {},
+                "mode" : "none",
+                "path" : "/user/hand/left/input/skeleton/left"
+             },
+             {
+                "inputs" : {},
+                "mode" : "none",
+                "path" : "/user/hand/right/input/skeleton/right"
+             }
+          ]
+       }
+    },
+    "category" : "steamvr_input",
+    "controller_type" : "vive_controller",
+    "description" : "Bindings for Carrier Command 2 VR for a vive controller",
+    "name" : "Carrier Command 2 VR configuration for Vive Controller",
+    "options" : {},
+    "simulated_actions" : []
+ }
+ 
