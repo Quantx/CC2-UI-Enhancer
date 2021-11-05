@@ -39,6 +39,7 @@ function update(screen_w, screen_h, ticks)
     g_render_camera_index_prev = render_camera_index
 
     local docking_vehicle = nil
+    local dv_z = -1e309;
 
     if screen_vehicle:get() then
         if render_camera_index == 0 then -- surface vehicle queue
@@ -47,10 +48,11 @@ function update(screen_w, screen_h, ticks)
                 if id ~= 0 then
                     local v = update_get_map_vehicle_by_id(id)
                     if v:get() then
+                        local rp = update_get_map_vehicle_position_relate_to_parent_vehicle(screen_vehicle:get_id(), v:get_id())
                         local ds = v:get_dock_state()
-                        if ds == e_vehicle_dock_state.docking or ds == e_vehicle_dock_state.undocking then
+                        if (ds == e_vehicle_dock_state.docking or ds == e_vehicle_dock_state.undocking) and rp:z() > dv_z then
                             docking_vehicle = v
-                            break
+                            dv_z = rp:z()
                         end
                     end
                 end
@@ -61,10 +63,11 @@ function update(screen_w, screen_h, ticks)
                 if id ~= 0 then
                     local v = update_get_map_vehicle_by_id(id)
                     if v:get() then
+                        local rp = update_get_map_vehicle_position_relate_to_parent_vehicle(screen_vehicle:get_id(), v:get_id())
                         local ds = v:get_dock_state()
-                        if ds == e_vehicle_dock_state.docking or ds == e_vehicle_dock_state.undocking then
+                        if (ds == e_vehicle_dock_state.docking or ds == e_vehicle_dock_state.undocking) and rp:z() > dv_z then
                             docking_vehicle = v
-                            break
+                            dv_z = rp:z()
                         end
                     end
                 end
