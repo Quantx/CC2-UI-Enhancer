@@ -69,6 +69,13 @@ end
 function update(screen_w, screen_h, ticks) 
     g_animation_time = g_animation_time + ticks
 
+    if update_get_active_input_type() == e_active_input.gamepad then
+        -- Set pointer to middle of screen
+        g_pointer_pos_x = 64
+        g_pointer_pos_y = 64
+    end
+
+
     local this_vehicle = update_get_screen_vehicle()
     local screen_team = update_get_local_team_id()
     update_set_screen_background_type(0)
@@ -356,6 +363,15 @@ function update(screen_w, screen_h, ticks)
             end
             
             update_ui_text(10, screen_h - 13, string.format("X:%-6.0f ", world_x) .. string.format("Y:%-6.0f", world_y), screen_w - 10, 0, color_grey_dark, 0)
+            
+            if not g_is_follow_carrier and update_get_active_input_type() == e_active_input.gamepad then
+                local crosshair_color = color8(255, 255, 255, 255)
+
+                update_ui_rectangle(g_pointer_pos_x, g_pointer_pos_y + 2, 1, 4, crosshair_color)
+                update_ui_rectangle(g_pointer_pos_x, g_pointer_pos_y - 5, 1, 4, crosshair_color)
+                update_ui_rectangle(g_pointer_pos_x + 2, g_pointer_pos_y, 4, 1, crosshair_color)
+                update_ui_rectangle(g_pointer_pos_x - 5, g_pointer_pos_y, 4, 1, crosshair_color)
+            end
         end
     elseif g_screen_index == 1 then
         update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_ud)
@@ -508,9 +524,6 @@ function input_axis(x, y, z, w)
     if not g_is_follow_carrier then
         g_camera_pos_x = g_camera_pos_x + x * g_camera_size * 0.05
         g_camera_pos_y = g_camera_pos_y + y * g_camera_size * 0.05
-        -- Set pointer to middle of screen
-        g_pointer_pos_x = 64
-        g_pointer_pos_y = 64
     end
 end
 
