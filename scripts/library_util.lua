@@ -38,7 +38,7 @@ vessel_names = {
 
 uimod_version = {
     game = "v1.0.22",
-    mod = "v8.7"
+    mod = "v8.8"
 }
 
 atlas_icons = {
