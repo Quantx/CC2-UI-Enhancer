@@ -189,6 +189,13 @@ function update(screen_w, screen_h, tick_fraction, delta_time, local_peer_id, ve
                         elseif control_mode == "manual" then
                             update_add_ui_interaction(update_get_loc(e_loc.interaction_auto), e_game_input.toggle_control_mode)
                             
+                            if attachment:get_is_controlling_peer() and attachment:get_definition_index() == e_game_object_type.attachment_hardpoint_missile_tv and attachment:get_is_viewing_sub_camera() then
+                                update_add_ui_interaction_special(update_get_loc(e_loc.interaction_throttle), e_ui_interaction_special.air_throttle)
+                                update_add_ui_interaction_special(update_get_loc(e_loc.interaction_roll), e_ui_interaction_special.air_roll)
+                                update_add_ui_interaction_special(update_get_loc(e_loc.interaction_pitch), e_ui_interaction_special.air_pitch)
+                                update_add_ui_interaction_special(update_get_loc(e_loc.interaction_yaw), e_ui_interaction_special.air_yaw)
+                            end
+
                             if attachment:get_ammo_capacity() > 0 then
                                 update_add_ui_interaction(update_get_loc(e_loc.interaction_fire), e_game_input.attachment_fire)
                             end
@@ -202,9 +209,9 @@ function update(screen_w, screen_h, tick_fraction, delta_time, local_peer_id, ve
                     if vehicle:get_control_mode() == "manual" and attachment_control_camera:get_controlling_peer_id() == local_peer_id then
                         if get_is_vehicle_air(vehicle:get_definition_index()) then
                             update_add_ui_interaction_special(update_get_loc(e_loc.interaction_throttle), e_ui_interaction_special.air_throttle)
-                            update_add_ui_interaction_special(update_get_loc(e_loc.interaction_yaw), e_ui_interaction_special.air_yaw)
-                            update_add_ui_interaction_special(update_get_loc(e_loc.interaction_pitch), e_ui_interaction_special.air_pitch)
                             update_add_ui_interaction_special(update_get_loc(e_loc.interaction_roll), e_ui_interaction_special.air_roll)
+                            update_add_ui_interaction_special(update_get_loc(e_loc.interaction_pitch), e_ui_interaction_special.air_pitch)
+                            update_add_ui_interaction_special(update_get_loc(e_loc.interaction_yaw), e_ui_interaction_special.air_yaw)
                         else
                             update_add_ui_interaction_special(update_get_loc(e_loc.interaction_throttle), e_ui_interaction_special.land_throttle)
                             update_add_ui_interaction_special(update_get_loc(e_loc.interaction_steer), e_ui_interaction_special.land_steer)
@@ -219,7 +226,7 @@ function update(screen_w, screen_h, tick_fraction, delta_time, local_peer_id, ve
                 if attachment:get() then       
                     if attachment:get_definition_index() < e_game_object_type.count then
                         render_attachment_info(vec2(10, screen_h / 2 - 80), map_data, vehicle, attachment, 255, screen_w, screen_h)
-                        is_render_center = render_attachment_hud(screen_w, screen_h, map_data, tick_fraction, vehicle, attachment)
+                        is_render_center = render_attachment_hud(screen_w, screen_h, map_data, tick_fraction, vehicle, attachment, local_peer_id)
                     end
                 end
             
@@ -1014,7 +1021,7 @@ end
 --
 --------------------------------------------------------------------------------
 
-function render_attachment_hud(screen_w, screen_h, map_data, tick_fraction, vehicle, attachment)
+function render_attachment_hud(screen_w, screen_h, map_data, tick_fraction, vehicle, attachment, local_peer_id)
     local def = attachment:get_definition_index()
 
     is_render_center = false
@@ -1192,7 +1199,7 @@ function render_attachment_hud_missile(screen_w, screen_h, map_data, vehicle, at
     return false
 end
 
-function render_attachment_hud_tv_missile(screen_w, screen_h, map_data, vehicle, attachment)
+function render_attachment_hud_tv_missile(screen_w, screen_h, map_data, vehicle, attachment, local_peer_id)
     local function render_camera_crosshair(x, y, rad, size, col)
         update_ui_rectangle(x - rad, y - rad, 1, size, col)
         update_ui_rectangle(x - rad, y - rad, size, 1, col)
@@ -1242,6 +1249,10 @@ function render_attachment_hud_tv_missile(screen_w, screen_h, map_data, vehicle,
         g_is_render_hp = false
         g_is_render_control_mode = false
         g_is_render_compass = true
+
+        if attachment:get_control_mode() == "manual" and attachment:get_is_controlling_peer() then
+            render_mouse_flight_axis(hud_pos)
+        end
 
         return true
     else
@@ -1495,21 +1506,7 @@ function render_attachment_hud_artillery(screen_w, screen_h, map_data, vehicle, 
         if hit_accuracy > 1 then
             local artillery_pos_screen = update_world_to_screen(artillery_pos)    
             update_ui_image_rot(artillery_pos_screen:x(), artillery_pos_screen:y(), atlas_icons.hud_impact_marker, col, 0)
-        elseif is_blink_on then
-            local text = update_get_loc(e_loc.upp_tilt)
-            local text_w = update_ui_get_text_size(text, 200, 1)
-            
-            update_ui_image(hud_pos:x() - text_w / 2 - 10, hud_pos:y() + 50, atlas_icons.hud_warning, col_red, 0)
-            update_ui_image(hud_pos:x() + text_w / 2, hud_pos:y() + 50, atlas_icons.hud_warning, col_red, 0)
-            update_ui_text(hud_pos:x() - 100, hud_pos:y() + 50, text, 200, 1, col_red, 0)
         end
-    elseif is_blink_on then
-        local text = update_get_loc(e_loc.upp_range)
-        local text_w = update_ui_get_text_size(text, 200, 1)
-
-        update_ui_image(hud_pos:x() - text_w / 2 - 10, hud_pos:y() + 50, atlas_icons.hud_warning, col_red, 0)
-        update_ui_image(hud_pos:x() + text_w / 2, hud_pos:y() + 50, atlas_icons.hud_warning, col_red, 0)
-        update_ui_text(hud_pos:x() - 100, hud_pos:y() + 50, text, 200, 1, col_red, 0)
     end
 
     local cam_forward = update_get_camera_forward()
@@ -1712,6 +1709,10 @@ function render_flight_hud(screen_w, screen_h, is_render_center, vehicle)
 
     if g_is_render_control_mode then
         render_control_mode(vec2(hud_min:x() + hud_size:x() + 30, hud_pos:y() + 45 + 5), vehicle, col)
+    end
+
+    if vehicle:get_control_mode() == "manual" and vehicle:get_is_controlling_peer() then
+        render_mouse_flight_axis(hud_pos)
     end
 end
 
@@ -2221,6 +2222,23 @@ function render_camera_forward_axis(screen_w, screen_h, vehicle)
     update_ui_line(axis_y0:x(), axis_y0:y(), axis_y1:x(), axis_y1:y(), col)
 end
 
+function render_mouse_flight_axis(pos)
+    if update_get_active_input_type() == e_active_input.keyboard then 
+        local settings = update_get_game_settings()
+
+        if settings.mouse_flight_mode ~= e_mouse_flight_mode.disabled and (settings.ui_show_mouse_joystick_on_hud or settings.mouse_joystick_mode == e_mouse_joystick_mode.offset) then
+            local flight_axis = update_get_mouse_flight_axis()
+            local max_axis = clamp(math.max(math.abs(flight_axis:x()), math.abs(flight_axis:y())), 0, 1)
+            local alpha = clamp((max_axis + 0.1) / 0.2, 0, 1)
+            local col_line = color8(255, 255, 255, math.floor(180 * alpha))
+            local col_mark = color8(255, 255, 255, math.floor(255 * alpha))
+            local rad = 80
+            update_ui_line(pos:x() + 1, pos:y() + 1, pos:x() + flight_axis:x() * rad, pos:y() + flight_axis:y() * rad, col_line)
+            update_ui_image_rot(pos:x() + 1 + flight_axis:x() * rad, pos:y() + 1 + flight_axis:y() * rad, atlas_icons.hud_target_offscreen_friendly, col_mark, 0)
+        end
+    end
+end
+
 
 --------------------------------------------------------------------------------
 --
@@ -2660,8 +2678,7 @@ function get_is_vision_show_target_distance(attachment_def)
 end
 
 function get_is_vision_target_lock_behaviour(attachment_def)
-    return attachment_def == e_game_object_type.attachment_turret_artillery
-        or attachment_def == e_game_object_type.attachment_turret_rocket_pod
+    return attachment_def == e_game_object_type.attachment_turret_rocket_pod
         or attachment_def == e_game_object_type.attachment_turret_missile
         or attachment_def == e_game_object_type.attachment_hardpoint_missile_ir
         or attachment_def == e_game_object_type.attachment_hardpoint_missile_laser

@@ -2,7 +2,7 @@ g_camera_pos_x = 0
 g_camera_pos_y = 0
 g_is_camera_pos_initialised = false
 g_camera_size = (32 * 1024)
-g_camera_size_max = 64 * 1024
+g_camera_size_max = 128 * 1024
 g_camera_size_min = 4 * 1024
 g_screen_index = 2
 g_map_render_mode = 1
@@ -10,6 +10,7 @@ g_ui = nil
 g_is_pointer_hovered = false
 g_is_vehicle_team_colors = false
 g_is_island_team_colors = true
+g_is_island_names = false
 g_is_deploy_carrier_triggered = false
 g_dock_state_prev = nil
 
@@ -22,6 +23,7 @@ function parse()
     g_map_render_mode = parse_s32("mode", g_map_render_mode)
     g_is_vehicle_team_colors = parse_bool("is_vehicle_team_colors", g_is_vehicle_team_colors)
     g_is_island_team_colors = parse_bool("is_island_team_colors", g_is_island_team_colors)
+    g_is_island_names = parse_bool("is_island_names", g_is_island_names)
 end
 
 function begin()
@@ -86,19 +88,29 @@ function update(screen_w, screen_h, ticks)
 
             update_set_screen_background_is_render_islands(is_render_islands)
 
-            if is_render_islands == false then
-                island_count = update_get_tile_count()
+            island_count = update_get_tile_count()
 
+            if is_render_islands == false or g_is_island_names then
                 for i = 0, island_count - 1, 1 do 
                     local island = update_get_tile_by_index(i)
-
+                    
                     if island:get() then
                         local island_position = island:get_position_xz()
                         local island_color = get_island_team_color(island:get_team_control())
-
+                        
                         local screen_pos_x, screen_pos_y = get_screen_from_world(island_position:x(), island_position:y(), g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
 
-                        update_ui_image(screen_pos_x - 4, screen_pos_y - 4, atlas_icons.map_icon_island, island_color, 0)
+                        if is_render_islands == false then
+                            update_ui_image(screen_pos_x - 4, screen_pos_y - 4, atlas_icons.map_icon_island, island_color, 0)
+                        end
+
+                        if g_is_island_names and is_render_islands then
+                            local island_name = island:get_name()
+                            local island_size = island:get_size()
+                            local _, name_pos_y = get_screen_from_world(0, island_position:y() + island_size:y() * 0.5, g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
+
+                            update_ui_text(screen_pos_x - 100, math.min(name_pos_y - 5, screen_pos_y - 14), island_name, 200, 1, island_color, 0)
+                        end
                     end
                 end
             end
@@ -140,7 +152,13 @@ function update(screen_w, screen_h, ticks)
             local this_vehicle_dir = this_vehicle:get_direction()
             update_ui_line(64, 64, 64 + (this_vehicle_dir:x() * 20), 64 + (this_vehicle_dir:y() * -20), color_white)
 
-            update_ui_text(10, screen_h - 13, string.format("X:%-6.0f ", g_camera_pos_x) .. string.format("Y:%-6.0f", g_camera_pos_y), screen_w - 10, 0, color_grey_dark, 0)
+            local cy = screen_h - 15
+            update_ui_text(10, cy, "Y", 100, 0, color_grey_mid, 0)
+            update_ui_text(20, cy, string.format("%-6.0f ", g_camera_pos_y), screen_w - 10, 0, color_grey_dark, 0)
+            cy = cy - 10
+
+            update_ui_text(10, cy, "X", 100, 0, color_grey_mid, 0)
+            update_ui_text(20, cy, string.format("%-6.0f ", g_camera_pos_x), screen_w - 10, 0, color_grey_dark, 0)
         end
     elseif g_screen_index == 1 then
         update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_ud)
@@ -161,6 +179,7 @@ function update(screen_w, screen_h, ticks)
 
             g_is_vehicle_team_colors = ui:checkbox(update_get_loc(e_loc.upp_vehicle_team_colors), g_is_vehicle_team_colors)
             g_is_island_team_colors = ui:checkbox(update_get_loc(e_loc.upp_island_team_colors), g_is_island_team_colors)
+            g_is_island_names = ui:checkbox(update_get_loc(e_loc.upp_island_names), g_is_island_names)
     
             ui:spacer(5)
     

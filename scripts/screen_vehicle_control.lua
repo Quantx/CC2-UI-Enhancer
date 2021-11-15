@@ -18,6 +18,7 @@ g_is_drag_pan_map = false
 g_viewing_vehicle_id = 0
 g_is_vehicle_team_colors = false
 g_is_island_team_colors = true
+g_is_render_grid = true
 
 g_blend_tick = 0
 g_prev_pos_x = 0
@@ -48,9 +49,10 @@ g_color_waypoint = color8(0, 255, 255, 8)
 g_is_mouse_mode = false
 g_pointer_pos_x = 0
 g_pointer_pos_y = 0
-g_pointer_pos_dx = 0
-g_pointer_pos_dy = 0
+g_pointer_pos_prev = 0
+g_pointer_pos_prev = 0
 g_is_pointer_hovered = false
+g_is_pointer_pressed = false
 
 g_cursor_pos_x = 0
 g_cursor_pos_y = 0
@@ -450,6 +452,7 @@ function render_selection_map(screen_w, screen_h)
 
         g_is_vehicle_team_colors = ui:checkbox(update_get_loc(e_loc.upp_vehicle_team_colors), g_is_vehicle_team_colors)
         g_is_island_team_colors = ui:checkbox(update_get_loc(e_loc.upp_island_team_colors), g_is_island_team_colors)
+        g_is_render_grid = ui:checkbox(update_get_loc(e_loc.upp_show_grid), g_is_render_grid)
 
         ui:spacer(5)
 
@@ -521,6 +524,7 @@ function parse()
     g_is_vehicle_team_colors = parse_bool("is_vehicle_team_colors", g_is_vehicle_team_colors)
     g_is_island_team_colors = parse_bool("is_island_team_colors", g_is_island_team_colors)
     g_viewing_vehicle_id = parse_s32("", g_viewing_vehicle_id)
+    g_is_render_grid = parse_bool("is_show_grid", g_is_render_grid) 
 end
 
 function begin()
@@ -563,7 +567,7 @@ function update(screen_w, screen_h, ticks)
         g_camera_size = lerp(g_prev_size, g_next_size, blend_factor)
     end
 
-    if update_screen_overrides(screen_w, screen_h, ticks)  then return end
+    -- if update_screen_overrides(screen_w, screen_h, ticks)  then return end
 
     g_tut_is_carrier_selected = false
     g_tut_is_context_menu_open = get_is_selection()
@@ -583,13 +587,15 @@ function update(screen_w, screen_h, ticks)
             g_camera_pos_y = g_camera_pos_y + (g_input_y * g_camera_size * 0.01)
             input_zoom_camera(1 - (g_input_w * 0.1))
 
-            if g_is_mouse_mode then
-                g_drag_distance = g_drag_distance + math.abs(g_pointer_pos_dx) + math.abs(g_pointer_pos_dy)
+            if update_get_active_input_type() == e_active_input.keyboard and g_is_pointer_pressed then
+                g_drag_distance = g_drag_distance + math.abs(g_pointer_pos_x - g_pointer_pos_x_prev) + math.abs(g_pointer_pos_y - g_pointer_pos_y_prev)
+            end
 
-                if g_is_drag_pan_map then
-                    g_camera_pos_x = g_camera_pos_x + (g_pointer_pos_dx * g_camera_size * 0.005)
-                    g_camera_pos_y = g_camera_pos_y - (g_pointer_pos_dy * g_camera_size * 0.005)
-                end
+            if g_is_drag_pan_map then
+                local pointer_dx, pointer_dy = get_world_delta_from_screen(g_pointer_pos_x - g_pointer_pos_x_prev, g_pointer_pos_y - g_pointer_pos_y_prev, g_camera_size, screen_w, screen_h)
+
+                g_camera_pos_x = g_camera_pos_x - pointer_dx
+                g_camera_pos_y = g_camera_pos_y - pointer_dy
             end
 
             g_drag_distance = g_drag_distance + math.abs(g_input_x) + math.abs(g_input_y)
@@ -731,6 +737,41 @@ function update(screen_w, screen_h, ticks)
                         end
                     end
                 end
+            end
+        end
+
+        -- render grid
+
+        if g_is_render_grid and g_map_render_mode == 1 then
+            local function floor_to(x, y)
+                return math.floor(x / y) * y
+            end
+
+            local screen_min_x, screen_min_y = get_world_from_screen(0, 0, g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
+            local screen_max_x, screen_max_y = get_world_from_screen(screen_w, screen_h, g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
+            
+            local grid_spacing = get_grid_spacing(g_camera_size)
+            local grid_min_x = floor_to(screen_min_x, grid_spacing)
+            local grid_min_y = floor_to(screen_min_y, grid_spacing)
+            local grid_max_x = floor_to(screen_max_x, grid_spacing) + grid_spacing
+            local grid_max_y = floor_to(screen_max_y, grid_spacing) + grid_spacing
+            local grid_col_maj = color8(0, 255, 255, 5)
+            local grid_col_min = color8(0, 255, 255, 1)
+
+            for x = grid_min_x, grid_max_x, grid_spacing do
+                local line_x = get_screen_from_world(x, 0, g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
+                update_ui_rectangle(line_x, 0, 1, screen_h, grid_col_maj)
+                
+                line_x = get_screen_from_world(x + grid_spacing / 2, 0, g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
+                update_ui_rectangle(line_x, 0, 1, screen_h, grid_col_min)
+            end
+
+            for y = grid_min_y, grid_max_y, -grid_spacing do
+                local _, line_y = get_screen_from_world(0, y, g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
+                update_ui_rectangle(0, line_y, screen_w, 1, grid_col_maj)
+                
+                _, line_y = get_screen_from_world(0, y + grid_spacing / 2, g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
+                update_ui_rectangle(0, line_y, screen_w, 1, grid_col_min)
             end
         end
 
@@ -954,7 +995,7 @@ function update(screen_w, screen_h, ticks)
                                     waypoint_pos_x_prev = waypoint_screen_pos_x
                                     waypoint_pos_y_prev = waypoint_screen_pos_y
 
-                                    local waypoint_repeat_index = waypoint:get_repeat_index(j)
+                                    local waypoint_repeat_index = waypoint:get_repeat_index()
 
                                     if waypoint_repeat_index >= 0 then
                                         local waypoint_repeat = vehicle:get_waypoint(waypoint_repeat_index)
@@ -1277,43 +1318,7 @@ function update(screen_w, screen_h, ticks)
             end
         end
 
-        local function render_drag_info(world_pos_drag_start)
-            -- render bearing/position information
-
-            local cy = screen_h - 55
-            local cx = 15
-            local world_x, world_y = get_world_from_screen(g_cursor_pos_x, g_cursor_pos_y, g_camera_pos_x, g_camera_pos_y, g_camera_size, 256, 256)
-            local icon_col = color_grey_mid
-            local text_col = color_grey_dark
-
-            update_ui_text(cx, cy, "X", 100, 0, icon_col, 0)
-            update_ui_text(cx + 15, cy, string.format("%.0f", world_x), 100, 0, text_col, 0)
-            cy = cy + 10
-            
-            update_ui_text(cx, cy, "Y", 100, 0, icon_col, 0)
-            update_ui_text(cx + 15, cy, string.format("%.0f", world_y), 100, 0, text_col, 0)
-            cy = cy + 10
-
-            local dist =  vec2_dist(world_pos_drag_start, vec2(world_x, world_y))
-
-            if dist < 10000 then
-                update_ui_image(cx, cy, atlas_icons.column_distance, icon_col, 0)
-                update_ui_text(cx + 15, cy, string.format("%.0f ", dist) .. update_get_loc(e_loc.acronym_meters), 100, 0, text_col, 0)
-            else
-                update_ui_image(cx, cy, atlas_icons.column_distance, icon_col, 0)
-                update_ui_text(cx + 15, cy, string.format("%.2f ", dist / 1000) .. update_get_loc(e_loc.acronym_kilometers), 100, 0, text_col, 0)
-            end
-
-            cy = cy + 10
-
-            local bearing = 90 - math.atan(world_y - world_pos_drag_start:y(), world_x - world_pos_drag_start:x()) / math.pi * 180
-
-            if bearing < 0 then bearing = bearing + 360 end
-
-            update_ui_image(cx, cy, atlas_icons.column_angle, icon_col, 0)
-            update_ui_text(cx + 15, cy, string.format("%.0f deg", bearing), 100, 0, text_col, 0)
-            cy = cy + 10
-        end
+        local drag_start_pos = nil
 
         if get_is_selection() then
             -- selection
@@ -1334,7 +1339,7 @@ function update(screen_w, screen_h, ticks)
                     update_ui_line(screen_pos_x, screen_pos_y, g_cursor_pos_x, g_cursor_pos_y, color8(255, 255, 255, 255))
 
                     if g_drag_distance > 2 then
-                        render_drag_info(waypoint_pos)
+                        drag_start_pos = waypoint_pos
                     end
                 else
                     g_drag_vehicle_id = 0
@@ -1355,7 +1360,7 @@ function update(screen_w, screen_h, ticks)
                 update_ui_line(screen_pos_x, screen_pos_y, g_cursor_pos_x, g_cursor_pos_y, drag_line_color)
 
                 if g_drag_distance > 2 then
-                    render_drag_info(vehicle_pos_xz)
+                    drag_start_pos = vehicle_pos_xz
                 end
             else
                 g_drag_vehicle_id = 0
@@ -1381,7 +1386,7 @@ function update(screen_w, screen_h, ticks)
                 update_ui_line(screen_pos_x, screen_pos_y, g_cursor_pos_x, g_cursor_pos_y, color8(255, 255, 255, 255))
                 
                 if g_drag_distance > 2 then
-                    render_drag_info(vehicle_pos_xz)
+                    drag_start_pos = vehicle_pos_xz
                 end
             end
         elseif g_highlighted_vehicle_id > 0 and g_highlighted_waypoint_id == 0 then
@@ -1394,6 +1399,25 @@ function update(screen_w, screen_h, ticks)
                     render_tooltip(10, 10, screen_w - 20, screen_h - 20, g_cursor_pos_x, g_cursor_pos_y, 128, 31, 10, function(w, h) render_vehicle_tooltip(w, h, highlighted_vehicle) end)
                 else
                     render_tooltip(10, 10, screen_w - 20, screen_h - 20, g_cursor_pos_x, g_cursor_pos_y, 128, 21, 10, function(w, h) render_vehicle_tooltip(w, h, highlighted_vehicle) end)
+                end
+            end
+        elseif g_highlighted_vehicle_id > 0 and g_higlighted_waypoint_id ~= 0 then
+            -- render waypoint tooltip
+
+            local highlighted_vehicle = update_get_map_vehicle_by_id(g_highlighted_vehicle_id)
+
+            if highlighted_vehicle:get() then
+                if get_is_vehicle_air(highlighted_vehicle:get_definition_index()) then
+                    local waypoint = highlighted_vehicle:get_waypoint_by_id(g_highlighted_waypoint_id)
+
+                    if waypoint:get() then
+                        local altitude_text = waypoint:get_altitude() .. update_get_loc(e_loc.acronym_meters)
+                        local text_w = update_ui_get_text_size(altitude_text, 200, 0)
+
+                        render_tooltip(10, 10, screen_w - 20, screen_h - 20, g_cursor_pos_x, g_cursor_pos_y, text_w + 8, 13, 10, function(w, h)  
+                            update_ui_text(0, 2, altitude_text, w, 1, color_white, 0)
+                        end)
+                    end
                 end
             end
         end
@@ -1412,6 +1436,9 @@ function update(screen_w, screen_h, ticks)
         end
 
         if get_is_selection() == false then
+            render_cursor_info(screen_w, screen_h, drag_start_pos)
+            render_map_scale(screen_w, screen_h)
+
             local sample_x, sample_y = get_world_from_screen(g_cursor_pos_x, g_cursor_pos_y, g_camera_pos_x, g_camera_pos_y, g_camera_size, 256, 256)
 
             local label_x = 24
@@ -1479,7 +1506,6 @@ function update(screen_w, screen_h, ticks)
             update_ui_pop_clip()
             update_ui_pop_offset()
         end
-
     elseif g_screen_index == 1 then
         update_set_screen_background_type(0)
         local viewing_vehicle = update_get_map_vehicle_by_id(g_viewing_vehicle_id)
@@ -1529,8 +1555,8 @@ function update(screen_w, screen_h, ticks)
 
     g_ui:end_ui()
 
-    g_pointer_pos_dx = 0
-    g_pointer_pos_dy = 0
+    g_pointer_pos_x_prev = g_pointer_pos_x
+    g_pointer_pos_y_prev = g_pointer_pos_y
 end
 
 function update_interaction_ui()
@@ -1604,6 +1630,10 @@ function input_zoom_camera(factor)
 end
 
 function input_event(event, action)
+    if event == e_input.pointer_1 then
+        g_is_pointer_pressed = action == e_input_action.press
+    end
+
     if g_screen_index == 0 then
         if get_is_selection() then
             input_selection(event, action)
@@ -1877,14 +1907,68 @@ end
 function input_pointer(is_hovered, x, y)
 	g_is_pointer_hovered = is_hovered
 
-    g_pointer_pos_dx = g_pointer_pos_dx + g_pointer_pos_x - x
-    g_pointer_pos_dy = g_pointer_pos_dy + g_pointer_pos_y - y
-
     g_pointer_pos_x = x
     g_pointer_pos_y = y
 
     if get_is_selection() then
         g_ui:input_pointer(is_hovered, x, y)
+    end
+end
+
+function render_map_scale(screen_w, screen_h)
+    if g_is_render_grid then
+        update_ui_push_offset(screen_w - 50, screen_h - 20)
+
+        local grid_spacing = math.floor(get_grid_spacing() / 1000)
+        local text_units = update_get_loc(e_loc.acronym_kilometers)
+
+        update_ui_text(0, -10, math.floor(grid_spacing) .. text_units, 32, 1, color_grey_mid, 0)
+        update_ui_rectangle(0, 0, 1, 4, color_grey_dark)
+        update_ui_rectangle(16, 2, 1, 2, color_grey_dark)
+        update_ui_rectangle(31, 0, 1, 4, color_grey_dark)
+        update_ui_rectangle(0, 4, 32, 1, color_grey_dark)
+
+        update_ui_pop_offset()
+    end
+end
+
+function render_cursor_info(screen_w, screen_h, world_pos_drag_start)
+    -- render bearing/position information
+
+    local cy = screen_h - iff(world_pos_drag_start, 55, 35)
+    local cx = 15
+    local world_x, world_y = get_world_from_screen(g_cursor_pos_x, g_cursor_pos_y, g_camera_pos_x, g_camera_pos_y, g_camera_size, 256, 256)
+    local icon_col = color_grey_mid
+    local text_col = color_grey_dark
+
+    update_ui_text(cx, cy, "X", 100, 0, icon_col, 0)
+    update_ui_text(cx + 15, cy, string.format("%.0f", world_x), 100, 0, text_col, 0)
+    cy = cy + 10
+    
+    update_ui_text(cx, cy, "Y", 100, 0, icon_col, 0)
+    update_ui_text(cx + 15, cy, string.format("%.0f", world_y), 100, 0, text_col, 0)
+    cy = cy + 10
+
+    if world_pos_drag_start then
+        local dist =  vec2_dist(world_pos_drag_start, vec2(world_x, world_y))
+
+        if dist < 10000 then
+            update_ui_image(cx, cy, atlas_icons.column_distance, icon_col, 0)
+            update_ui_text(cx + 15, cy, string.format("%.0f ", dist) .. update_get_loc(e_loc.acronym_meters), 100, 0, text_col, 0)
+        else
+            update_ui_image(cx, cy, atlas_icons.column_distance, icon_col, 0)
+            update_ui_text(cx + 15, cy, string.format("%.2f ", dist / 1000) .. update_get_loc(e_loc.acronym_kilometers), 100, 0, text_col, 0)
+        end
+
+        cy = cy + 10
+
+        local bearing = 90 - math.atan(world_y - world_pos_drag_start:y(), world_x - world_pos_drag_start:x()) / math.pi * 180
+
+        if bearing < 0 then bearing = bearing + 360 end
+
+        update_ui_image(cx, cy, atlas_icons.column_angle, icon_col, 0)
+        update_ui_text(cx + 15, cy, string.format("%.0f deg", bearing), 100, 0, text_col, 0)
+        cy = cy + 10
     end
 end
 
@@ -2114,4 +2198,16 @@ function get_island_team_color(team)
     else
         return color_enemy
     end
+end
+
+function get_grid_spacing()
+    local grid_spacing = 1000
+    local camera_size = g_camera_size
+
+    while camera_size > 8000 do
+        grid_spacing = grid_spacing * 2
+        camera_size = camera_size / 2
+    end
+
+    return grid_spacing
 end

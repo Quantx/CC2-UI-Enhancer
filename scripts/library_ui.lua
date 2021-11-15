@@ -1911,12 +1911,15 @@ function imgui_options_menu(ui, x, y, w, h, is_active, selected_category_index, 
             settings.ui_show_highlights             = ui:checkbox(update_get_loc(e_loc.interaction_highlight), settings.ui_show_highlights)
 
             if update_get_is_vr() == false then
-            ui:header(update_get_loc(e_loc.hud))
+                ui:header(update_get_loc(e_loc.hud))
                 settings.ui_show_control_hints          = ui:checkbox(update_get_loc(e_loc.controls), settings.ui_show_control_hints)
                 settings.ui_show_subtitles              = ui:checkbox(update_get_loc(e_loc.subtitles), settings.ui_show_subtitles)
                 settings.ui_show_tooltips               = ui:checkbox(update_get_loc(e_loc.tooltips), settings.ui_show_tooltips)
                 settings.ui_show_voice_chat_self        = ui:checkbox(update_get_loc(e_loc.voice_indicator), settings.ui_show_voice_chat_self)
                 settings.ui_show_voice_chat_others      = ui:checkbox(update_get_loc(e_loc.team_voice_indicators), settings.ui_show_voice_chat_others)
+
+                ui:header(update_get_loc(e_loc.upp_vehicle_hud))
+                settings.ui_show_mouse_joystick_on_hud  = ui:checkbox(update_get_loc(e_loc.ui_show_mouse_joystick_on_hud), settings.ui_show_mouse_joystick_on_hud)
             end
         ui:end_window()
     elseif selected_category_index == 3 then
@@ -1970,6 +1973,34 @@ function imgui_options_menu(ui, x, y, w, h, is_active, selected_category_index, 
             ui:header(update_get_loc(e_loc.upp_invert))
             settings.mouse_inv_x                    = ui:checkbox(update_get_loc(e_loc.horizontal), settings.mouse_inv_x)
             settings.mouse_inv_y                    = ui:checkbox(update_get_loc(e_loc.vertical), settings.mouse_inv_y)
+            ui:header(update_get_loc(e_loc.upp_mouse_flight))
+            settings.mouse_flight_mode              = ui:combo(update_get_loc(e_loc.mouse_flight_mode), settings.mouse_flight_mode, { update_get_loc(e_loc.mouse_flight_mode_disabled), update_get_loc(e_loc.mouse_flight_mode_roll_pitch), update_get_loc(e_loc.mouse_flight_mode_yaw_pitch) })
+            
+            if settings.mouse_flight_mode ~= e_mouse_flight_mode.disabled then
+                settings.mouse_joystick_mode        = ui:combo(update_get_loc(e_loc.mouse_joystick_mode), settings.mouse_joystick_mode, { update_get_loc(e_loc.mouse_joystick_mode_motion), update_get_loc(e_loc.mouse_joystick_mode_offset) })
+                
+                local axis_names = { 
+                    [0] = { x = "X", y = "Y" },
+                    [1] = { 
+                        x = update_get_loc(e_loc.mouse_flight_sensitivity_roll),
+                        y = update_get_loc(e_loc.mouse_flight_sensitivity_pitch)
+                    },
+                    [2] = {
+                        x = update_get_loc(e_loc.mouse_flight_sensitivity_yaw),
+                        y = update_get_loc(e_loc.mouse_flight_sensitivity_pitch)
+                    }
+                }
+
+                if settings.mouse_joystick_mode == e_mouse_joystick_mode.motion then
+                    ui:header(update_get_loc(e_loc.upp_mouse_flight_sensitivity))
+                    settings.mouse_flight_sensitivity_x = ui:slider(axis_names[settings.mouse_flight_mode].x, settings.mouse_flight_sensitivity_x, 0.5, 4, 0.25)
+                    settings.mouse_flight_sensitivity_y = ui:slider(axis_names[settings.mouse_flight_mode].y, settings.mouse_flight_sensitivity_y, 0.5, 4, 0.25)
+                end
+
+                ui:header(update_get_loc(e_loc.upp_mouse_flight_invert))
+                settings.mouse_flight_inv_x         = ui:checkbox(axis_names[settings.mouse_flight_mode].x, settings.mouse_flight_inv_x)
+                settings.mouse_flight_inv_y         = ui:checkbox(axis_names[settings.mouse_flight_mode].y, settings.mouse_flight_inv_y)
+            end
         ui:end_window()
     elseif selected_category_index == 6 then
         local window = ui:begin_window(update_get_loc(e_loc.upp_gamepad), x, y, w, h, nil, is_active, 0, true, is_highlight)
@@ -2577,7 +2608,7 @@ function imgui_table_header(ui, columns)
     window.cy = window.cy + 12
 end
 
-function imgui_table_entry(ui, columns, is_selectable)
+function imgui_table_entry(ui, columns, is_selectable, min_row_h)
     local window = ui:get_window()
     local x = window.cx
     local y = window.cy
@@ -2586,7 +2617,7 @@ function imgui_table_entry(ui, columns, is_selectable)
     local is_active = window.is_active
 
     local cx = 0
-    local text_h = 10
+    local row_h = min_row_h or 10
     local is_bg_enabled = false
 
     for i = 1, #columns do
@@ -2596,14 +2627,17 @@ function imgui_table_entry(ui, columns, is_selectable)
     end
 
     for i = 1, #columns do
+        if columns[i].row_h ~= nil then
+            row_h = math.max(columns[i].row_h, row_h)
+        end
         if type(columns[i].value) == "string" then
             local text_render_w, text_render_h = update_ui_get_text_size(columns[i].value, columns[i].w - columns[i].margin, 0)
-            text_h = math.max(text_render_h, text_h)
+            row_h = math.max(text_render_h, row_h)
         end
     end
 
     if is_selected and is_active then
-        update_ui_rectangle(cx, y, w, text_h + 3, iff(is_selectable, color_button_bg, color_button_bg_inactive))
+        update_ui_rectangle(cx, y, w, row_h + 3, iff(is_selectable, color_button_bg, color_button_bg_inactive))
     end
 
     for i = 1, #columns do
@@ -2611,11 +2645,11 @@ function imgui_table_entry(ui, columns, is_selectable)
         local col = iff(is_active, iff(is_selected and is_highlight, columns[i].col or iff(is_selectable, color_highlight, color_grey_mid), columns[i].col or color_grey_dark), color_grey_dark)
 
         if columns[i].bg_col ~= nil then
-            update_ui_rectangle(cx, y, columns[i].w, text_h + 3, columns[i].bg_col)
+            update_ui_rectangle(cx, y, columns[i].w, row_h + 3, columns[i].bg_col)
         end
 
         if type(columns[i].value) == "string" then
-            text_h = math.max(text_h, update_ui_text(cx + columns[i].margin, y + 3, columns[i].value, columns[i].w - columns[i].margin, 0, col, 0))
+            update_ui_text(cx + columns[i].margin, y + 3, columns[i].value, columns[i].w - columns[i].margin, 0, col, 0)
         elseif type(columns[i].value) == "function" then
             update_ui_push_offset(cx + columns[i].margin, y)
             columns[i].value(columns[i].w - columns[i].margin, row_h, is_selected)
@@ -2629,19 +2663,19 @@ function imgui_table_entry(ui, columns, is_selectable)
 
     cx = columns[1].w
 
-    update_ui_rectangle(x, y + text_h + 3, w, 1, color8(255, 255, 255, 2))
+    update_ui_rectangle(x, y + row_h + 3, w, 1, color8(255, 255, 255, 2))
 
     for i = 2, #columns do
         local is_border = columns[i - 1].is_border == nil or columns[i].is_border
 
         if is_border then
-            update_ui_rectangle(cx, y, 1, text_h + 3, color_grey_dark)
+            update_ui_rectangle(cx, y, 1, row_h + 3, color_grey_dark)
         end
 
         cx = cx + columns[i].w
     end
     
-    window.cy = window.cy + text_h + 3
+    window.cy = window.cy + row_h + 3
 
     local is_hovered = ui:hoverable(x, y, w, window.cy - y, true)
     local is_action = false
@@ -2767,10 +2801,17 @@ function imgui_vehicle_inventory_table(ui, vehicle)
     local selected_h = 0
     local row_index = 1
 
-    local facility_production_counts = vehicle:get_inventory_production_counts()
-    
-    local column_widths = { w - 103, 32, 39, 32 }
-    local column_margins = { 5, 2, 2, 2 }
+    local island_stock = {}
+    local barge_stock = {}
+    local team = update_get_team(vehicle:get_team())
+
+    if team:get() then
+        island_stock = team:get_island_stock()
+        barge_stock = team:get_barge_stock()
+    end
+
+    local column_widths = { w - 109, 27, 27, 27, 27 }
+    local column_margins = { 5, 2, 2, 2, 2 }
     
     for _, category in pairs(g_item_categories) do
         if #category.items > 0 then
@@ -2780,7 +2821,8 @@ function imgui_vehicle_inventory_table(ui, vehicle)
                 { w=column_widths[1], margin=column_margins[1], value=category.name },
                 { w=column_widths[2], margin=column_margins[2], value=atlas_icons.column_warehouse },
                 { w=column_widths[3], margin=column_margins[3], value=atlas_icons.column_pending },
-                { w=column_widths[4], margin=column_margins[4], value=atlas_icons.column_stock }
+                { w=column_widths[4], margin=column_margins[4], value=atlas_icons.column_distance },
+                { w=column_widths[5], margin=column_margins[5], value=atlas_icons.column_stock }
             }
 
             for _, item in pairs(category.items) do
@@ -2790,15 +2832,17 @@ function imgui_vehicle_inventory_table(ui, vehicle)
                         is_added_header = true
                     end
 
-                    local warehouse_count = clamp(facility_production_counts[item.index] or 0, -99999, 99999)
+                    local island_count = clamp(island_stock[item.index] or 0, -99999, 99999)
+                    local barge_count = clamp(barge_stock[item.index] or 0, -99999, 99999)
                     local order_count = clamp(vehicle:get_inventory_order(item.index), -99999, 99999)
                     local stock_count = clamp(vehicle:get_inventory_count_by_item_index(item.index), -99999, 99999)
 
                     local columns = { 
                         { w=column_widths[1], margin=column_margins[1], value=item.name },
-                        { w=column_widths[2], margin=column_margins[2], value=tostring(warehouse_count) },
-                        { w=column_widths[3], margin=column_margins[3], value=string.format("%+d", order_count), col=iff(order_count > 0, color_status_ok, iff(order_count < 0, color_status_bad, color_grey_dark)) },
-                        { w=column_widths[4], margin=column_margins[4], value=tostring(stock_count), col=iff(stock_count > 0, color_status_ok, color_status_bad) }
+                        { w=column_widths[2], margin=column_margins[2], value=format_quantity(island_count) },
+                        { w=column_widths[3], margin=column_margins[3], value=format_quantity(order_count), col=iff(order_count > 0, color_status_ok, iff(order_count < 0, color_status_bad, color_grey_dark)) },
+                        { w=column_widths[4], margin=column_margins[4], value=format_quantity(barge_count) },
+                        { w=column_widths[5], margin=column_margins[5], value=format_quantity(stock_count), col=iff(stock_count > 0, color_status_ok, color_status_bad) }
                     }
 
                     local is_action, row_selected_col, col_x, col_y, col_w, col_h = imgui_table_entry_grid(ui, columns)
@@ -2832,8 +2876,6 @@ function imgui_barge_inventory_table(ui, vehicle, is_category_headers)
     local w, h = ui:get_region()
     local selected_item = -1
 
-    local facility_production_counts = vehicle:get_inventory_production_counts()
-    
     local column_widths = { w - 50, 50 }
     local column_margins = { 5, 2 }
     local item_count = 0
@@ -3257,4 +3299,12 @@ function imgui_list_item_blink(ui, label, is_select_on_hover, is_enabled)
     window.cy = window.cy + 13
 
     return is_action
+end
+
+function format_quantity(amount)
+    if amount < 10000 then
+        return string.format("%.0f", amount)
+    else
+        return string.format("%.0f", amount / 1000) .. update_get_loc(e_loc.acronym_thousand)
+    end
 end

@@ -155,7 +155,8 @@ atlas_icons = {
     map_icon_factory_barge = 0,
     map_icon_barge = 0,
     tab_border = 0,
-    screen_propulsion = 0,
+    screen_propulsion_gauge = 0,
+    screen_propulsion_carrier = 0,
     column_distance = 0,
     column_weight = 0,
     column_stabilisation_mode = 0,
@@ -380,6 +381,11 @@ atlas_icons = {
     icon_item_16_ammo_sonic_pulse = 0,
     icon_item_16_ammo_smoke = 0,
     icon_chassis_turret = 0,
+    mouse_icon_special_ud = 0,
+    mouse_icon_special_lr = 0,
+    map_icon_load = 0,
+    map_icon_unload = 0,
+    column_trash = 0,
 }
 
 function begin_load()
@@ -436,10 +442,13 @@ function get_attachment_icons(definition_index)
     return def_data[1], def_data[2]
 end
 
-function get_screen_from_world(world_x, world_y, camera_x, camera_y, camera_size, screen_w, screen_h)
+function get_screen_from_world(world_x, world_y, camera_x, camera_y, camera_size, screen_w, screen_h, aspect)
     local view_w = camera_size
     local view_h = camera_size
-    local aspect = screen_w / screen_h
+    
+    if aspect == nil then 
+        aspect = screen_w / screen_h
+    end
 
     if aspect > 1 then
         view_w = view_w * aspect
@@ -456,14 +465,22 @@ function get_screen_from_world(world_x, world_y, camera_x, camera_y, camera_size
     return screen_x, screen_y
 end
 
-function get_world_from_screen(screen_x, screen_y, camera_x, camera_y, camera_size, screen_w, screen_h)
+function get_world_from_screen(screen_x, screen_y, camera_x, camera_y, camera_size, screen_w, screen_h, aspect)
     local view_x = (screen_x / screen_w) - 0.5
     local view_y = (screen_y / screen_h) - 0.5
 
-    local world_x = camera_x + (view_x * camera_size)
+    if aspect == nil then
+        aspect = screen_w / screen_h
+    end
+
+    local world_x = camera_x + (view_x * camera_size * aspect)
     local world_y = camera_y - (view_y * camera_size)
 
     return world_x, world_y
+end
+
+function get_world_delta_from_screen(dx, dy, camera_size, screen_w, screen_h, aspect)
+    return get_world_from_screen(screen_w / 2 + dx, screen_h / 2 + dy, 0, 0, camera_size, screen_w, screen_h, aspect)
 end
 
 function lerp(a, b, c)
@@ -778,4 +795,8 @@ function table_count(t)
     end
 
     return i
+end
+
+function mult_alpha(col, alpha) 
+    return color8(col:r(), col:g(), col:b(), math.floor(col:a() * alpha))  
 end

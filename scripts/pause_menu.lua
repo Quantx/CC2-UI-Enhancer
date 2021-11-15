@@ -352,7 +352,7 @@ function input_event(event, action)
                 g_focused_screen = g_screens.active_tab
             end
         elseif event == e_input.pointer_1 then
-            if g_hovered_tab ~= -1 then
+            if action == e_input_action.press and g_hovered_tab ~= -1 then
                 set_active_tab(g_hovered_tab)
             end
         elseif event == e_input.back then
@@ -426,14 +426,13 @@ function tab_map_render(screen_w, screen_h, x, y, w, h, delta_time, is_active)
         
         if g_is_mouse_mode then
             tab_map_zoom(1 - g_pointer_scroll * 0.15)
+        end
 
-            local pointer_dx = g_pointer_pos_x - g_pointer_pos_x_prev
-            local pointer_dy = g_pointer_pos_y - g_pointer_pos_y_prev
+        if update_get_active_input_type() == e_active_input.keyboard and g_is_pointer_pressed then
+            local pointer_dx, pointer_dy = get_world_delta_from_screen(g_pointer_pos_x - g_pointer_pos_x_prev, g_pointer_pos_y - g_pointer_pos_y_prev, g_tab_map.camera_size, screen_w, screen_h)
 
-            if g_is_pointer_pressed then
-                g_tab_map.camera_pos_x = g_tab_map.camera_pos_x - pointer_dx * g_tab_map.camera_size * 0.005 * speed_multiplier
-                g_tab_map.camera_pos_y = g_tab_map.camera_pos_y + pointer_dy * g_tab_map.camera_size * 0.005 * speed_multiplier
-            end
+            g_tab_map.camera_pos_x = g_tab_map.camera_pos_x - pointer_dx
+            g_tab_map.camera_pos_y = g_tab_map.camera_pos_y - pointer_dy
         end
     end
 
@@ -1369,7 +1368,6 @@ function tab_manual_render(screen_w, screen_h, x, y, w, h, delta_time, is_active
                 update_get_loc(e_loc.manual_inventory_tab_map_3),
                 update_get_loc(e_loc.manual_inventory_tab_map_4),
                 update_get_loc(e_loc.manual_inventory_tab_map_5),
-                update_get_loc(e_loc.manual_inventory_tab_map_6),
 
                 { "h", update_get_loc(e_loc.upp_tab_barges) },
                 update_get_loc(e_loc.manual_inventory_tab_barges_1),
@@ -1401,7 +1399,6 @@ function tab_manual_render(screen_w, screen_h, x, y, w, h, delta_time, is_active
 
                 { "h", update_get_loc(e_loc.upp_warehouses) },
                 {  update_get_loc(e_loc.manual_logistics_warehouses_1) },
-                update_get_loc(e_loc.manual_logistics_warehouses_2),
 
                 { "h", update_get_loc(e_loc.upp_blueprints) },
                 update_get_loc(e_loc.manual_logistics_blueprints_1),

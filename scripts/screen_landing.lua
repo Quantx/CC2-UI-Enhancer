@@ -178,7 +178,7 @@ function render_docking_vehicle_wing(vehicle_parent, vehicle)
             local z_factor = (relative_position:z() - pattern_length) / (pattern_length * 2)
             p0x = -run_length / 2 - z_factor * run_length
         end
-    elseif vehicle_dock_state == e_vehicle_dock_state.docking then
+    elseif vehicle_dock_state == e_vehicle_dock_state.docking or vehicle_dock_state == e_vehicle_dock_state.docking_taxi then
         if relative_position:z() < -pattern_length then
             local angle = update_get_angle_2d(relative_position:x() + 200, relative_position:z() + pattern_length) - (math.pi * 0.5)
             p0x, p0z = arc_position(run_length / 2 + run_arc - final_arc, 0, final_arc, angle)
@@ -238,7 +238,7 @@ function get_docking_vehicles(vehicle_parent)
         if vehicle:get() then
             local vehicle_dock_state = vehicle:get_dock_state()
 
-            if vehicle_dock_state == e_vehicle_dock_state.docking or vehicle_dock_state == e_vehicle_dock_state.dock_queue then
+            if vehicle_dock_state == e_vehicle_dock_state.docking or vehicle_dock_state == e_vehicle_dock_state.dock_queue or vehicle_dock_state == e_vehicle_dock_state.docking_taxi then
                 local vehicle_dock_parent_id = vehicle:get_dock_parent_id()
 
                 if vehicle_dock_parent_id == vehicle_parent:get_id() then

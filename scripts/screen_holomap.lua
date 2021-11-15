@@ -18,6 +18,16 @@ g_map_size = 2000
 g_map_x_offset = 0
 g_map_z_offset = 0
 g_map_size_offset = 0
+g_cursor_pos_prev_x = -1
+g_cursor_pos_prev_y = -1
+g_cursor_pos_next_x = -1
+g_cursor_pos_next_y = -1
+g_cursor_pos_x = -1
+g_cursor_pos_y = -1
+g_is_show_cursor = false
+g_is_show_bearing = false
+g_drag_pos_world_x = -1
+g_drag_pos_world_y = -1
 
 g_button_mode = 0
 g_is_map_pos_initialised = false
@@ -72,6 +82,15 @@ function parse()
     g_next_pos_x = parse_f32("map_x", g_next_pos_x)
     g_next_pos_y = parse_f32("map_y", g_next_pos_y)
     g_next_size = parse_f32("map_size", g_next_size)
+
+    g_cursor_pos_prev_x = g_cursor_pos_next_x
+    g_cursor_pos_prev_y = g_cursor_pos_next_y
+    g_cursor_pos_next_x = parse_f32("", g_cursor_pos_next_x)
+    g_cursor_pos_next_y = parse_f32("", g_cursor_pos_next_y)
+    g_is_show_cursor = parse_bool("", g_is_show_cursor)
+    g_drag_pos_world_x = parse_f32("", g_drag_pos_world_x)
+    g_drag_pos_world_y = parse_f32("", g_drag_pos_world_y)
+    g_is_show_bearing = parse_bool("", g_is_show_bearing)
 end
 
 function begin()
@@ -116,8 +135,14 @@ function update(screen_w, screen_h, ticks)
         end
     end
 
-    update_add_ui_interaction_special(update_get_loc(e_loc.interaction_pan), e_ui_interaction_special.map_pan)
-    update_add_ui_interaction_special(update_get_loc(e_loc.interaction_zoom), e_ui_interaction_special.map_zoom)
+    if g_is_show_bearing == false then
+        update_add_ui_interaction_special(update_get_loc(e_loc.interaction_pan), e_ui_interaction_special.map_pan)
+        update_add_ui_interaction_special(update_get_loc(e_loc.interaction_zoom), e_ui_interaction_special.map_zoom)
+
+        if update_get_is_notification_holomap_set() == false then
+            update_add_ui_interaction_special(update_get_loc(e_loc.interaction_bearing), e_ui_interaction_special.interact_a_no_alt)
+        end
+    end
 
     if g_is_map_pos_initialised == false then
         g_is_map_pos_initialised = true
@@ -128,21 +153,32 @@ function update(screen_w, screen_h, ticks)
         g_next_pos_x = g_map_x
         g_next_pos_y = g_map_z
         g_next_size = g_map_size
+
+        if g_is_mouse_mode then
+            g_cursor_pos_next_x = g_pointer_pos_x
+            g_cursor_pos_next_y = g_pointer_pos_y
+        else
+            g_cursor_pos_next_x = screen_w / 2
+            g_cursor_pos_next_y = screen_h / 2
+        end
+
+        g_is_show_cursor = true
     else
         g_blend_tick = g_blend_tick + 1
         local blend_factor = clamp(g_blend_tick / 10.0, 0.0, 1.0)
         g_map_x = lerp(g_prev_pos_x, g_next_pos_x, blend_factor)
         g_map_z = lerp(g_prev_pos_y, g_next_pos_y, blend_factor)
         g_map_size = lerp(g_prev_size, g_next_size, blend_factor)
+        g_cursor_pos_x = lerp(g_cursor_pos_prev_x, g_cursor_pos_next_x, blend_factor)
+        g_cursor_pos_y = lerp(g_cursor_pos_prev_y, g_cursor_pos_next_y, blend_factor)
     end
     
     if g_is_mouse_mode and update_get_is_notification_holomap_set() == false then
-        local pointer_dx = g_pointer_pos_x - g_pointer_pos_x_prev
-        local pointer_dy = g_pointer_pos_y - g_pointer_pos_y_prev
-
         if g_is_pointer_pressed then
-            g_map_x = g_map_x - pointer_dx * g_map_size * 0.005
-            g_map_z = g_map_z + pointer_dy * g_map_size * 0.005
+            local pointer_dx, pointer_dy = get_world_delta_from_screen(g_pointer_pos_x - g_pointer_pos_x_prev, g_pointer_pos_y - g_pointer_pos_y_prev, g_map_size, screen_w, screen_h, 2.6 / 1.6)
+
+            g_map_x = g_map_x - pointer_dx
+            g_map_z = g_map_z - pointer_dy
         end
     end
 
@@ -167,6 +203,7 @@ function update(screen_w, screen_h, ticks)
     update_ui_rectangle(0, 0, screen_w, screen_h, color8(0, 0, 0, 220))
 
     if update_get_is_notification_holomap_set() then
+        g_is_show_bearing = false
         g_notification_time = g_notification_time + 1
 
         update_set_screen_background_type(0)
@@ -228,6 +265,147 @@ function update(screen_w, screen_h, ticks)
     else
         g_dismiss_counter = 0
         g_notification_time = 0
+
+        local island_count = update_get_tile_count()
+
+        if g_map_size < 80000 then
+            -- render island names and icons
+
+            for i = 0, island_count - 1, 1 do 
+                local island = update_get_tile_by_index(i)
+
+                if island:get() then
+                    local island_color = update_get_team_color(island:get_team_control())
+                    local island_position = island:get_position_xz()
+                    local island_name = island:get_name()
+                    local island_size = island:get_size()
+                    local screen_pos_x, screen_pos_y = get_screen_from_world(island_position:x(), island_position:y(), g_map_x + g_map_x_offset, g_map_z + g_map_z_offset, g_map_size + 
+                    g_map_size_offset, screen_w, screen_h, 2.6 / 1.6)
+                    local _, name_pos_y = get_screen_from_world(island_position:x(), island_position:y() + island_size:y() / 2, g_map_x + g_map_x_offset, g_map_z + g_map_z_offset, g_map_size + 
+                    g_map_size_offset, screen_w, screen_h, 2.6 / 1.6)
+             
+                    local name_pos_y = math.min(screen_pos_y - 27, name_pos_y)
+
+                    update_ui_text(screen_pos_x - 100, name_pos_y, island_name, 200, 1, island_color, 0)
+
+                    local difficulty_level = island:get_difficulty_level()
+                    local icon_w = 6
+                    local icon_spacing = 2
+                    local icon_count = difficulty_level + 2
+                    local total_w = icon_w * icon_count + icon_spacing * (icon_count - 1)
+                    local icon_y = name_pos_y + 10
+                    local icon_x = screen_pos_x - total_w / 2
+
+                    local icon_index = 0
+                    local category_data = g_item_categories[island:get_facility_category()]
+                    update_ui_image(icon_x + (icon_w + icon_spacing) * icon_index, icon_y, category_data.icon, island_color, 0)
+                    icon_index = icon_index + 2
+
+                    for i = 0, difficulty_level - 1 do
+                        update_ui_image(icon_x + (icon_w + icon_spacing) * icon_index, icon_y, atlas_icons.column_difficulty, island_color, 0)
+                        icon_index = icon_index + 1
+                    end
+                end
+            end
+        end
+
+        if update_get_is_focus_local() then
+            if g_is_show_bearing == false then
+                g_drag_pos_world_x, g_drag_pos_world_y = get_world_from_screen(g_cursor_pos_next_x, g_cursor_pos_next_y, g_map_x + g_map_x_offset, g_map_z + g_map_z_offset, g_map_size + 
+                g_map_size_offset, screen_w, screen_h, 2.6 / 1.6)
+            end
+        end
+    end
+
+    if update_get_is_notification_holomap_set() == false then
+        local cursor_x = iff(update_get_is_focus_local(), g_cursor_pos_next_x, g_cursor_pos_x)
+        local cursor_y = iff(update_get_is_focus_local(), g_cursor_pos_next_y, g_cursor_pos_y)
+        local cursor_world_x, cursor_world_y = get_world_from_screen(cursor_x, cursor_y, g_map_x + g_map_x_offset, g_map_z + g_map_z_offset, g_map_size + g_map_size_offset, screen_w, screen_h, 2.6 / 1.6)
+
+        local cx = 20
+        local cy = screen_h - 20
+        local icon_col = color_white
+        local text_col = color_grey_mid
+
+        if g_is_show_bearing then
+            local drag_x, drag_y = get_screen_from_world(g_drag_pos_world_x, g_drag_pos_world_y, g_map_x + g_map_x_offset, g_map_z + g_map_z_offset, g_map_size + 
+            g_map_size_offset, screen_w, screen_h, 2.6 / 1.6)
+
+            local team_col = update_get_team_color(update_get_screen_team_id())
+
+            update_ui_circle(drag_x, drag_y, 2, 4, team_col)
+            update_ui_line(drag_x, drag_y, cursor_x, cursor_y, team_col)
+
+            local dist_screen = vec2_dist(vec2(drag_x, drag_y), vec2(cursor_x, cursor_y))
+            local angle = math.atan(cursor_y - drag_y, cursor_x - drag_x)
+            local bearing = 90 + angle / math.pi * 180
+            if bearing < 0 then bearing = bearing + 360 end
+
+            if dist_screen > 5 then
+                local function rotate(x, y, a)
+                    local s = math.sin(a)
+                    local c = math.cos(a)
+                    return x * c - y * s, x * s + y * c
+                end
+
+                local rad = 10
+
+                if dist_screen > rad then
+                    local step =  math.pi / 180 * 20
+                    local bearing_rad =  bearing / 180 * math.pi
+
+                    update_ui_push_offset(drag_x, drag_y)
+                    update_ui_begin_triangles()
+
+                    for a = 0, bearing_rad, step do
+                        local a_next = math.min(bearing_rad, a + step)
+                        local p0 = vec2(rotate(0, -rad, a))
+                        local p1 = vec2(rotate(0, -rad, a_next))
+                        update_ui_add_triangle(vec2(0, 0), p0, p1, mult_alpha(team_col, 0.1))
+                        update_ui_line(math.floor(p0:x()), math.floor(p0:y()), math.floor(p1:x()), math.floor(p1:y()), team_col)
+                    end
+
+                    update_ui_end_triangles()
+                    update_ui_pop_offset()
+                end
+
+                update_ui_push_offset(cursor_x, cursor_y)
+                update_ui_begin_triangles()
+                update_ui_add_triangle(vec2(rotate(0, 0, angle)), vec2(rotate(-10, -4, angle)), vec2(rotate(-10, 4, angle)), team_col)
+                update_ui_end_triangles()
+                update_ui_pop_offset()
+            end
+
+            update_ui_image(cx, cy, atlas_icons.column_angle, icon_col, 0)
+            update_ui_text(cx + 15, cy, string.format("%.0f deg", bearing), 100, 0, text_col, 0)
+            cy = cy - 10
+
+            local dist = vec2_dist(vec2(g_drag_pos_world_x, g_drag_pos_world_y), vec2(cursor_world_x, cursor_world_y))
+
+            if dist < 10000 then
+                update_ui_image(cx, cy, atlas_icons.column_distance, icon_col, 0)
+                update_ui_text(cx + 15, cy, string.format("%.0f ", dist) .. update_get_loc(e_loc.acronym_meters), 100, 0, text_col, 0)
+            else
+                update_ui_image(cx, cy, atlas_icons.column_distance, icon_col, 0)
+                update_ui_text(cx + 15, cy, string.format("%.2f ", dist / 1000) .. update_get_loc(e_loc.acronym_kilometers), 100, 0, text_col, 0)
+            end
+    
+            cy = cy - 10
+        else
+            if update_get_is_focus_local() == false and g_is_show_cursor then
+                render_cursor(clamp(g_cursor_pos_x, 0, screen_w), clamp(g_cursor_pos_y, 0, screen_h))
+            elseif g_is_mouse_mode == false then
+                render_cursor(screen_w / 2, screen_h / 2)
+            end
+        end
+
+        update_ui_text(cx, cy, "Y", 100, 0, icon_col, 0)
+        update_ui_text(cx + 15, cy, string.format("%.0f", cursor_world_y), 100, 0, text_col, 0)
+        cy = cy - 10
+
+        update_ui_text(cx, cy, "X", 100, 0, icon_col, 0)
+        update_ui_text(cx + 15, cy, string.format("%.0f", cursor_world_x), 100, 0, text_col, 0)
+        cy = cy - 10
     end
 
     g_pointer_pos_x_prev = g_pointer_pos_x
@@ -237,10 +415,16 @@ end
 function input_event(event, action)
     if event == e_input.action_a then
         g_is_dismiss_pressed = action == e_input_action.press
+
+        if update_get_is_notification_holomap_set() == false then
+            g_is_show_bearing = action == e_input_action.press
+        end
     elseif event == e_input.pointer_1 then
         g_is_pointer_pressed = action == e_input_action.press
     elseif event == e_input.back then
         g_is_pointer_pressed = false
+        g_is_show_cursor = false
+        g_is_show_bearing = false
         update_set_screen_state_exit()
     end
 end
@@ -275,6 +459,30 @@ end
 function map_zoom(amount)
     g_map_size = g_map_size * amount
     g_map_size = math.max(500, math.min(g_map_size, 200000))
+end
+
+function render_cursor(x, y)
+    local col = color_white
+    local col_grid = color8(128, 255, 255, 8)
+
+    update_ui_push_offset(x, y)
+
+    local thickness = 2
+    local size = 1000
+    local border = 10
+    update_ui_rectangle(-thickness / 2, border, thickness, size, col_grid)
+    update_ui_rectangle(-thickness / 2, -size - border, thickness, size, col_grid)
+    update_ui_rectangle(border, -thickness / 2, size, thickness, col_grid)
+    update_ui_rectangle(-size - border, -thickness / 2, size, thickness, col_grid)
+
+    thickness = 2
+    size = 6
+    border = 2
+    update_ui_rectangle(-thickness / 2, border, thickness, size, col)
+    update_ui_rectangle(-thickness / 2, -size - border, thickness, size, col)
+    update_ui_rectangle(border, -thickness / 2, size, thickness, col)
+    update_ui_rectangle(-size - border, -thickness / 2, size, thickness, col)
+    update_ui_pop_offset() 
 end
 
 function render_notification_display(screen_w, screen_h, notification)
@@ -390,7 +598,6 @@ function render_notification_tile(screen_w, screen_h, label, text_col, tile)
         cy = cy + update_ui_text_scale(0, cy, label, screen_w, 1, text_col, 0, 3)
         
         update_set_screen_map_position_scale(tile_pos:x(), tile_pos:y(), map_size_for_tile)
-        -- update_ui_rectangle_outline((screen_w - tile_rect_size) / 2, (screen_h - tile_rect_size) / 2, tile_rect_size, tile_rect_size, text_col)
 
         cy = (screen_h + tile_rect_size) / 2 - 10
         cy = cy + update_ui_text(0, cy, tile:get_name(), screen_w, 1, text_col, 0)
@@ -430,10 +637,6 @@ function get_notification_color(notification)
     end
 
     return iff(g_notification_time < 30 and g_notification_time % 10 < 5, color_white, color)
-end
-
-function mult_alpha(col, alpha) 
-    return color8(col:r(), col:g(), col:b(), math.floor(col:a() * alpha))  
 end
 
 function focus_carrier()
