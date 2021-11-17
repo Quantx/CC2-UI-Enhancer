@@ -2875,8 +2875,6 @@ function imgui_barge_inventory_table(ui, vehicle, is_category_headers)
     local y = window.cy
     local w, h = ui:get_region()
     local selected_item = -1
-
-    local facility_production_counts = vehicle:get_inventory_production_counts()
     
     local column_widths = { w - 50, 50 }
     local column_margins = { 5, 2 }

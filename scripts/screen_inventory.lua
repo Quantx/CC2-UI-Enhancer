@@ -1680,7 +1680,10 @@ function get_node_data(id, type)
         if type == g_node_types.barge then
             return update_get_loc(e_loc.upp_barge), g_map_colors.barge, atlas_icons.icon_chassis_16_barge
         elseif type == g_node_types.carrier then
-            return update_get_loc(e_loc.upp_carrier), g_map_colors.carrier, atlas_icons.icon_chassis_16_carrier
+            local v = update_get_map_vehicle_by_id(id)
+            local team_id = v:get_team() + 1
+            local name = string.upper( vessel_names[team_id] ) .. " " .. update_get_loc(e_loc.upp_carrier)
+            return name, g_map_colors.carrier, atlas_icons.icon_chassis_16_carrier
         elseif type == g_node_types.tile then
             local tile = update_get_tile_by_id(id)
             local category_data = g_item_categories[tile:get_facility_category()]
