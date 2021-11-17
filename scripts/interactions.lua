@@ -948,6 +948,8 @@ function get_special_input_icon(special_input)
         [e_ui_interaction_special.vehicle_zoom] = { icon = atlas_icons.mouse_icon_special_scroll },
         [e_ui_interaction_special.cancel_rebind] = { text = update_get_key_name(259) },
         [e_ui_interaction_special.map_drag] = { icon = atlas_icons.mouse_icon_special_drag },
+        [e_ui_interaction_special.mouse_lr] = { icon = atlas_icons.mouse_icon_special_lr },
+		[e_ui_interaction_special.mouse_ud] = { icon = atlas_icons.mouse_icon_special_ud },
     }
 
     if update_get_active_input_type() == e_active_input.gamepad then
@@ -998,8 +1000,12 @@ function get_display_inputs(game_input, special_input)
             return { { input = e_game_input.pause} }
         elseif special_input == e_ui_interaction_special.map_drag then
             return { { special = e_ui_interaction_special.map_drag }, { input = e_game_input.interact_a} }
+        elseif special_input == e_ui_interaction_special.interact_a_no_alt then
+			return { { input = e_game_input.interact_a } }
         end
     else
+        local mouse_flight_mode = update_get_mouse_flight_mode()
+    
         if game_input == e_game_input.interact_a then
             return { { input = e_game_input.interact_a }, { input = e_game_input.interact_a_alt } }
         elseif game_input == e_game_input.select_attachment_next then
@@ -1011,13 +1017,37 @@ function get_display_inputs(game_input, special_input)
         elseif special_input == e_ui_interaction_special.map_pan then
             return { { special = e_ui_interaction_special.map_pan }, { input = e_game_input.dpad_up }, { input = e_game_input.dpad_left }, { input = e_game_input.dpad_down }, { input = e_game_input.dpad_right } }
         elseif special_input == e_ui_interaction_special.air_yaw then
-            return { { input = e_game_input.look_left }, { input = e_game_input.look_right } }
+            if mouse_flight_mode == e_mouse_flight_mode.roll_pitch then
+				return { { input = e_game_input.move_left }, { input = e_game_input.move_right } }
+			elseif mouse_flight_mode == e_mouse_flight_mode.yaw_pitch then
+				return { { special = e_ui_interaction_special.mouse_lr } }
+			else
+				return { { input = e_game_input.look_left }, { input = e_game_input.look_right } }
+			end
         elseif special_input == e_ui_interaction_special.air_pitch then
-            return { { input = e_game_input.move_up }, { input = e_game_input.move_down } }
+            if mouse_flight_mode == e_mouse_flight_mode.roll_pitch then
+				return { { special = e_ui_interaction_special.mouse_ud } }
+			elseif mouse_flight_mode == e_mouse_flight_mode.yaw_pitch then
+				return { { special = e_ui_interaction_special.mouse_ud } }
+			else
+				return { { input = e_game_input.move_up }, { input = e_game_input.move_down } }
+			end
         elseif special_input == e_ui_interaction_special.air_roll then
-            return { { input = e_game_input.move_left }, { input = e_game_input.move_right } }
+            if mouse_flight_mode == e_mouse_flight_mode.roll_pitch then
+				return { { special = e_ui_interaction_special.mouse_lr } }
+			elseif mouse_flight_mode == e_mouse_flight_mode.yaw_pitch then
+				return { { input = e_game_input.move_left }, { input = e_game_input.move_right } }
+			else
+				return { { input = e_game_input.move_left }, { input = e_game_input.move_right } }
+			end
         elseif special_input == e_ui_interaction_special.air_throttle then
-            return { { input = e_game_input.look_up }, { input = e_game_input.look_down } }
+            if mouse_flight_mode == e_mouse_flight_mode.roll_pitch then
+				return { { input = e_game_input.move_up }, { input = e_game_input.move_down } }
+			elseif mouse_flight_mode == e_mouse_flight_mode.yaw_pitch then
+				return { { input = e_game_input.move_up }, { input = e_game_input.move_down } }
+			else
+				return { { input = e_game_input.look_up }, { input = e_game_input.look_down } }
+			end
         elseif special_input == e_ui_interaction_special.vehicle_zoom then
             return { { special = e_ui_interaction_special.vehicle_zoom }, { input = e_game_input.move_up }, { input = e_game_input.move_down } }
         elseif special_input == e_ui_interaction_special.land_steer then
@@ -1026,6 +1056,8 @@ function get_display_inputs(game_input, special_input)
             return { { input = e_game_input.move_up }, { input = e_game_input.move_down } }
         elseif special_input == e_ui_interaction_special.pause then
             return iff(update_get_keyboard_back_opens_pause(), { { input = e_game_input.pause}, { input = e_game_input.back } }, { { input = e_game_input.pause } })
+        elseif special_input == e_ui_interaction_special.interact_a_no_alt then
+			return { { input = e_game_input.interact_a } }
         end
     end
 

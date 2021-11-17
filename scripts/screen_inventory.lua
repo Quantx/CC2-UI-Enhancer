@@ -15,8 +15,10 @@ g_tab_map = {
     cursor_pos_y = 0,
     is_drag_pan_map = false,
     hovered_id = 0,
+    hovered_waypoint_id = 0,
     hovered_type = 0,
     dragged_id = 0,
+    dragged_waypoint_id = 0,
     dragged_type = 0,
     is_map_pos_initialised = false,
 
@@ -24,8 +26,9 @@ g_tab_map = {
     selected_facility_item = -1,
     selected_facility_queue_item = -1,
     selected_barge_id = 0,
+    selected_barge_waypoint_mode = false,
     selected_panel = 0,
-
+    
     panel_scroll_pos = {
         [0] = 0,
         [1] = 0,
@@ -39,10 +42,13 @@ g_tab_stock = {
     input_event = nil,
     input_pointer = nil,
     input_scroll = nil,
-    scroll_pos = 0,
     is_overlay = false,
-
+    
     selected_item = -1,
+    selected_item_modify_amount = 0,
+    is_confirm_discard = false,
+    
+    scroll_pos = 0,
 }
 
 g_tab_barges = {
@@ -51,10 +57,11 @@ g_tab_barges = {
     input_event = nil,
     input_pointer = nil,
     input_scroll = nil,
-    scroll_pos = 0,
     is_overlay = false,
 
     selected_item = -1,
+    
+    scroll_pos = 0,
 }
 
 g_tabs = {
@@ -75,7 +82,7 @@ g_focused_screen = g_screens.active_tab
 g_active_tab = g_tabs.stock
 g_hovered_tab = -1
 
-g_link_types = {
+g_node_types = {
     tile = 0,
     carrier = 1,
     barge = 2
@@ -103,10 +110,11 @@ g_pointer_pos_y = 0
 g_pointer_pos_x_prev = 0
 g_pointer_pos_y_prev = 0
 g_is_pointer_pressed = false
-g_is_hovered = false
 g_pointer_scroll = 0
 g_is_mouse_mode = false
 
+g_screen_w = 256
+g_screen_h = 128
 
 --------------------------------------------------------------------------------
 --
@@ -128,10 +136,10 @@ function parse()
     g_tab_map.selected_facility_queue_item = parse_s32("", g_tab_map.selected_facility_queue_item)
     g_tab_map.selected_panel = parse_s32("", g_tab_map.selected_panel)
     g_tab_stock.selected_item = parse_s32("", g_tab_stock.selected_item)
+    g_tab_stock.selected_item_modify_amount = parse_s32("", g_tab_stock.selected_item_modify_amount)
+    g_tab_stock.is_confirm_discard = parse_bool("", g_tab_stock.is_confirm_discard)
     g_tab_barges.selected_item = parse_s32("", g_tab_barges.selected_item)
-
-    -- End of original parse calls
-
+    
     g_tab_map.panel_scroll_pos[0] = parse_f32("", g_tab_map.panel_scroll_pos[0])
     g_tab_map.panel_scroll_pos[1] = parse_f32("", g_tab_map.panel_scroll_pos[1])
     g_tab_map.panel_scroll_pos[2] = parse_f32("", g_tab_map.panel_scroll_pos[2])
@@ -175,8 +183,14 @@ end
 --------------------------------------------------------------------------------
 
 function update(screen_w, screen_h, ticks) 
+    g_screen_w = screen_w
+    g_screen_h = screen_h
+
     g_is_mouse_mode = update_get_active_input_type() == e_active_input.keyboard
     g_animation_time = g_animation_time + ticks
+
+    update_set_screen_background_type(0)
+    update_set_screen_background_is_render_islands(false)
 
     local vehicle = update_get_screen_vehicle()
     if vehicle:get() == false then return end
@@ -186,8 +200,14 @@ function update(screen_w, screen_h, ticks)
     update_interaction_ui()
 
     local is_hoverable = g_focused_screen == g_screens.menu or g_tabs[g_active_tab].is_overlay == false
+    local is_clip_tab = true
 
-    if g_is_mouse_mode and g_is_pointer_hovered and is_hoverable and update_get_screen_state_active() then
+    if g_active_tab == g_tabs.map and is_barge_waypoint_mode() then
+        is_hoverable = false
+        is_clip_tab = false
+    end
+
+    if g_is_mouse_mode and g_is_pointer_hovered and is_hoverable and update_get_screen_state_active() and g_is_pointer_pressed == false then
         if g_pointer_pos_y > 15 then
             g_focused_screen = g_screens.active_tab
         else
@@ -219,22 +239,19 @@ function update(screen_w, screen_h, ticks)
         cx = cx + tw + 1
     end
 
-    update_ui_push_clip(0, 15, screen_w, screen_h - 15)
+    if is_clip_tab then update_ui_push_clip(0, 15, screen_w, screen_h - 15) end
 
     g_ui:begin_ui()
     g_tabs[g_active_tab].render(screen_w, screen_h, 0, 15, screen_w, screen_h - 15, g_focused_screen == g_screens.active_tab, vehicle)
     g_ui:end_ui()
 
-    update_ui_pop_clip()
+    if is_clip_tab then update_ui_pop_clip() end
 
     render_currency_display(screen_w - 10, 5, g_tab_map.selected_facility_id ~= 0 and g_tab_map.selected_facility_item ~= -1)
 
     g_pointer_scroll = 0
-    
-    if g_is_hovered then
-        g_pointer_pos_x_prev = g_pointer_pos_x
-        g_pointer_pos_y_prev = g_pointer_pos_y
-    end
+    g_pointer_pos_x_prev = g_pointer_pos_x
+    g_pointer_pos_y_prev = g_pointer_pos_y
 end
 
 function set_active_tab(tab)
@@ -262,17 +279,19 @@ function update_interaction_ui()
     if g_focused_screen == g_screens.active_tab then
         if g_active_tab == g_tabs.map then
             if g_tab_map.selected_facility_id == 0 then
-                update_add_ui_interaction_special(update_get_loc(e_loc.interaction_pan), e_ui_interaction_special.map_pan)
-                update_add_ui_interaction_special(update_get_loc(e_loc.interaction_zoom), e_ui_interaction_special.map_zoom)
-    
+                if g_tab_map.is_overlay == false then
+                    update_add_ui_interaction_special(update_get_loc(e_loc.interaction_pan), e_ui_interaction_special.map_pan)
+                    update_add_ui_interaction_special(update_get_loc(e_loc.interaction_zoom), e_ui_interaction_special.map_zoom)
+                end
+
                 if g_tab_map.dragged_id == 0 and g_tab_map.hovered_id ~= 0 then
-                    if g_tab_map.hovered_type == g_link_types.tile then
+                    if g_tab_map.hovered_type == g_node_types.tile then
                         local tile = update_get_tile_by_id(g_tab_map.hovered_id)
     
                         if tile:get() and tile:get_team_control() == update_get_screen_team_id() then
                             update_add_ui_interaction(update_get_loc(e_loc.interaction_select), e_game_input.interact_a)
                         end
-                    elseif g_tab_map.hovered_type == g_link_types.barge then
+                    elseif g_tab_map.hovered_type == g_node_types.barge then
                         local barge = update_get_map_vehicle_by_id(g_tab_map.hovered_id)
 
                         if barge:get() and barge:get_team() == update_get_screen_team_id() then
@@ -400,7 +419,7 @@ function tab_barges_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen
         else
             barge_window.scroll_y = g_tab_barges.scroll_pos
         end
-
+    
         local selected_item = imgui_barge_table(ui, barges)
         ui:divider(0, 3)
         ui:divider(0, 10)
@@ -419,9 +438,14 @@ function tab_barges_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen
         update_add_ui_interaction(update_get_loc(e_loc.interaction_back), e_game_input.back)
         update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_ud)
 
-        local window = ui:begin_window(update_get_loc(e_loc.upp_barge_id).. " " .. selected_barge:get_id() .. "##selectedbarge", 60, 5, w - 120, h - 20, atlas_icons.column_distance, is_tab_active, 2)
+        local window = ui:begin_window(update_get_loc(e_loc.upp_barge_id).. " " .. selected_barge:get_id() .. "##selectedbarge", 60, 2, w - 120, 103, atlas_icons.column_distance, is_tab_active, 2)
             local inventory_capacity = selected_barge:get_inventory_capacity()
             local inventory_weight = selected_barge:get_inventory_weight()
+            local hp_factor = selected_barge:get_hitpoints() / selected_barge:get_total_hitpoints()
+
+            window.label_bias = 0.1
+            ui:stat(atlas_icons.icon_health, string.format("%.0f%%", hp_factor * 100), get_color_hp(hp_factor))
+            window.label_bias = 0.5
 
             ui:header(update_get_loc(e_loc.upp_inventory))
 
@@ -438,20 +462,20 @@ function tab_barges_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen
                 g_tab_map.camera_pos_x = barge_pos_xz:x()
                 g_tab_map.camera_pos_y = barge_pos_xz:y()
                 g_tab_map.camera_size = 4096
+                g_tab_map.is_map_pos_initialised = true
                 set_active_tab(g_tabs.map)
             end
 
-            local action, destination_id, destination_type = selected_barge:get_barge_state_data()
-            local pos_xz = get_node_pos_xz(destination_id, destination_type)
+            local _, destination_id, destination_type = selected_barge:get_barge_state_data()
+            local pos_xz = get_destination_pos_xz(selected_barge:get_id(), destination_id, destination_type)
 
             if ui:list_item(update_get_loc(e_loc.upp_show_destination), true, pos_xz ~= nil) then
                 if pos_xz ~= nil then
                     g_tab_barges.selected_item = -1
-
-                    local barge_pos_xz = selected_barge:get_position_xz()
                     g_tab_map.camera_pos_x = pos_xz:x()
                     g_tab_map.camera_pos_y = pos_xz:y()
                     g_tab_map.camera_size = 4096
+                    g_tab_map.is_map_pos_initialised = true
                     set_active_tab(g_tabs.map)
                 end
             end
@@ -460,6 +484,7 @@ function tab_barges_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen
                 g_tab_barges.selected_item = -1
 
                 g_tab_map.selected_barge_id = selected_barge:get_id()
+                g_tab_map.selected_panel = 1
                 set_active_tab(g_tabs.map)
             end
         ui:end_window()
@@ -492,7 +517,6 @@ end
 
 function tab_barges_input_pointer(is_hovered, x, y)
     g_ui:input_pointer(is_hovered, x, y)
-    g_is_hovered = is_hovered
 end
 
 function tab_barges_input_scroll(dy)
@@ -505,43 +529,32 @@ function imgui_barge_table(ui, barges)
     local y = window.cy
     local w, h = ui:get_region()
     local selected_item = -1
+    local is_active = window.is_active
 
     local id_w = update_ui_get_text_size("0000", 10000, 0) + 8
 
-    local column_widths = { id_w, 94, 60, 40 }
-    local column_margins = { 5, 2, 2, 2 }
+    local column_widths = { id_w, 46, 67, 57, 38, 5 }
+    local column_margins = { 5, 2, 2, 0, 2, 1 }
 
     local header_columns = {
         { w=column_widths[1], margin=column_margins[1], value=update_get_loc(e_loc.upp_id) },
         { w=column_widths[2], margin=column_margins[2], value=atlas_icons.hud_warning },
         { w=column_widths[3], margin=column_margins[3], value=atlas_icons.column_transit },
-        { w=column_widths[4], margin=column_margins[4], value=atlas_icons.column_distance },
+        { w=column_widths[4], margin=column_margins[4], value=atlas_icons.column_stock },
+        { w=column_widths[5], margin=column_margins[5], value=atlas_icons.column_distance },
+        { w=column_widths[6], margin=column_margins[6], value="" },
     }
     imgui_table_header(ui, header_columns)
         
     for k, barge in pairs(barges) do
-        local get_action_text = function(action_type, destination_type)
-            if action_type == e_barge_action.load then
-                return update_get_loc(e_loc.upp_load_stock)
-            elseif action_type == e_barge_action.unload then
-                return update_get_loc(e_loc.upp_unload)
-            elseif action_type == e_barge_action.load_carrier_stock then
-                return iff(destination_type == g_link_types.carrier, update_get_loc(e_loc.collect_surplus), update_get_loc(e_loc.collect_order))
-            elseif action_type == e_barge_action.unload_carrier_stock then
-                return update_get_loc(e_loc.upp_deliver_order)
-            end
-    
-            return "---"
-        end
-    
+        local display_id = barge:get_id()
         local action, destination_id, destination_type = barge:get_barge_state_data()
         local dist_to_target = 0
         local waypoint = barge:get_waypoint(0)
-        local text_action = get_action_text(action, destination_type)
-        local text_destination = "---"
+        local text_action = get_action_text(action)
+        local text_destination, col_destination = get_destination_data(destination_id, destination_type)
         local text_dist = "---"
-        local col_destination = color_grey_dark
-    
+        
         if waypoint:get() then
             local waypoint_pos_xz = waypoint:get_position_xz()
             local barge_pos_xz = barge:get_position_xz()
@@ -549,30 +562,64 @@ function imgui_barge_table(ui, barges)
             dist_to_target = vec2_dist(waypoint_pos_xz, barge_pos_xz)
         end
     
-        if destination_id ~= 0 then
-            local label, col = get_node_data(destination_id, destination_type)
-    
-            if label ~= nil then
-                text_destination = get_action_text(action, destination_type)
-                text_destination = label
-                col_destination = col
-            end
-        else
-            text_action = update_get_loc(e_loc.upp_idle)
+        if dist_to_target > 0 then
+            text_dist = string.format("%.0fm", math.min(99999, dist_to_target))
         end
 
+        local transfer_item = barge:get_barge_transfer_item()
+        local item_data = g_item_data[transfer_item]
+        local is_transferring = item_data ~= nil
 
-        if dist_to_target >= 10000 then
-            text_dist = string.format("%.0f", dist_to_target / 1000) ..  update_get_loc(e_loc.acronym_kilometers)
-        elseif dist_to_target > 0 then
-            text_dist = string.format("%.0f", dist_to_target) .. update_get_loc(e_loc.acronym_meters)
+        local function column_health(w, h, is_selected)
+            local hp_factor = barge:get_hitpoints() / barge:get_total_hitpoints()
+            update_ui_push_offset(math.floor(w / 2), 2)
+            update_ui_rectangle(0, -1, 2, 10, color_grey_dark)
+
+            local bar_h = math.ceil(10 * hp_factor)
+            update_ui_rectangle(0, 9 - bar_h, 2, bar_h, get_color_hp(hp_factor))
+            update_ui_pop_offset()
+        end
+
+        local function column_item_transfer(w, h, is_selected)
+            h = h + 3
+
+            update_ui_push_clip(0, 0, w, h)
+
+            if item_data ~= nil then
+                local transfer_progress = get_barge_transfer_progress(barge)
+                local icon_start, icon_end = get_barge_transfer_icons(barge)
+
+                local arrow_w = w - 30
+                local arrow_h = 9
+                local icon_col = iff(is_selected and is_active, color_grey_mid, color_grey_dark)
+                local item_col = iff(is_active, color_white, color_grey_mid)
+                local arrow_col = iff(is_active, g_map_colors.progress, color_grey_mid)
+
+                update_ui_push_offset(math.floor((w - arrow_w) / 2), math.floor((h - arrow_h) / 2 + 1))
+                render_arrow(0, 0, arrow_w, arrow_h, 3, 4, 0, color_grey_dark)
+                update_ui_push_clip(0, 0, math.floor(arrow_w * transfer_progress + 0.5), arrow_h)
+                render_arrow(0, 0, arrow_w, arrow_h, 3, 4, 0, arrow_col)
+                update_ui_pop_clip()
+                update_ui_pop_offset()
+
+                update_ui_image_rot(8, h / 2, icon_start, icon_col, 0)
+                update_ui_image_rot(w - 8, h / 2, icon_end, icon_col, 0)
+                render_button_bg(w / 2 - 9, h / 2 - 9, 18, 18, color8(0, 0, 0, 128))
+                update_ui_image_rot(w / 2, h / 2, item_data.icon, item_col, 0)
+            else
+                update_ui_text(2, 3, "---", w, 0, color_grey_dark, 0)
+            end
+
+            update_ui_pop_clip()
         end
 
         local columns = { 
-            { w=column_widths[1], margin=column_margins[1], value=tostring(barge:get_id()) },
+            { w=column_widths[1], margin=column_margins[1], value=tostring(display_id) },
             { w=column_widths[2], margin=column_margins[2], value=text_action },
             { w=column_widths[3], margin=column_margins[3], value=text_destination, col=col_destination },
-            { w=column_widths[4], margin=column_margins[4], value=text_dist }
+            { w=column_widths[4], margin=column_margins[4], value=column_item_transfer, row_h = iff(is_transferring, 13, nil) },
+            { w=column_widths[5], margin=column_margins[5], value=text_dist },
+            { w=column_widths[6], margin=column_margins[6], value=column_health },
         }
 
         local is_action = imgui_table_entry(ui, columns, true)
@@ -583,6 +630,70 @@ function imgui_barge_table(ui, barges)
     end
 
     return selected_item
+end
+
+function get_action_text(action_type)
+    local text = {
+        [e_barge_action_type.idle] = update_get_loc(e_loc.upp_idle),
+        [e_barge_action_type.travel] = update_get_loc(e_loc.upp_travel),
+        [e_barge_action_type.load] = update_get_loc(e_loc.upp_load_stock),
+        [e_barge_action_type.unload] = update_get_loc(e_loc.upp_unload),
+        [e_barge_action_type.wait] = update_get_loc(e_loc.upp_waiting),
+    }
+
+    return text[action_type] or "---"
+end
+
+function get_destination_data(destination_id, destination_type)
+    if destination_type == e_barge_destination_type.tile then
+        local tile = update_get_tile_by_id(destination_id)
+
+        if tile:get() then
+            local category_data = g_item_categories[tile:get_facility_category()]
+            return tile:get_name(), g_map_colors.factory, category_data.icon
+        end
+    elseif destination_type == e_barge_destination_type.vehicle then
+        local vehicle = update_get_map_vehicle_by_id(destination_id)
+
+        if vehicle:get() then
+            if is_vehicle_carrier(vehicle) then
+                local vehicle_name = get_chassis_data_by_definition_index(vehicle:get_definition_index())
+                return vehicle_name, g_map_colors.carrier, atlas_icons.icon_chassis_16_carrier
+            end
+        end
+    elseif destination_type == e_barge_destination_type.waypoint then
+        return update_get_loc(e_loc.upp_waypoint), color_status_ok
+    end
+
+    return "---", color_grey_dark, atlas_icons.icon_attachment_16_unknown
+end
+
+function get_destination_pos_xz(barge_id, destination_id, destination_type)
+    if destination_type == e_barge_destination_type.tile then
+        local tile = update_get_tile_by_id(destination_id)
+
+        if tile:get() then
+            return tile:get_position_xz()
+        end
+    elseif destination_type == e_barge_destination_type.vehicle then
+        local vehicle = update_get_map_vehicle_by_id(destination_id)
+
+        if vehicle:get() then
+            return vehicle:get_position_xz()
+        end
+    elseif destination_type == e_barge_destination_type.waypoint then
+        local vehicle = update_get_map_vehicle_by_id(barge_id)
+
+        if vehicle:get() then
+            local waypoint = vehicle:get_waypoint_by_id(destination_id)
+
+            if waypoint:get() then
+                return waypoint:get_position_xz()
+            end
+        end
+    end
+
+    return nil
 end
 
 
@@ -599,6 +710,35 @@ function tab_map_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_ve
     end
 
     update_map_cursor_state(screen_w, screen_h)
+    
+    if is_tab_active and g_tab_map.is_overlay == false then    
+        if g_is_mouse_mode == false or g_tab_map.is_drag_pan_map == false then
+            update_map_hovered(screen_w, screen_h)
+        end
+    else
+        clear_map_hovered()
+        clear_map_dragged()
+    end
+
+    if is_tab_active then
+        if g_tab_map.is_overlay == false then
+            g_tab_map.camera_pos_x = g_tab_map.camera_pos_x + (g_input_axis.x * g_tab_map.camera_size * 0.01)
+            g_tab_map.camera_pos_y = g_tab_map.camera_pos_y + (g_input_axis.y * g_tab_map.camera_size * 0.01)
+            input_map_zoom_camera(1 - (g_input_axis.w * 0.1))
+        end
+
+        if g_is_mouse_mode then
+            if g_tab_map.is_drag_pan_map then
+                local pointer_dx, pointer_dy = get_world_delta_from_screen(g_pointer_pos_x - g_pointer_pos_x_prev, g_pointer_pos_y - g_pointer_pos_y_prev, g_tab_map.camera_size, screen_w, screen_h)
+
+                g_tab_map.camera_pos_x = g_tab_map.camera_pos_x - pointer_dx
+                g_tab_map.camera_pos_y = g_tab_map.camera_pos_y - pointer_dy
+            end
+        end
+    else
+        g_tab_map.is_drag_pan_map = false
+    end
+
     g_tab_map.is_overlay = false
     
     update_ui_push_clip(x, y, w, h)
@@ -609,23 +749,7 @@ function tab_map_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_ve
 end
 
 function render_map_details(screen_vehicle, screen_w, screen_h, is_tab_active)
-    update_ui_rectangle(0, 0, screen_w, screen_w, color8(5, 5, 5, 255))
     update_set_screen_map_position_scale(g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size)
-
-    if is_tab_active then
-        g_tab_map.camera_pos_x = g_tab_map.camera_pos_x + (g_input_axis.x * g_tab_map.camera_size * 0.01)
-        g_tab_map.camera_pos_y = g_tab_map.camera_pos_y + (g_input_axis.y * g_tab_map.camera_size * 0.01)
-        input_map_zoom_camera(1 - (g_input_axis.w * 0.1))
-
-        if g_is_mouse_mode and g_is_hovered then
-            if g_tab_map.is_drag_pan_map then
-                g_tab_map.camera_pos_x = g_tab_map.camera_pos_x - ((g_pointer_pos_x - g_pointer_pos_x_prev) * g_tab_map.camera_size * 0.005)
-                g_tab_map.camera_pos_y = g_tab_map.camera_pos_y + ((g_pointer_pos_y - g_pointer_pos_y_prev) * g_tab_map.camera_size * 0.005)
-            end
-        end
-    else
-        g_tab_map.is_drag_pan_map = false
-    end
 
     local vehicle_team = screen_vehicle:get_team()
 
@@ -636,94 +760,77 @@ function render_map_details(screen_vehicle, screen_w, screen_h, is_tab_active)
     end
 
     local is_render_islands = (g_tab_map.camera_size < (64 * 1024))
+    update_set_screen_background_type(1)
     update_set_screen_background_is_render_islands(is_render_islands)
-
-    for _, vehicle in iter_vehicles(vehicle_filter) do
-        if vehicle:get_definition_index() ~= e_game_object_type.chassis_carrier then
-            local waypoint_count = vehicle:get_waypoint_count()
-
-            local pos_prev = vehicle:get_position_xz()
-
-            for i = 0, waypoint_count do
-                local waypoint_data = vehicle:get_waypoint(i)
-
-                if waypoint_data:get() then
-                    local waypoint_pos = waypoint_data:get_position_xz()
-
-                    local s0x, s0y = get_screen_from_world(pos_prev:x(), pos_prev:y(), g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
-                    
-                    local s1x, s1y = get_screen_from_world(waypoint_pos:x(), waypoint_pos:y(), g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
-
-                    update_ui_line(s0x, s0y, s1x, s1y, color_grey_dark)
-
-                    pos_prev = waypoint_pos
-                end
-            end
-        end
-    end
-
-    for _, link in iter_resource_links() do
-        render_resource_link(link, screen_w, screen_h)
-    end
 
     local is_collapse_icons = g_tab_map.camera_size > g_tab_map.camera_size_max * 0.4
     local team_color = update_get_team_color(vehicle_team)
     local tile_color = color8(16, 16, 16, 255)
 
-    for _, tile in iter_tiles() do 
-        local tile_position = tile:get_position_xz()
-        
-        local screen_pos_x, screen_pos_y = get_screen_from_world(tile_position:x(), tile_position:y(), g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
-        
-        local tile_icon_color = g_map_colors.inactive
+    local function render_waypoint_path(vehicle)
+        local waypoint_count = vehicle:get_waypoint_count()
+        local pos_prev = vehicle:get_position_xz()
 
-        if tile:get_team_control() == vehicle_team then
-            tile_icon_color = g_map_colors.factory
-        end
+        for i = 0, waypoint_count do
+            local waypoint_data = vehicle:get_waypoint(i)
 
-        local category_data = g_item_categories[tile:get_facility_category()]
-        
-        local tile_col = iff(is_tile_hovered(tile) or is_tile_dragged(tile), color_white, tile_icon_color)
-        
-        if is_collapse_icons then
-            update_ui_rectangle(screen_pos_x - 1, screen_pos_y - 1, 2, 2, tile_col)
-        else
-            local name = tile:get_name()
-            local name_factor = clamp(invlerp(g_tab_map.camera_size,  g_tab_map.camera_size_min, g_tab_map.camera_size_max * 0.35), 0, 1)
-            update_ui_text(screen_pos_x - 100, screen_pos_y - 16, name, 200, 1, color8_lerp(color_black, color_empty, name_factor), 0)
+            if waypoint_data:get() then
+                local waypoint_pos = waypoint_data:get_position_xz()
+                local s0x, s0y = get_screen_from_world(pos_prev:x(), pos_prev:y(), g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
+                local s1x, s1y = get_screen_from_world(waypoint_pos:x(), waypoint_pos:y(), g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
+                local waypoint_col = color8(0, 255, 255, 2)
 
-            update_ui_rectangle(screen_pos_x - 5, screen_pos_y - 4, 10, 8, color_black)
-            update_ui_rectangle(screen_pos_x - 4, screen_pos_y - 5, 8, 10, color_black)
-            update_ui_image(screen_pos_x - 4, screen_pos_y - 4, category_data.icon, tile_col, 0)
-        end
-        
-        if category_data.index ~= 0 and tile:get_team_control() == vehicle_team then
-            local production_factor = tile:get_facility_production_factor()
-            local queue_count = tile:get_facility_production_queue_count()
-            
-            if queue_count > 0 then
-                if is_collapse_icons then
-                    if g_animation_time % 30 > 15 then
-                        update_ui_rectangle(screen_pos_x - 1, screen_pos_y - 1, 2, 2, g_map_colors.progress)
+                if is_barge_waypoint_mode() then
+                    if is_vehicle_modify_waypoints(vehicle) then
+                        waypoint_col = g_map_colors.barge
+
+                        if is_vehicle_hovered(vehicle) and g_tab_map.hovered_waypoint_id == 0 then
+                            waypoint_col = color_white
+                        end
                     end
-                else
-                    update_ui_rectangle(screen_pos_x - 4, screen_pos_y + 5, 8, 2, color_black)
-                    update_ui_rectangle(screen_pos_x - 4, screen_pos_y + 5, 8 * production_factor, 2, g_map_colors.progress)
+                elseif is_vehicle_hovered(vehicle) then
+                    waypoint_col = g_map_colors.barge
                 end
+                
+                update_ui_line(s0x, s0y, s1x, s1y, waypoint_col)
+
+                local waypoint_repeat_index = waypoint_data:get_repeat_index()
+
+                if waypoint_repeat_index >= 0 then
+                    local waypoint_repeat = vehicle:get_waypoint(waypoint_repeat_index)
+                    local waypoint_repeat_pos = waypoint_repeat:get_position_xz()
+                    local repeat_screen_pos_x, repeat_screen_pos_y = get_screen_from_world(waypoint_repeat_pos:x(), waypoint_repeat_pos:y(), g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
+
+                    update_ui_line(s1x, s1y, repeat_screen_pos_x, repeat_screen_pos_y, waypoint_col)
+
+                    if is_vehicle_modify_waypoints(vehicle) then
+                        update_ui_image((s1x + repeat_screen_pos_x) / 2 - 4, (s1y + repeat_screen_pos_y) / 2 - 4, atlas_icons.map_icon_loop, waypoint_col, 0)
+                    end
+                end
+
+                pos_prev = waypoint_pos
             end
         end
     end
 
-    for _, vehicle in iter_vehicles(vehicle_filter) do
+    local function render_vehicle(vehicle)
         local vehicle_def = vehicle:get_definition_index()
         
         local vehicle_position = vehicle:get_position_xz()
         local screen_pos_x, screen_pos_y = get_screen_from_world(vehicle_position:x(), vehicle_position:y(), g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
         
         local region_vehicle_icon, icon_offset = get_icon_data_by_definition_index(vehicle_def)
-      
+
         if vehicle_def == e_game_object_type.chassis_sea_barge then
-            local vehicle_col = iff(is_vehicle_hovered(vehicle) or is_vehicle_dragged(vehicle), color_white, g_map_colors.barge)
+            local vehicle_col = iff(is_vehicle_hovered(vehicle), color_white, g_map_colors.barge)
+
+            if is_vehicle_modify_waypoints(vehicle) then
+                if g_animation_time % 20 > 10 or is_vehicle_dragged(vehicle) then
+                    vehicle_col = color_white
+                end
+            elseif is_barge_waypoint_mode() and is_vehicle_modify_waypoints(vehicle) == false then
+                vehicle_col = color8(32, 32, 32, 32)
+            end
 
             if is_collapse_icons then
                 update_ui_rectangle(screen_pos_x - 1, screen_pos_y - 1, 2, 2, vehicle_col)
@@ -744,7 +851,7 @@ function render_map_details(screen_vehicle, screen_w, screen_h, is_tab_active)
                 end
             end
         elseif vehicle_def == e_game_object_type.chassis_carrier then
-            local vehicle_col = iff(is_vehicle_hovered(vehicle) or is_vehicle_dragged(vehicle), color_white, g_map_colors.carrier)
+            local vehicle_col = iff(is_vehicle_hovered(vehicle), color_white, g_map_colors.carrier)
             
             if is_collapse_icons then
                 update_ui_rectangle(screen_pos_x - 2, screen_pos_y - 2, 4, 4, vehicle_col)
@@ -754,13 +861,137 @@ function render_map_details(screen_vehicle, screen_w, screen_h, is_tab_active)
         end
     end
 
-    if g_tab_map.dragged_id ~= 0 then
-        local drag_start = get_resource_node_position(g_tab_map.dragged_id, g_tab_map.dragged_type)
+    -- render waypoint paths
+        
+    for _, vehicle in iter_vehicles(vehicle_filter) do
+        if is_barge_waypoint_mode() == false or is_vehicle_modify_waypoints(vehicle) == false then
+            if is_vehicle_hovered(vehicle) == false then
+                render_waypoint_path(vehicle)
+            end
+        end
+    end
 
-        if drag_start then
-            local screen_drag_x, screen_drag_y = get_screen_from_world(drag_start:x(), drag_start:y(), g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
+    -- render tiles
 
-            update_ui_line(screen_drag_x, screen_drag_y, g_tab_map.cursor_pos_x, g_tab_map.cursor_pos_y, color_white)
+    for _, tile in iter_tiles() do 
+        local tile_position = tile:get_position_xz()
+        
+        local screen_pos_x, screen_pos_y = get_screen_from_world(tile_position:x(), tile_position:y(), g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
+        
+        local tile_icon_color = g_map_colors.inactive
+        local tile_icon_bg = color_black
+
+        if tile:get_team_control() == vehicle_team then
+            tile_icon_color = g_map_colors.factory
+        end
+
+        local category_data = g_item_categories[tile:get_facility_category()]
+        local tile_col = iff(is_tile_hovered(tile), color_white, tile_icon_color)
+        
+        if is_collapse_icons then
+            update_ui_rectangle(screen_pos_x - 1, screen_pos_y - 1, 2, 2, tile_col)
+        else
+            local name = tile:get_name()
+            local name_factor = clamp(invlerp(g_tab_map.camera_size,  g_tab_map.camera_size_min, g_tab_map.camera_size_max * 0.35), 0, 1)
+            local tile_size = tile:get_size()
+            local name_pos_x, name_pos_y = get_screen_from_world(tile_position:x(), tile_position:y() + tile_size:y() / 2, g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
+
+            update_ui_text(name_pos_x - 100, math.min(screen_pos_y - 14, name_pos_y), name, 200, 1, color8_lerp(color8(0, 255, 255, 10), color_empty, name_factor), 0)
+
+            update_ui_rectangle(screen_pos_x - 5, screen_pos_y - 4, 10, 8, tile_icon_bg)
+            update_ui_rectangle(screen_pos_x - 4, screen_pos_y - 5, 8, 10, tile_icon_bg)
+            update_ui_image(screen_pos_x - 4, screen_pos_y - 4, category_data.icon, tile_col, 0)
+        end
+        
+        if category_data.index ~= 0 and tile:get_team_control() == vehicle_team then
+            local production_factor = tile:get_facility_production_factor()
+            local queue_count = tile:get_facility_production_queue_count()
+            
+            if queue_count > 0 then
+                if is_collapse_icons then
+                    if g_animation_time % 30 > 15 then
+                        update_ui_rectangle(screen_pos_x - 1, screen_pos_y - 1, 2, 2, g_map_colors.progress)
+                    end
+                else
+                    update_ui_rectangle(screen_pos_x - 4, screen_pos_y + 5, 8, 2, color_black)
+                    update_ui_rectangle(screen_pos_x - 4, screen_pos_y + 5, 8 * production_factor, 2, g_map_colors.progress)
+                end
+            end
+        end
+    end
+
+    -- render vehicles
+
+    for _, vehicle in iter_vehicles(vehicle_filter) do
+        if is_vehicle_modify_waypoints(vehicle) == false then
+            render_vehicle(vehicle)
+        end
+    end
+
+ -- render modifying waypoint path
+            
+    for _, vehicle in iter_vehicles(vehicle_filter) do
+        if is_barge_waypoint_mode() and is_vehicle_modify_waypoints(vehicle) then
+            render_waypoint_path(vehicle)
+        elseif is_barge_waypoint_mode() == false and is_vehicle_hovered(vehicle) then
+            render_waypoint_path(vehicle)
+        end
+    end
+
+    -- render waypoints
+
+    for _, vehicle in iter_vehicles(vehicle_filter) do
+        local waypoint_count = vehicle:get_waypoint_count()
+
+        for i = 0, waypoint_count do
+            local waypoint_data = vehicle:get_waypoint(i)
+
+            if waypoint_data:get() then
+                local waypoint_pos = waypoint_data:get_position_xz()
+                local sx, sy = get_screen_from_world(waypoint_pos:x(), waypoint_pos:y(), g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
+                
+                if is_barge_waypoint_mode() then
+                    if is_vehicle_modify_waypoints(vehicle) then
+                        local waypoint_col = g_map_colors.barge
+
+                        if is_waypoint_hovered(vehicle, waypoint_data:get_id()) or (is_vehicle_hovered(vehicle) and g_tab_map.hovered_waypoint_id == 0) then
+                            waypoint_col = color_white
+                        end
+
+                        update_ui_image_rot(sx, sy, atlas_icons.map_icon_waypoint, waypoint_col, 0)
+
+                        local waypoint_type = waypoint_data:get_type()
+
+                        if waypoint_type == e_waypoint_type.barge_load_tile then
+                            update_ui_image_rot(sx, sy - 10, atlas_icons.map_icon_load, waypoint_col, 0)
+                        elseif waypoint_type == e_waypoint_type.barge_unload_carrier then
+                            update_ui_image_rot(sx, sy - 10, atlas_icons.map_icon_unload, waypoint_col, 0)
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    -- render selected barge
+
+    if is_barge_waypoint_mode() then
+        local selected_barge = update_get_map_vehicle_by_id(g_tab_map.selected_barge_id)
+
+        if selected_barge:get() then
+            render_vehicle(selected_barge)
+        end
+    end
+
+    if g_tab_map.selected_barge_id ~= 0 and g_tab_map.selected_barge_waypoint_mode then
+        if g_tab_map.dragged_id == g_tab_map.selected_barge_id and g_tab_map.dragged_type == g_node_types.barge then 
+            local drag_start = get_resource_node_position(g_tab_map.dragged_id, g_tab_map.dragged_type, g_tab_map.dragged_waypoint_id)
+
+            if drag_start then
+                local screen_drag_x, screen_drag_y = get_screen_from_world(drag_start:x(), drag_start:y(), g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
+
+                update_ui_line(screen_drag_x, screen_drag_y, g_tab_map.cursor_pos_x, g_tab_map.cursor_pos_y, color_white)
+            end
         end
     end
 
@@ -768,42 +999,63 @@ function render_map_details(screen_vehicle, screen_w, screen_h, is_tab_active)
         if g_is_mouse_mode == false then
             update_ui_image(screen_w / 2 - 5, screen_h / 2 - 5, atlas_icons.map_icon_crosshair, iff(g_tab_map.hovered_id ~= 0, color_black, color_white), 0)
         end
-        
-        if g_is_mouse_mode == false or g_tab_map.is_drag_pan_map == false then
-            update_map_hovered(screen_w, screen_h, screen_vehicle)
-        end
-    else
-        clear_hover()
-        clear_drag()
     end
 end
 
 function render_map_ui(screen_w, screen_h, x, y, w, h, screen_vehicle, is_tab_active)
     local ui = g_ui
 
-    local is_local = update_get_is_focus_local()
-
     if is_tab_active then
         if g_tab_map.selected_barge_id ~= 0 then
-            g_tab_map.is_overlay = true
-            update_ui_rectangle(0, 0, screen_w, screen_h, color8(0, 0, 0, 200))
-            
-            update_add_ui_interaction(update_get_loc(e_loc.interaction_back), e_game_input.back)
-            update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_ud)
-
             local selected_barge = update_get_map_vehicle_by_id(g_tab_map.selected_barge_id)
 
             if selected_barge:get() and selected_barge:get_team() == screen_vehicle:get_team() then
-                ui:begin_window(update_get_loc(e_loc.upp_barge_id).." " .. g_tab_map.selected_barge_id .. "##barge", x + 15, y + 5, w - 30, h - 15, atlas_icons.column_stock, is_tab_active, 2)
-                    local region_w, region_h = ui:get_region()
-                    render_barge_inventory_status(0, 0, region_w, 22, selected_barge)
-                    
-                    ui:spacer(22)
+                local display_id = g_tab_map.selected_barge_id
 
-                    imgui_barge_inventory_table(ui, selected_barge, false)
-                    ui:divider(0, 3)
-                    ui:divider(0, 10)
-                ui:end_window()
+                if g_tab_map.selected_barge_waypoint_mode == false then
+                    g_tab_map.is_overlay = true
+                    update_ui_rectangle(0, 0, screen_w, screen_h, color8(0, 0, 0, 200))
+
+                    if g_tab_map.selected_panel == 0 then
+                        update_add_ui_interaction(update_get_loc(e_loc.interaction_back), e_game_input.back)
+                        update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_ud)
+
+                        ui:begin_window(update_get_loc(e_loc.upp_barge_id).. " " .. display_id .. "##barge", x + w / 2 - 50, y + 25, 100, 39, atlas_icons.column_stock, is_tab_active, 2)
+                            if ui:list_item(update_get_loc(e_loc.upp_waypoints), true) then
+                                g_tab_map.selected_barge_waypoint_mode = true
+                            end
+
+                            if ui:list_item(update_get_loc(e_loc.upp_inventory), true) then
+                                g_tab_map.selected_panel = 1
+                            end
+                        ui:end_window()
+                    else
+                        update_add_ui_interaction(update_get_loc(e_loc.interaction_back), e_game_input.back)
+                        update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_ud)
+            
+                        ui:begin_window(update_get_loc(e_loc.upp_barge_id).." " .. display_id .. "##barge2", x + 15, y + 5, w - 30, h - 15, atlas_icons.column_stock, is_tab_active, 2)
+                            local region_w, region_h = ui:get_region()
+                            render_barge_inventory_status(0, 0, region_w, 22, selected_barge)
+                            
+                            ui:spacer(22)
+                            imgui_barge_inventory_table(ui, selected_barge, false)
+                            ui:divider(0, 3)
+                            ui:divider(0, 10)
+                        ui:end_window()
+                    end
+                else
+                    update_add_ui_interaction(update_get_loc(e_loc.interaction_cancel), e_game_input.back)
+
+                    local display_text = update_get_loc(e_loc.upp_barge_id) .. " " .. display_id
+                    local text_w = update_ui_get_text_size(display_text, 200, 0) + 22
+                    update_ui_rectangle(0, 0, w, 15, color_black)
+                    update_ui_rectangle(0, 14, w, 1, color_white)
+                    update_ui_push_offset(10, 4)
+                    render_tab(0, 0, text_w, "", color_white, color_black)
+                    update_ui_image(5, 1, atlas_icons.column_distance, color_black, 0)
+                    update_ui_text(17, 1, display_text, 200, 0, color_black, 0)
+                    update_ui_pop_offset()
+                end
             else
                 g_tab_map.selected_barge_id = 0
             end
@@ -825,7 +1077,7 @@ function render_map_ui(screen_w, screen_h, x, y, w, h, screen_vehicle, is_tab_ac
 
                     local is_windows_active = is_tab_active and g_tab_map.selected_facility_item == -1 and g_tab_map.selected_facility_queue_item == -1
 
-                    if is_windows_active and g_is_mouse_mode and g_is_pointer_hovered then
+                    if is_windows_active and g_is_mouse_mode and g_is_pointer_hovered and g_is_pointer_pressed == false then
                         if g_pointer_pos_x > left_w then
                             g_tab_map.selected_panel = 1
                         else
@@ -839,15 +1091,18 @@ function render_map_ui(screen_w, screen_h, x, y, w, h, screen_vehicle, is_tab_ac
                         else
                             window.scroll_y = g_tab_map.panel_scroll_pos[0]
                         end
-
-                        if ui:list_item(update_get_loc(e_loc.upp_queue), true) and not g_is_mouse_mode then
-                            g_tab_map.selected_panel = 1
+                    
+                        if update_get_active_input_type() == e_active_input.gamepad then
+                            if ui:list_item(update_get_loc(e_loc.upp_queue), true) then
+                                g_tab_map.selected_panel = 1
+                            end
                         end
 
+--[[                        
                         if ui:list_item(update_get_loc(e_loc.upp_inventory), true) then
                             g_tab_map.selected_panel = 2
                         end
-
+--]]
                         local items_unlocked = {}
                         local items_locked = {}
                         local team_data = update_get_team(screen_vehicle:get_team())
@@ -926,7 +1181,7 @@ function render_map_ui(screen_w, screen_h, x, y, w, h, screen_vehicle, is_tab_ac
                         else
                             window.scroll_y = g_tab_map.panel_scroll_pos[1]
                         end
-
+                    
                         local queue_count = facility_tile:get_facility_production_queue_count()
 
                         for i = 0, queue_count - 1 do
@@ -956,7 +1211,7 @@ function render_map_ui(screen_w, screen_h, x, y, w, h, screen_vehicle, is_tab_ac
 
                         if item_data ~= nil then
                             local window = ui:begin_window(item_data.name .. "##queueitem", 30, y + 10, w - 60, h - 30, atlas_icons.column_pending, true, 2)
-                                imgui_item_description(ui, screen_vehicle, item_data, false)
+                                imgui_item_description(ui, screen_vehicle, item_data, false, true)
 
                                 imgui_table_header(ui, {
                                     { w=134, margin=5, value=update_get_loc(e_loc.upp_queue) },
@@ -1000,7 +1255,7 @@ function render_map_ui(screen_w, screen_h, x, y, w, h, screen_vehicle, is_tab_ac
 
                         if item ~= nil then
                             local window = ui:begin_window(item.name .. "##facilityitem", 30, y + 10, w - 60, h - 30, atlas_icons.column_stock, true, 2)
-                                imgui_item_description(ui, screen_vehicle, item, false)
+                                imgui_item_description(ui, screen_vehicle, item, false, true)
                                 
                                 local production_count = facility_tile:get_facility_production_queue_item_type(item.index)
                                 
@@ -1035,7 +1290,7 @@ function render_map_ui(screen_w, screen_h, x, y, w, h, screen_vehicle, is_tab_ac
                         else
                             window.scroll_y = g_tab_map.panel_scroll_pos[2]
                         end
-
+                        
                         imgui_facility_inventory_table(ui, facility_tile)
                         ui:divider(0, 3)
                         ui:divider(0, 10)
@@ -1046,7 +1301,7 @@ function render_map_ui(screen_w, screen_h, x, y, w, h, screen_vehicle, is_tab_ac
             end
         else
             local zoom_factor = invlerp(g_tab_map.camera_size, g_tab_map.camera_size_min, g_tab_map.camera_size_max)
-            local world_x, world_y = get_world_from_screen(g_tab_map.cursor_pos_x, g_tab_map.cursor_pos_y, g_tab_map.camera_pos_x, g_tab_map.camera_pos_y,g_tab_map.camera_size, screen_w, screen_h)
+            local world_x, world_y = get_world_from_screen(g_tab_map.cursor_pos_x, g_tab_map.cursor_pos_y, g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
 
             update_ui_text(10, screen_h - 13, 
                 string.format("X:%-6.0f ", world_x) .. 
@@ -1067,11 +1322,11 @@ end
 function render_barge_inventory_status(x, y, w, h, barge)
     update_ui_push_offset(x, y)
 
-    local left_w = 85
+    local left_w = 95
     local right_w = w - left_w
 
-    local inventory_capacity = math.min(barge:get_inventory_capacity(), 99999)
-    local inventory_weight = math.min(barge:get_inventory_weight(), 99999)
+    local inventory_capacity = math.min(barge:get_inventory_capacity(), 999999)
+    local inventory_weight = math.min(barge:get_inventory_weight(), 999999)
 
     update_ui_push_offset(5, 2)
     update_ui_image(0, 0, atlas_icons.column_weight, color_grey_dark, 0)
@@ -1082,17 +1337,25 @@ function render_barge_inventory_status(x, y, w, h, barge)
 
     update_ui_line(left_w, 0, left_w, h, color_white)
 
+    render_barge_item_transfer_status(left_w, 0, right_w, h, barge)
+
+    update_ui_line(0, h, w, h, color_white)
+
+    update_ui_pop_offset()
+end
+
+function render_barge_item_transfer_status(x, y, w, h, barge)
+    update_ui_push_offset(x, y)
+
     local transfer_item = barge:get_barge_transfer_item()
     local item_data = g_item_data[transfer_item]
     
     if item_data ~= nil then
-        update_ui_push_offset(left_w, 0)
-
         local border = 5
         local transfer_progress = get_barge_transfer_progress(barge)
         local icon_start, icon_end = get_barge_transfer_icons(barge)
 
-        local bar_w = right_w - border * 2 - 20 * 2
+        local bar_w = w - border * 2 - 20 * 2
         local bar_h = 10
 
         update_ui_push_offset(border + 20, (h - bar_h) / 2)
@@ -1105,20 +1368,16 @@ function render_barge_inventory_status(x, y, w, h, barge)
 
         update_ui_pop_offset()
 
-        -- update_ui_rectangle_outline(border, 2, 18, 18, color_grey_dark)
+        update_ui_rectangle_outline(border, 2, 18, 18, color_grey_dark)
         update_ui_image_rot(border + 9, 11, icon_start, color_grey_dark, 0)
-        -- update_ui_rectangle_outline(right_w - border - 18, 2, 18, 18, color_grey_dark)
-        update_ui_image_rot(right_w - border - 18 + 9, 11, icon_end, color_grey_dark, 0)
+        update_ui_rectangle_outline(w - border - 18, 2, 18, 18, color_grey_dark)
+        update_ui_image_rot(w - border - 18 + 9, 11, icon_end, color_grey_dark, 0)
         
-        render_button_bg(right_w / 2 - 9, 2, 18, 18, color8(8, 8, 8, 128))
-        update_ui_image(right_w / 2 - 8, 3, item_data.icon, color_white, 0)
-
-        update_ui_pop_offset()
+        render_button_bg(w / 2 - 9, 2, 18, 18, color8(8, 8, 8, 128))
+        update_ui_image(w / 2 - 8, 3, item_data.icon, color_white, 0)
     else
-        update_ui_text(left_w, h / 2 - 4, "---", right_w, 1, color_grey_dark, 0)
+        update_ui_text(0, h / 2 - 4, "---", w, 1, color_grey_dark, 0)
     end
-
-    update_ui_line(0, h, w, h, color_white)
 
     update_ui_pop_offset()
 end
@@ -1155,7 +1414,7 @@ function render_map_facility_queue(x, y, w, h, tile)
 end
 
 function get_node_tooltip_h(tooltip_w, id, type)
-    if type == g_link_types.tile then
+    if type == g_node_types.tile then
         local tile = update_get_tile_by_id(id)
         local category_data = g_item_categories[tile:get_facility_category()]
 
@@ -1192,19 +1451,17 @@ end
 function render_node_tooltip(w, h, id, type)
     local name, color = get_node_data(id, type)
 
-    if type == g_link_types.carrier then
-        local vehicle = update_get_map_vehicle_by_id(id)
-        local vessel = string.upper( vessel_names[vehicle:get_team() + 1] )
-    
+    if type == g_node_types.carrier then
         update_ui_image(2, h / 2 - 8, atlas_icons.icon_chassis_16_carrier, color, 0)
-        update_ui_text(18, h / 2 - 4, vessel .. " " .. name, 200, 0, color_white, 0)
-    elseif type == g_link_types.barge then
+        update_ui_text(18, h / 2 - 4, name, 200, 0, color_white, 0)
+    elseif type == g_node_types.barge then
         local barge = update_get_map_vehicle_by_id(id)
 
         if barge:get() then
+            local display_id = barge:get_id()
             local cy = 3
             update_ui_image(2, h / 2 - 8, atlas_icons.icon_chassis_16_barge, color, 0)
-            update_ui_text(18, cy, name .. " " .. tostring(id), 200, 0, color_white, 0)
+            update_ui_text(18, cy, name .. " " .. display_id, 200, 0, color_white, 0)
             update_ui_image(w - 13, cy, atlas_icons.column_transit, color_highlight, 0)
 
             cy = cy + 10
@@ -1219,7 +1476,7 @@ function render_node_tooltip(w, h, id, type)
             update_ui_rectangle(60, cy + 3, bar_w * get_barge_transfer_progress(barge), 3, g_map_colors.progress)
             update_ui_image(w - 12, cy, atlas_icons.column_stock, color_grey_dark, 0)
         end
-    elseif type == g_link_types.tile then
+    elseif type == g_node_types.tile then
         local tile = update_get_tile_by_id(id)
         local category_data = g_item_categories[tile:get_facility_category()]
 
@@ -1325,7 +1582,9 @@ function get_tile_blueprint_unlocks(tile)
 end
 
 function update_map_cursor_state(screen_w, screen_h)
-    if update_get_active_input_type() == e_active_input.keyboard and update_get_is_focus_local() then
+    if update_get_is_focus_local() == false then return end
+    
+    if update_get_active_input_type() == e_active_input.keyboard then
         g_tab_map.cursor_pos_x = g_pointer_pos_x
         g_tab_map.cursor_pos_y = g_pointer_pos_y
     else
@@ -1342,51 +1601,87 @@ end
 
 function update_map_hovered(screen_w, screen_h)
     local vehicle_radius_sq = 5 ^ 2
+    local waypoint_radius_sq = 5 ^ 2
     local tile_radius_sq = 5 ^ 2
     local min_hover_dist_sq = 256 ^ 2
-    clear_hover()
+    clear_map_hovered()
 
-    local tile_filter = function(t)
-        return true
-    end
+    -- selected barge waypoints
 
-    for _, tile in iter_tiles(tile_filter) do
-        local tile_pos_xz = tile:get_position_xz()
-        local screen_x, screen_y = get_screen_from_world(tile_pos_xz:x(), tile_pos_xz:y(), g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
-        local dist_sq = vec2_dist_sq(vec2(screen_x, screen_y), vec2(g_tab_map.cursor_pos_x, g_tab_map.cursor_pos_y))
-        
-        if dist_sq < min_hover_dist_sq and dist_sq < tile_radius_sq then
-            min_hover_dist_sq = dist_sq
-            g_tab_map.hovered_id = tile:get_id()
-            g_tab_map.hovered_type = g_link_types.tile
+    if is_barge_waypoint_mode() then
+        local selected_barge = update_get_map_vehicle_by_id(g_tab_map.selected_barge_id)
+
+        if selected_barge:get() then
+            local vehicle_node_type = iff(selected_barge:get_definition_index() == e_game_object_type.chassis_carrier, g_node_types.carrier, g_node_types.barge)
+            local waypoint_count = selected_barge:get_waypoint_count()
+
+            for i = 0, waypoint_count do
+                local waypoint_data = selected_barge:get_waypoint(i)
+
+                if waypoint_data:get() then
+                    local waypoint_pos = waypoint_data:get_position_xz()
+                    local screen_x, screen_y = get_screen_from_world(waypoint_pos:x(), waypoint_pos:y(), g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
+                    local dist_sq = vec2_dist_sq(vec2(screen_x, screen_y), vec2(g_tab_map.cursor_pos_x, g_tab_map.cursor_pos_y))
+
+                    if dist_sq < min_hover_dist_sq and dist_sq < waypoint_radius_sq then
+                        min_hovered_dist_sq = dist_sq
+                        set_map_hovered(selected_barge:get_id(), vehicle_node_type, waypoint_data:get_id())
+                    end
+                end
+            end
         end
     end
 
-    local vehicle_filter = function(v)
-        local def = v:get_definition_index()
-        return v:get_team() == update_get_screen_team_id() and (def == e_game_object_type.chassis_sea_barge or def == e_game_object_type.chassis_carrier)
-    end
+    if g_tab_map.hovered_id == 0 then
+        -- tiles
 
-    for _, vehicle in iter_vehicles(vehicle_filter) do
-        local vehicle_pos_xz = vehicle:get_position_xz()
-        local screen_x, screen_y = get_screen_from_world(vehicle_pos_xz:x(), vehicle_pos_xz:y(), g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
-        local dist_sq = vec2_dist_sq(vec2(screen_x, screen_y), vec2(g_tab_map.cursor_pos_x, g_tab_map.cursor_pos_y))
-        
-        if dist_sq < min_hover_dist_sq and dist_sq < vehicle_radius_sq then
-            min_hover_dist_sq = dist_sq
-            g_tab_map.hovered_id = vehicle:get_id()
-            g_tab_map.hovered_type = iff(vehicle:get_definition_index() == e_game_object_type.chassis_carrier, g_link_types.carrier, g_link_types.barge)
+        local tile_filter = function(t)
+            return true
+        end
+
+        for _, tile in iter_tiles(tile_filter) do
+            if is_tile_hoverable(tile) then
+                local tile_pos_xz = tile:get_position_xz()
+                local screen_x, screen_y = get_screen_from_world(tile_pos_xz:x(), tile_pos_xz:y(), g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
+                local dist_sq = vec2_dist_sq(vec2(screen_x, screen_y), vec2(g_tab_map.cursor_pos_x, g_tab_map.cursor_pos_y))
+
+                if dist_sq < min_hover_dist_sq and dist_sq < tile_radius_sq then
+                    min_hover_dist_sq = dist_sq
+                    set_map_hovered(tile:get_id(), g_node_types.tile)
+                end
+            end
+        end
+
+        local vehicle_filter = function(v)
+            local def = v:get_definition_index()
+            return v:get_team() == update_get_screen_team_id() and (def == e_game_object_type.chassis_sea_barge or def == e_game_object_type.chassis_carrier)
+        end
+
+        -- vehicles
+
+        for _, vehicle in iter_vehicles(vehicle_filter) do
+            if is_vehicle_hoverable(vehicle) then
+                local vehicle_pos_xz = vehicle:get_position_xz()
+                local screen_x, screen_y = get_screen_from_world(vehicle_pos_xz:x(), vehicle_pos_xz:y(), g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
+                local dist_sq = vec2_dist_sq(vec2(screen_x, screen_y), vec2(g_tab_map.cursor_pos_x, g_tab_map.cursor_pos_y))
+                local vehicle_node_type = iff(vehicle:get_definition_index() == e_game_object_type.chassis_carrier, g_node_types.carrier, g_node_types.barge)
+
+                if dist_sq < min_hover_dist_sq and dist_sq < vehicle_radius_sq then
+                    min_hover_dist_sq = dist_sq
+                    set_map_hovered(vehicle:get_id(), vehicle_node_type)
+                end
+            end
         end
     end
 end
 
 function get_node_data(id, type)
     if id ~= 0 then
-        if type == g_link_types.barge then
+        if type == g_node_types.barge then
             return update_get_loc(e_loc.upp_barge), g_map_colors.barge, atlas_icons.icon_chassis_16_barge
-        elseif type == g_link_types.carrier then
+        elseif type == g_node_types.carrier then
             return update_get_loc(e_loc.upp_carrier), g_map_colors.carrier, atlas_icons.icon_chassis_16_carrier
-        elseif type == g_link_types.tile then
+        elseif type == g_node_types.tile then
             local tile = update_get_tile_by_id(id)
             local category_data = g_item_categories[tile:get_facility_category()]
 
@@ -1399,10 +1694,10 @@ end
 
 function get_node_pos_xz(id, type)
     if id ~= 0 then
-        if type == g_link_types.barge or type == g_link_types.carrier then
+        if type == g_node_types.barge or type == g_node_types.carrier then
             local vehicle = update_get_map_vehicle_by_id(id)
             if vehicle:get() then return vehicle:get_position_xz() end
-        elseif type == g_link_types.tile then
+        elseif type == g_node_types.tile then
             local tile = update_get_tile_by_id(id)
             if tile:get() then return tile:get_position_xz() end
         end
@@ -1417,23 +1712,33 @@ function tab_map_input_event(input, action)
     if action == e_input_action.press then
         if input == e_input.action_a or input == e_input.pointer_1 then
             if g_tab_map.dragged_id == 0 and g_tab_map.hovered_id ~= 0 then
-                if g_tab_map.hovered_type == g_link_types.tile then
+                if g_tab_map.hovered_type == g_node_types.tile then
                     local tile = update_get_tile_by_id(g_tab_map.hovered_id)
 
                     if tile:get() and tile:get_team_control() == update_get_screen_team_id() then
-                        g_tab_map.dragged_id = g_tab_map.hovered_id
-                        g_tab_map.dragged_type = g_tab_map.hovered_type
+                        set_map_dragged(g_tab_map.hovered_id, g_tab_map.hovered_type, g_tab_map.hovered_waypoint_id)
                     end
                 else
-                    g_tab_map.dragged_id = g_tab_map.hovered_id
-                    g_tab_map.dragged_type = g_tab_map.hovered_type
+                    set_map_dragged(g_tab_map.hovered_id, g_tab_map.hovered_type, g_tab_map.hovered_waypoint_id)
                 end
             elseif input == e_input.pointer_1 then
-                g_tab_map.is_drag_pan_map = true
+                if g_tab_map.is_overlay == false then
+                    g_tab_map.is_drag_pan_map = true
+                end
             end
         elseif input == e_input.back then
-            if g_tab_map.selected_barge_id ~= 0 then
-                g_tab_map.selected_barge_id = 0
+            if g_tab_map.dragged_id ~= 0 then
+                clear_map_dragged()
+            elseif g_tab_map.selected_barge_id ~= 0 then
+                if g_tab_map.selected_barge_waypoint_mode then
+                    g_tab_map.selected_barge_waypoint_mode = false
+                    g_tab_map.selected_barge_id = 0
+                elseif g_tab_map.selected_panel == 1 then
+                    g_tab_map.selected_panel = 0
+                    g_tab_map.selected_barge_id = 0
+                else
+                    g_tab_map.selected_barge_id = 0
+                end
             elseif g_tab_map.selected_facility_id ~= 0 then
                 if g_tab_map.selected_facility_queue_item ~= -1 then
                     g_tab_map.selected_facility_queue_item = -1
@@ -1464,26 +1769,49 @@ function tab_map_input_event(input, action)
             end
 
             if g_tab_map.dragged_id ~= 0 then
-                if g_tab_map.hovered_id ~= 0 and (g_tab_map.hovered_id ~= g_tab_map.dragged_id or g_tab_map.hovered_type ~= g_tab_map.dragged_type) then
-                    create_resource_link(g_tab_map.dragged_id, g_tab_map.hovered_id, g_tab_map.dragged_type, g_tab_map.hovered_type)
-                elseif g_tab_map.dragged_id == g_tab_map.hovered_id and g_tab_map.dragged_type == g_tab_map.hovered_type then
-                    if g_tab_map.dragged_type == g_link_types.tile then
-                        local tile = update_get_tile_by_id(g_tab_map.hovered_id)
-                    
-                        if tile:get() and tile:get_team_control() == update_get_screen_team_id() then
-                            g_tab_map.selected_facility_id = g_tab_map.hovered_id
+                if is_barge_waypoint_mode() then
+                    if g_tab_map.dragged_type == g_node_types.barge then
+                        if is_barge_waypoint_mode() then
+                            local dragged_barge = update_get_map_vehicle_by_id(g_tab_map.dragged_id)
+                            
+                            if dragged_barge:get() then
+                                local world_x, world_y = get_world_from_screen(g_tab_map.cursor_pos_x, g_tab_map.cursor_pos_y, g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, g_screen_w, g_screen_h)
+                                
+                                if g_tab_map.dragged_waypoint_id == 0 then
+                                    if is_vehicle_hovered(dragged_barge) == false then
+                                        dragged_barge:clear_waypoints()
+                                        dragged_barge:clear_attack_target()
+                                        add_barge_waypoint(dragged_barge, world_x, world_y, g_tab_map.hovered_id, g_tab_map.hovered_type)
+                                    end
+                                elseif is_vehicle_hovered(dragged_barge) and g_tab_map.hovered_waypoint_id ~= 0 and g_tab_map.dragged_waypoint_id ~= g_tab_map.hovered_waypoint_id then
+                                    dragged_barge:set_waypoint_repeat(g_tab_map.dragged_waypoint_id, g_tab_map.hovered_waypoint_id)
+                                elseif is_vehicle_hovered(dragged_barge) == false then
+                                    dragged_barge:clear_waypoints_from(g_tab_map.dragged_waypoint_id)
+                                    add_barge_waypoint(dragged_barge, world_x, world_y, g_tab_map.hovered_id, g_tab_map.hovered_type)
+                                end
+                            end
                         end
-                    elseif g_tab_map.dragged_type == g_link_types.barge then
-                        local barge = update_get_map_vehicle_by_id(g_tab_map.hovered_id)
+                    end
+                elseif g_tab_map.dragged_id == g_tab_map.hovered_id and g_tab_map.dragged_type == g_tab_map.hovered_type then
+                    if g_tab_map.selected_barge_id == 0 and g_tab_map.selected_barge_waypoint_mode == false then
+                        if g_tab_map.dragged_type == g_node_types.tile then
+                            local tile = update_get_tile_by_id(g_tab_map.hovered_id)
+                        
+                            if tile:get() and tile:get_team_control() == update_get_screen_team_id() then
+                                g_tab_map.selected_facility_id = g_tab_map.hovered_id
+                            end
+                        elseif g_tab_map.dragged_type == g_node_types.barge then
+                            local barge = update_get_map_vehicle_by_id(g_tab_map.hovered_id)
 
-                        if barge:get() and barge:get_team() == update_get_screen_team_id() then
-                            g_tab_map.selected_barge_id = g_tab_map.hovered_id
+                            if barge:get() and barge:get_team() == update_get_screen_team_id() then
+                                g_tab_map.selected_barge_id = g_tab_map.hovered_id
+                            end
                         end
                     end
                 end
             end
 
-            clear_drag()
+            clear_map_dragged()
         end
     end
 
@@ -1492,96 +1820,127 @@ end
 
 function tab_map_input_pointer(is_hovered, x, y)
     g_ui:input_pointer(is_hovered, x, y)
-    g_is_hovered = is_hovered
 end
 
 function tab_map_input_scroll(dy)
     if g_is_pointer_hovered and g_tab_map.is_overlay == false then
-        input_map_zoom_camera(1 - dy * 0.15)
+		input_map_zoom_camera(1 - dy * 0.15)
     end
 
     g_ui:input_scroll(dy)
 end
 
 function is_vehicle_hovered(v)
-    return v:get_id() == g_tab_map.hovered_id and (g_tab_map.hovered_type == g_link_types.barge or g_tab_map.hovered_type == g_link_types.carrier)
+    return v:get_id() == g_tab_map.hovered_id and (g_tab_map.hovered_type == g_node_types.barge or g_tab_map.hovered_type == g_node_types.carrier)
+end
+
+function is_waypoint_hovered(v, id)
+    return is_vehicle_hovered(v) and g_tab_map.hovered_waypoint_id == id
 end
 
 function is_tile_hovered(t)
-    return t:get_id() == g_tab_map.hovered_id and g_tab_map.hovered_type == g_link_types.tile
+    return t:get_id() == g_tab_map.hovered_id and g_tab_map.hovered_type == g_node_types.tile
+end
+
+function is_tile_hoverable(t)
+    return is_barge_waypoint_mode() == false or g_tab_map.dragged_id == g_tab_map.selected_barge_id
 end
 
 function is_vehicle_dragged(v)
-    return v:get_id() == g_tab_map.dragged_id and (g_tab_map.dragged_type == g_link_types.barge or g_tab_map.dragged_type == g_link_types.carrier)
+    return v:get_id() == g_tab_map.dragged_id and (g_tab_map.dragged_type == g_node_types.barge or g_tab_map.dragged_type == g_node_types.carrier)
+end
+
+function is_vehicle_hoverable(v)
+    if is_barge_waypoint_mode() then
+        if is_vehicle_modify_waypoints(v) == false and (is_vehicle_carrier(v) == false or g_tab_map.dragged_id ~= g_tab_map.selected_barge_id) then
+            return false
+        end
+    end
+
+    return true
+end
+
+function is_vehicle_modify_waypoints(v)
+    return is_barge_waypoint_mode() and g_tab_map.selected_barge_id == v:get_id()
+end
+
+function is_vehicle_carrier(v)
+    return v:get_definition_index() == e_game_object_type.chassis_carrier
+end
+
+function is_vehicle_barge(v)
+    return v:get_definition_index() == e_game_object_type.chassis_sea_barge
+end
+
+function is_barge_waypoint_mode()
+    return g_tab_map.selected_barge_id ~= 0 and g_tab_map.selected_barge_waypoint_mode
 end
 
 function is_tile_dragged(t)
-    return t:get_id() == g_tab_map.dragged_id and g_tab_map.dragged_type == g_link_types.tile
+    return t:get_id() == g_tab_map.dragged_id and g_tab_map.dragged_type == g_node_types.tile
 end
 
-function clear_hover()
-    g_tab_map.hovered_id = 0
-    g_tab_map.hovered_type = 0
+function clear_map_hovered()
+    set_map_hovered(0, 0)
 end
 
-function clear_drag()
-    g_tab_map.dragged_id = 0
-    g_tab_map.dragged_type = 0
+function clear_map_dragged()
+    set_map_dragged(0, 0)
 end
 
-function create_resource_link(start_id, end_id, start_type, end_type)
-    update_create_resource_link(start_id, end_id, start_type, end_type)
+function set_map_hovered(node_id, node_type, waypoint_id)
+    g_tab_map.hovered_id = node_id
+    g_tab_map.hovered_type = node_type
+    g_tab_map.hovered_waypoint_id = waypoint_id or 0
 end
 
-function render_resource_link(link, screen_w, screen_h)
-    local start_pos_xz = get_resource_node_position(link:get_node_id_start(), link:get_node_type_start())
-    local end_pos_xz = get_resource_node_position(link:get_node_id_end(), link:get_node_type_end())
-    
-    if start_pos_xz ~= nil and end_pos_xz ~= nil then
-        local start_id = link:get_node_id_start()
-        local start_type = link:get_node_type_start()
-        local col = g_map_colors.inactive 
+function set_map_dragged(node_id, node_type, waypoint_id)
+    g_tab_map.dragged_id = node_id
+    g_tab_map.dragged_type = node_type
+    g_tab_map.dragged_waypoint_id = waypoint_id or 0
+end
 
-        if start_type == g_link_types.carrier then
-            col = g_map_colors.carrier
-        elseif start_type == g_link_types.barge then
-            col = g_map_colors.barge
-        elseif start_type == g_link_types.tile then
-            local tile = update_get_tile_by_id(start_id)
+function add_barge_waypoint(barge, x, y, hovered_id, hovered_type)
+    if hovered_type == g_node_types.tile then
+        local tile = update_get_tile_by_id(hovered_id)
 
-            if tile:get() == false or tile:get_team_control() ~= update_get_screen_team_id() then
-                col = g_map_colors.inactive
-            else
-                col = g_map_colors.factory
-            end
+        if tile:get() and tile:get_team_control() == update_get_screen_team_id() then
+            local tile_pos = tile:get_position_xz()
+            local waypoint_id = barge:add_waypoint(tile_pos:x(), tile_pos:y())
+            barge:set_waypoint_type_barge_load_tile(waypoint_id, hovered_id)
+
+            return
         end
+    elseif hovered_type == g_node_types.carrier then
+        local carrier = update_get_map_vehicle_by_id(hovered_id)
 
-        if start_id == g_tab_map.hovered_id and start_type == g_tab_map.hovered_type then
-            col = color_white
-        end
+        if carrier:get() and carrier:get_team() == update_get_screen_team_id() then
+            local waypoint_id = barge:add_waypoint(x, y)
+            barge:set_waypoint_type_barge_unload_carrier(waypoint_id, hovered_id)
 
-        local start_screen_x, start_screen_y = get_screen_from_world(start_pos_xz:x(), start_pos_xz:y(), g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
-
-        local end_screen_x, end_screen_y = get_screen_from_world(end_pos_xz:x(), end_pos_xz:y(), g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
-
-        local offset = math.floor((g_animation_time * 0.4) % 7)
-
-        local x0, y0, x1, y1 = clip_line_to_rect(start_screen_x, start_screen_y, end_screen_x, end_screen_y, 0, 0, screen_w, screen_h)
-
-        if x0 ~= nil then
-            render_dashed_line(vec2(x0, y0), vec2(x1, y1), offset, 4, 7, col)
+            return
         end
     end
+
+    barge:add_waypoint(x, y)
 end
 
-function get_resource_node_position(id, type)
-    if type == g_link_types.barge or type == g_link_types.carrier then
+function get_resource_node_position(id, type, waypoint_id)
+    if type == g_node_types.barge or type == g_node_types.carrier then
         local vehicle = update_get_map_vehicle_by_id(id)
 
         if vehicle:get() then
+            if waypoint_id ~= nil and waypoint_id ~= 0 then
+                local waypoint = vehicle:get_waypoint_by_id(waypoint_id)
+
+                if waypoint:get() then
+                    return waypoint:get_position_xz()
+                end
+            end
+
             return vehicle:get_position_xz()
         end
-    elseif type == g_link_types.tile then
+    elseif type == g_node_types.tile then
         local tile = update_get_tile_by_id(id)
 
         if tile:get() then
@@ -1643,20 +2002,14 @@ function tab_stock_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_
     g_tab_stock.is_overlay = false
     render_inventory_stats(0, 0, w, 10, screen_vehicle)
 
-    local is_local = update_get_is_focus_local()
-    local window = ui:begin_window("##inventory", 5, 10, w - 10, h - 10, nil, is_tab_active and g_tab_stock.selected_item == -1, 1, is_local)
-        if is_local then
-            g_tab_stock.scroll_pos = window.scroll_y
-        else
-            window.scroll_y = g_tab_stock.scroll_pos
-        end
-
+    local window = ui:begin_window("##inventory", 5, 10, w - 10, h - 10, nil, is_tab_active and g_tab_stock.selected_item == -1, 1)
         local selected_item, selected_row, selected_col, sx, sy, sw, sh = imgui_vehicle_inventory_table(ui, screen_vehicle)
         ui:divider(0, 3)
         ui:divider(0, 10)
     
         if selected_item ~= -1 then
             g_tab_stock.selected_item = selected_item
+            g_tab_stock.selected_item_modify_amount = 0
         end
 
         if is_tab_active and selected_row ~= -1 and selected_col > 1 then
@@ -1668,7 +2021,7 @@ function tab_stock_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_
                 sx = g_pointer_pos_x - 5
             end
 
-            local tooltip_text = { update_get_loc(e_loc.item_name), update_get_loc(e_loc.in_warehouses), update_get_loc(e_loc.pending_order), update_get_loc(e_loc.carrier_stock) }
+            local tooltip_text = { update_get_loc(e_loc.item_name), update_get_loc(e_loc.in_warehouses), update_get_loc(e_loc.pending_order), update_get_loc(e_loc.in_barges), update_get_loc(e_loc.carrier_stock) }
             local text = tooltip_text[selected_col]
             local text_w, text_h = update_ui_get_text_size(text, 100, 1)
 
@@ -1695,38 +2048,79 @@ function tab_stock_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_
 
         if item_data == nil then
             g_tab_stock.selected_item = -1
+            g_tab_stock.is_confirm_discard = false
         else
             g_tab_stock.is_overlay = true
             update_ui_rectangle(0, 0, w, h, color8(0, 0, 0, 200))
 
-            local window = ui:begin_window(item_data.name .. "##item", 30, 10, w - 60, h - 25, atlas_icons.column_stock, is_tab_active, 2)
-                imgui_item_description(ui, screen_vehicle, item_data, true)
+            local order_amount = screen_vehicle:get_inventory_order(item_data.index)
+
+            local is_active = is_tab_active and g_tab_stock.is_confirm_discard == false
+            local window = ui:begin_window(item_data.name .. "##item", 30, 10, w - 60, h - 28, atlas_icons.column_stock, is_active, 2)
+                imgui_item_description(ui, screen_vehicle, item_data, true, is_active)
                 ui:header(update_get_loc(e_loc.upp_order))
                 
-                local order_amount_prev = screen_vehicle:get_inventory_order(item_data.index)
-                local order_amount = order_amount_prev
-                order_amount = ui:selector(update_get_loc(e_loc.quantity), order_amount, -99999, 99999, 1, "%+d")
+                local total_modify_amount = g_tab_stock.selected_item_modify_amount + order_amount
+                total_modify_amount = ui:selector(update_get_loc(e_loc.quantity), total_modify_amount, -99999, 99999, 1, "%+d")
+                g_tab_stock.selected_item_modify_amount = total_modify_amount - order_amount
 
                 local button_action = ui:button_group({ "X", "-100", "-10", "+10", "+100" }, true)
 
                 if button_action == 0 then
-                    order_amount = 0
+                    g_tab_stock.selected_item_modify_amount = -order_amount
                 elseif button_action == 1 then
-                    order_amount = order_amount - 100
+                    g_tab_stock.selected_item_modify_amount = g_tab_stock.selected_item_modify_amount - 100
                 elseif button_action == 2 then
-                    order_amount = order_amount - 10
+                    g_tab_stock.selected_item_modify_amount = g_tab_stock.selected_item_modify_amount - 10
                 elseif button_action == 3 then
-                    order_amount = order_amount + 10
+                    g_tab_stock.selected_item_modify_amount = g_tab_stock.selected_item_modify_amount + 10
                 elseif button_action == 4 then
-                    order_amount = order_amount + 100
-                end
-
-                order_amount = clamp(order_amount, -99999, 99999)
-
-                if order_amount_prev ~= order_amount then
-                    screen_vehicle:set_inventory_order(item_data.index, order_amount - order_amount_prev)
+                    g_tab_stock.selected_item_modify_amount = g_tab_stock.selected_item_modify_amount + 100
                 end
             ui:end_window()
+
+            if g_tab_stock.is_confirm_discard then
+                ui.window_col_active = color_status_bad
+                local is_close = false
+                local discard_count = -(order_amount + g_tab_stock.selected_item_modify_amount)
+
+                if discard_count <= 0 then
+                    is_close = true
+                end
+
+                discard_count = math.max(discard_count, 0)
+
+                local window = ui:begin_window(update_get_loc(e_loc.upp_discard_items) .. "?##discard", 60, 22, w - 120, h - 50, atlas_icons.column_trash, is_tab_active, 2)
+                    local region_w, region_h = ui:get_region()
+                    ui:spacer(2)
+
+                    local discard_text = "x" .. discard_count
+                    local text_w = update_ui_get_text_size(discard_text, 200, 0)
+
+                    update_ui_push_offset(window.cx + (region_w - 18 - text_w) / 2, window.cy - 1)
+                    update_ui_rectangle_outline(0, 0, 18, 18, color_grey_dark)
+                    update_ui_image(1, 1, item_data.icon, color_white, 0)
+                    update_ui_text(20, 6, discard_text, 100, 0, color_status_bad, 0)
+                    update_ui_pop_offset()
+
+                    ui:spacer(20)
+                
+                    if ui:button(update_get_loc(e_loc.upp_cancel), true, 1) then
+                        is_close = true
+                    end
+                    
+                    if ui:button(update_get_loc(e_loc.upp_confirm), true, 1) then
+                        -- discard item
+                        screen_vehicle:set_inventory_order(item_data.index, discard_count, e_carrier_order_operation.delete)
+                        is_close = true
+                    end
+                ui:end_window()
+
+                if is_close then
+                    g_tab_stock.selected_item = -1
+                    g_tab_stock.is_confirm_discard = false
+                end
+            end
         end
     end
     update_ui_pop_offset()
@@ -1759,8 +2153,25 @@ function tab_stock_input_event(input, action)
     g_ui:input_event(input, action)
 
     if input == e_input.back and action == e_input_action.press then
-        if g_tab_stock.selected_item ~= -1 then
-            g_tab_stock.selected_item = -1
+        if g_tab_stock.is_confirm_discard then
+            g_tab_stock.is_confirm_discard = false
+        elseif g_tab_stock.selected_item ~= -1 then
+            local screen_vehicle = update_get_screen_vehicle()
+            local item_data = g_item_data[g_tab_stock.selected_item]
+
+            if screen_vehicle:get() and item_data then
+                local total_order_amount = screen_vehicle:get_inventory_order(item_data.index) + g_tab_stock.selected_item_modify_amount
+
+                if total_order_amount < 0 and total_order_amount then
+                    g_tab_stock.is_confirm_discard = true
+                else
+                    -- apply pending order
+                    screen_vehicle:set_inventory_order(item_data.index, g_tab_stock.selected_item_modify_amount, e_carrier_order_operation.modify)
+                    g_tab_stock.selected_item = -1
+                end
+            else
+                g_tab_stock.selected_item = -1
+            end
         else
             return true
         end
@@ -1771,27 +2182,26 @@ end
 
 function tab_stock_input_pointer(is_hovered, x, y)
     g_ui:input_pointer(is_hovered, x, y)
-    g_is_hovered = is_hovered
 end
 
 function tab_stock_input_scroll(dy)
     g_ui:input_scroll(dy)
 end
 
-function imgui_item_description(ui, vehicle, item_data, is_inventory)
+function imgui_item_description(ui, vehicle, item_data, is_inventory, is_active)
     local window = ui:get_window()
     local region_w, region_h = ui:get_region()
     ui:spacer(2)
 
     update_ui_rectangle_outline(window.cx + 4, window.cy - 1, 18, 18, color_grey_dark)
-    update_ui_image(window.cx + 5, window.cy, item_data.icon, color_white, 0)
+    update_ui_image(window.cx + 5, window.cy, item_data.icon, iff(is_active, color_white, color_grey_dark), 0)
 
     local text_h = update_ui_text(window.cx + 25, window.cy, item_data.desc, region_w - 30, 0, color_grey_dark, 0)
     window.cy = window.cy + math.max(text_h, 17)
 
     ui:spacer(2)
 
-    local icon_w = region_w / 3
+    local icon_w = region_w / 4
     local cx = window.cx
     local cy = window.cy
 
@@ -1799,23 +2209,41 @@ function imgui_item_description(ui, vehicle, item_data, is_inventory)
     update_ui_text(math.floor(cx + 15), cy, item_data.mass, math.floor(icon_w) - 15, 0, color_grey_dark, 0)
     cx = cx + icon_w
 
-    update_ui_image(math.floor(cx + 5), cy, atlas_icons.column_time, color_grey_dark, 0)
-    update_ui_text(math.floor(cx + 15), cy, item_data.time .. "s", math.floor(icon_w) - 15, 0, color_grey_dark, 0)
-    cx = cx + icon_w
-
     if is_inventory then
-        local facility_production_counts = vehicle:get_inventory_production_counts()
-        local warehouse_count = clamp(facility_production_counts[item_data.index] or 0, -99999, 99999)
+        local island_stock = {}
+        local barge_stock = {}
+        local team = update_get_team(vehicle:get_team())
 
-        local col = color_status_bad
-
-        if warehouse_count > 0 then
-            col = color_status_ok
+        if team:get() then
+            island_stock = team:get_island_stock()
+            barge_stock = team:get_barge_stock()
         end
 
+        local island_count = clamp(island_stock[item_data.index] or 0, -99999, 99999)
+        local col = iff(is_active, iff(island_count > 0, color_status_ok, color_status_bad), color_grey_dark)
+
         update_ui_image(math.floor(cx + 5), cy, atlas_icons.column_warehouse, col, 0)
-        update_ui_text(math.floor(cx + 15), cy, warehouse_count, math.floor(icon_w) - 15, 0, col, 0)
+        update_ui_text(math.floor(cx + 16), cy, island_count, math.floor(icon_w) - 15, 0, col, 0)
+        cx = cx + icon_w
+
+        local barge_count = clamp(barge_stock[item_data.index] or 0, -99999, 99999)
+        col = iff(is_active, iff(barge_count > 0, color_status_ok, color_grey_dark), color_grey_dark)
+
+        update_ui_image(math.floor(cx + 5), cy, atlas_icons.column_distance, col, 0)
+        update_ui_text(math.floor(cx + 16), cy, barge_count, math.floor(icon_w) - 15, 0, col, 0)
+        cx = cx + icon_w
+
+        local stock_count = vehicle:get_inventory_count_by_item_index(item_data.index)
+        col = iff(is_active, iff(stock_count > 0, color_status_ok, color_status_bad), color_grey_dark)
+
+        update_ui_image(math.floor(cx + 5), cy, atlas_icons.column_stock, col, 0)
+        update_ui_text(math.floor(cx + 16), cy, stock_count, math.floor(icon_w) - 15, 0, col, 0)
+        cx = cx + icon_w
     else
+        update_ui_image(math.floor(cx + 5), cy, atlas_icons.column_time, color_grey_dark, 0)
+        update_ui_text(math.floor(cx + 16), cy, item_data.time .. "s", math.floor(icon_w) - 15, 0, color_grey_dark, 0)
+        cx = cx + icon_w
+
         local team = update_get_team(update_get_screen_team_id())
         local col = color_status_bad
 
@@ -1824,7 +2252,7 @@ function imgui_item_description(ui, vehicle, item_data, is_inventory)
         end
 
         update_ui_image(math.floor(cx + 5), cy, atlas_icons.column_currency, col, 0)
-        update_ui_text(math.floor(cx + 15), cy, item_data.cost, math.floor(icon_w) - 15, 0, col, 0)
+        update_ui_text(math.floor(cx + 16), cy, item_data.cost, math.floor(icon_w) - 15, 0, col, 0)
     end
 
     ui:spacer(10)
@@ -1865,31 +2293,15 @@ end
 
 function get_barge_transfer_icons(barge)
     local action, destination_id, destination_type = barge:get_barge_state_data()
-    local node_name, node_col, node_icon = get_node_data(destination_id, destination_type)
+    local _, _, node_icon = get_destination_data(destination_id, destination_type)
 
-    if action == e_barge_action.load or action == e_barge_action.load_carrier_stock then
+    if action == e_barge_action_type.load then
         return node_icon, atlas_icons.icon_chassis_16_barge 
-    elseif action == e_barge_action.unload or action == e_barge_action.unload_carrier_stock then
+    elseif action == e_barge_action_type.unload then
         return atlas_icons.icon_chassis_16_barge, node_icon
     end
 
     return atlas_icons.icon_chassis_16_barge, atlas_icons.icon_chassis_16_barge
-end
-
-function get_barge_transfer_status(barge)
-    local action, destination_id, destination_type = barge:get_barge_state_data()
-
-    if action == e_barge_action.load then
-        return update_get_loc(e_loc.loading_stock).."..."
-    elseif action == e_barge_action.unload then
-        return update_get_loc(e_loc.unloading_stock).."..."
-    elseif action == e_barge_action.load_carrier_stock then
-        return iff(destination_type == g_link_types.carrier, update_get_loc(e_loc.loading_surplus).."...", update_get_loc(e_loc.loading_order).."...")
-    elseif action == e_barge_action.unload_carrier_stock then
-        return update_get_loc(e_loc.unloading_order).."..."
-    end
-
-    return update_get_loc(e_loc.loading).."..."
 end
 
 function get_barge_inventory_item_count(barge)
@@ -1945,6 +2357,12 @@ function render_currency_display(x, y, is_active)
     update_ui_pop_offset()
 end
 
+function get_color_hp(hp_factor)
+    local col_low = iff(update_get_logic_tick() % 10 < 5, color_status_bad, color_empty)
+    local col_mid = color_status_warning
+    local col_high = color_status_ok
+    return iff(hp_factor > 0.75, col_high, iff(hp_factor > 0.2, col_mid, col_low))
+end
 
 --------------------------------------------------------------------------------
 --
@@ -2004,24 +2422,6 @@ function iter_vehicles(filter)
 
         if vehicle ~= nil then
             return index, vehicle
-        end
-    end
-end
-
-function iter_resource_links()
-    local link_count = update_get_resource_link_count()
-    local index = 0
-
-    return function()
-        local link = nil
-
-        while (link == nil or link:get() == false) and index < link_count do
-            link = update_get_resource_link_by_index(index)
-            index = index + 1
-        end
-
-        if link ~= nil then
-            return index, link
         end
     end
 end

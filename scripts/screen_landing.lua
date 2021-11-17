@@ -293,21 +293,11 @@ function render_vehicle_list( win_list, is_air )
             
             --TODO: plane landing mode. helis don't get the "docking" aka landing state even though the final approach is not cancelable
             --TODO: had to add the landing check for helis here, because they are in the dock_queue state all the way down to the runway.
-            elseif vehicle_dock_state == e_vehicle_dock_state.docking or (v.is_rotor and vehicle_dock_state == e_vehicle_dock_state.dock_queue and rotor_landed_carrier(vehicle)) then
+            elseif vehicle_dock_state == e_vehicle_dock_state.docking then
             
-                if is_air then
-                    vehicle_state_string = "LAND"
-                    vehicle_state_color = g_colors.docking
-                    
-                    if vehicle:get_attached_parent_id() ~= 0 then
-                        vehicle_state_string = "PARK"
-                        vehicle_state_color = color_status_dark_red
-                    end
-                else
-                    vehicle_state_string = "DOCK"
-                    vehicle_state_color = g_colors.docking
-                end
-            
+                vehicle_state_string = iff(is_air, "LAND", "DOCK")
+                vehicle_state_color = g_colors.docking
+                
             -- holding mode and helicopter landing mode
             elseif vehicle_dock_state == e_vehicle_dock_state.dock_queue then
                 
@@ -326,6 +316,12 @@ function render_vehicle_list( win_list, is_air )
                 vehicle_state_string = "STBY"
                 vehicle_state_color = g_colors.carrier
             
+            -- taxi
+            elseif vehicle_dock_state == e_vehicle_dock_state.docking_taxi then
+            
+                vehicle_state_string = "TAXI"
+                vehicle_state_color = color_grey_mid
+                
             -- manual flight control mode
             elseif vehicle_manual_flight_control then
             
@@ -512,7 +508,7 @@ function render_docking_vehicle_rotor(vehicle_parent, vehicle)
     local p0z = -final_arc + math.min(p0x - 10, final_arc)
 
     if relative_position:z() < -120 then
-        local col = iff(rotor_landed_carrier(vehicle), g_colors.docking, g_colors.dock_queue)
+        local col = iff(vehicle_dock_state == e_vehicle_dock_state.dock_queue, g_colors.dock_queue, g_colors.docking)
 
         if g_hovered_vehicle_id == vehicle:get_id() then
             col = color_white

@@ -125,7 +125,7 @@ e_attack_type = {
     rockets = 8,
     airlift = 9,
     deploy = 10,
-    
+
     count = 11,
 }
 
@@ -134,6 +134,8 @@ e_waypoint_type = {
     dock = 1,
     support = 2,
     deploy = 3,
+    barge_load_tile = 4,
+	barge_unload_carrier = 5,
 }
 
 e_loc = {
@@ -1148,7 +1150,7 @@ e_loc = {
     manual_inventory_tab_map_3 = 1008,
     manual_inventory_tab_map_4 = 1009,
     manual_inventory_tab_map_5 = 1010,
-    manual_inventory_tab_map_6 = 1011,
+    manual_inventory_tab_map_6_REMOVED_FROM_LOCALIZATION = 1011,
     upp_tab_barges = 1012,
     manual_inventory_tab_barges_1 = 1013,
     manual_inventory_tab_barges_2 = 1014,
@@ -1166,7 +1168,7 @@ e_loc = {
     manual_logistics_factories_1 = 1026,
     upp_warehouses = 1027,
     manual_logistics_warehouses_1 = 1028,
-    manual_logistics_warehouses_2 = 1029,
+    manual_logistics_warehouses_2_REMOVED_FROM_LOCALIZATION = 1029,
     upp_blueprints = 1030,
     manual_logistics_blueprints_1 = 1031,
     manual_logistics_blueprints_2 = 1032,
@@ -1529,15 +1531,50 @@ e_loc = {
     eyes_level_with_horizon = 1389,
     network_waiting_for_server = 1390,
 	network_connection_timeout_in = 1391,
-    virus_bot_retired = 1392,
+    upp_mouse_flight = 1392,
+	mouse_flight_mode = 1393,
+	mouse_flight_mode_yaw_pitch = 1394,
+	mouse_flight_mode_roll_pitch = 1395,
+	mouse_flight_mode_disabled = 1396,
+	mouse_joystick_mode = 1397,
+	mouse_joystick_mode_motion = 1398,
+	mouse_joystick_mode_offset = 1399,
+	upp_mouse_flight_sensitivity = 1400,
+	mouse_flight_sensitivity_yaw = 1401,
+	mouse_flight_sensitivity_pitch = 1402,
+	mouse_flight_sensitivity_roll = 1403,
+	upp_mouse_flight_invert = 1404,
+	ui_show_mouse_joystick_on_hud = 1405,
+	upp_vehicle_hud = 1406,
+	upp_discard_items = 1407,
+	upp_travel = 1408,
+	upp_show_grid = 1409,
+	interaction_bearing = 1410,
+	upp_air_traffic_taxi = 1411,
+	upp_air_traffic_queued = 1412,
+	upp_air_traffic_landing = 1413,
+	upp_air_traffic_launch = 1414,
+	upp_island_names = 1415,
+	virus_bot_retired = 1416,
+	in_barges = 1417,
+	acronym_thousand = 1418,
 
-    count = 1393,
+    count = 1419,
 }
 
-e_resource_node_type = {
-    tile = 0,
-    carrier = 1,
-    barge = 2,
+e_barge_destination_type = {
+	none = 0,
+	waypoint = 1,
+	vehicle = 2,
+	tile = 3,
+}
+
+e_barge_action_type = {
+	idle = 0,
+	travel = 1,
+	unload = 2,
+	load = 3,
+	wait = 4,
 }
 
 e_input = {
@@ -1654,7 +1691,10 @@ e_ui_interaction_special = {
     gamepad_scroll = 16,
     cancel_rebind = 17,
     map_drag = 18,
-    count = 19,
+    mouse_lr = 19,
+	mouse_ud = 20,
+	interact_a_no_alt = 21,
+	count = 22,
 }
 
 e_message_box_type = {
@@ -1757,6 +1797,7 @@ e_vehicle_dock_state = {
     undocking = 3,
     docked = 4,
     dock_queue = 5,
+    docking_taxi = 6,
 }
 
 e_objective_display_type = {
@@ -1786,4 +1827,20 @@ e_game_state = {
 e_simulation_screen_state = {
 	game = 0,
 	vehicle_camera = 1,
+}
+
+e_mouse_joystick_mode = {
+	motion = 0,
+	offset = 1,
+}
+
+e_mouse_flight_mode = {
+	disabled = 0,
+	roll_pitch = 1,
+	yaw_pitch = 2,
+}
+
+e_carrier_order_operation = {
+	modify = 0,
+	delete = 1,
 }

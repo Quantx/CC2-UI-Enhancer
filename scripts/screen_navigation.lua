@@ -2,7 +2,7 @@ g_camera_pos_x = 0
 g_camera_pos_y = 0
 g_is_camera_pos_initialised = false
 g_camera_size = (32 * 1024)
-g_camera_size_max = 64 * 1024
+g_camera_size_max = 128 * 1024
 g_camera_size_min = 4 * 1024
 g_screen_index = 2
 g_map_render_mode = 1
@@ -187,7 +187,7 @@ function update(screen_w, screen_h, ticks)
                             if def == e_game_object_type.chassis_sea_barge then
                                 local action, destination_id, destination_type = vehicle:get_barge_state_data()
                                 
-                                if destination_type == 1 then -- The destination of this barge is the carrier
+                                if destination_type == e_barge_destination_type.vehicle and destination_id == this_vehicle:get_id() then -- The destination of this barge is the carrier
                                     render_dashed_line(veh_x, veh_y, carrier_x, carrier_y, color8(0, 255, 64, 255))
                                 end
                             elseif def ~= e_game_object_type.chassis_spaceship and def ~= e_game_object_type.drydock then
@@ -195,7 +195,7 @@ function update(screen_w, screen_h, ticks)
                 
                                 local dock_state = vehicle:get_dock_state()
                                 
-                                if dock_state == e_vehicle_dock_state.docking or (is_rotor and dock_state == e_vehicle_dock_state.dock_queue and rotor_landed_carrier(vehicle)) then
+                                if dock_state == e_vehicle_dock_state.docking then
                                     render_dashed_line(veh_x, veh_y, carrier_x, carrier_y, color8(205, 8, 8, 255))
                                 elseif dock_state == e_vehicle_dock_state.dock_queue then
                                     render_dashed_line(veh_x, veh_y, carrier_x, carrier_y, color8(205, 8, 246, 255))
@@ -399,7 +399,7 @@ function update(screen_w, screen_h, ticks)
             g_is_follow_carrier = ui:checkbox("FOLLOW CARRIER", g_is_follow_carrier)
             g_is_vehicle_team_colors = ui:checkbox(update_get_loc(e_loc.upp_vehicle_team_colors), g_is_vehicle_team_colors)
             g_is_island_team_colors = ui:checkbox(update_get_loc(e_loc.upp_island_team_colors), g_is_island_team_colors)
-            g_is_island_names = ui:checkbox("ISLAND NAMES", g_is_island_names)
+            g_is_island_names = ui:checkbox(update_get_loc(e_loc.upp_island_names), g_is_island_names)
             g_is_vehicle_links = ui:checkbox("VEHICLE LINKS", g_is_vehicle_links)
 
             ui:spacer(5)

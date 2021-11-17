@@ -178,9 +178,7 @@ function update(screen_w, screen_h, ticks)
     end
     
     if holomap_override(screen_w, screen_h, ticks) then
-        if g_is_mouse_mode then
-            render_cursor(world_x, world_y, screen_w, screen_h)
-        end
+        render_cursor(world_x, world_y, screen_w, screen_h)
         return
     end
 
@@ -219,7 +217,7 @@ function update(screen_w, screen_h, ticks)
     update_add_ui_interaction_special(update_get_loc(e_loc.interaction_pan), e_ui_interaction_special.map_pan)
     update_add_ui_interaction_special(update_get_loc(e_loc.interaction_zoom), e_ui_interaction_special.map_zoom)
 
-    update_add_ui_interaction("map tool", e_game_input.interact_a)
+    update_add_ui_interaction(update_get_loc(e_loc.interaction_bearing), e_game_input.interact_a)
     if screen_vehicle:get() and screen_vehicle:get_dock_state() ~= e_vehicle_dock_state.docked then
         if not g_is_mouse_mode and g_highlighted_vehicle_id > 0 and g_highlighted_waypoint_id == 0 then
             local vehicle = update_get_map_vehicle_by_id(g_highlighted_vehicle_id)
@@ -345,10 +343,10 @@ function update(screen_w, screen_h, ticks)
         end
     else
         local vehicle_count = update_get_map_vehicle_count()
-        local map_zoom = g_map_size + g_map_size_offset
+        local cur_map_zoom = g_map_size + g_map_size_offset
 
         -- draw island names
-        if map_zoom < 70000 then
+        if cur_map_zoom < 95000 then
             local island_count = update_get_tile_count()
             for i = 0, island_count - 1, 1 do
                 local island = update_get_tile_by_index(i)
@@ -361,7 +359,7 @@ function update(screen_w, screen_h, ticks)
                     local screen_pos_x = 0
                     local screen_pos_y = 0
                     
-                    if map_zoom < 16000 then
+                    if cur_map_zoom < 16000 then
                         screen_pos_x, screen_pos_y = get_holomap_from_world(island_pos:x(), island_pos:y() + (island_size:y() / 2), screen_w, screen_h)
                     else
                         screen_pos_x, screen_pos_y = get_holomap_from_world(island_pos:x(), island_pos:y(), screen_w, screen_h)
@@ -384,21 +382,25 @@ function update(screen_w, screen_h, ticks)
                         end
                     end
 
-                    update_ui_text(screen_pos_x - 64, screen_pos_y - 10, island:get_name(), 128, 1, island_color, 0)
+                    update_ui_text(screen_pos_x - 64, screen_pos_y, island:get_name(), 128, 1, island_color, 0)
                     
                     local category_data = g_item_categories[island:get_facility_category()]
                     
-                    update_ui_image(screen_pos_x - 4, screen_pos_y, category_data.icon, island_color, 0)
-                    
                     if island:get_team_control() ~= screen_team then
-                        local difficulty_level = island:get_difficulty_level()
+                        local difficulty_level = island:get_difficulty_level() + 2
                         local icon_w = 6
                         local icon_spacing = 2
                         local total_w = icon_w * difficulty_level + icon_spacing * (difficulty_level - 1)
 
                         for i = 0, difficulty_level - 1 do
-                            update_ui_image(screen_pos_x - total_w / 2 + (icon_w + icon_spacing) * i, screen_pos_y + 9, atlas_icons.column_difficulty, island_color, 0)
+                            if i == 0 then
+                                update_ui_image(screen_pos_x - total_w / 2 + (icon_w + icon_spacing) * i, screen_pos_y + 10, category_data.icon, island_color, 0)
+                            elseif i >= 2 then
+                                update_ui_image(screen_pos_x - total_w / 2 + (icon_w + icon_spacing) * i, screen_pos_y + 10, atlas_icons.column_difficulty, island_color, 0)
+                            end
                         end
+                    else
+                        update_ui_image(screen_pos_x - 4, screen_pos_y + 10, category_data.icon, island_color, 0)
                     end
                 end
             end
@@ -408,7 +410,7 @@ function update(screen_w, screen_h, ticks)
         if is_local and (not g_is_mouse_mode or g_is_pointer_hovered) then
             g_highlighted_vehicle_id = 0
             g_highlighted_waypoint_id = 0
-            local highlighted_distance_best = 4 * math.max( 1, 2000 / map_zoom )
+            local highlighted_distance_best = 4 * math.max( 1, 2000 / cur_map_zoom )
 
             for i = 0, vehicle_count - 1, 1 do
                 local vehicle = update_get_map_vehicle_by_index(i)
@@ -688,6 +690,12 @@ function update(screen_w, screen_h, ticks)
                 end
             end
         end
+        
+        local cy = screen_h - 15
+        local cx = 15
+        
+        local icon_col = color_grey_mid
+        local text_col = color_grey_dark
 
         if g_is_ruler then
             if is_local and not g_is_ruler_set and (not g_is_mouse_mode or g_is_pointer_hovered) then
@@ -696,26 +704,58 @@ function update(screen_w, screen_h, ticks)
                 
                 g_is_ruler_set = true
             end
-        
-            local cy = screen_h - 45
-            local cx = 15
             
-            local icon_col = color_grey_mid
-            local text_col = color_grey_dark
-            
-            local screen_beg_x, screen_beg_y = get_holomap_from_world(g_ruler_x, g_ruler_y, screen_w, screen_h)
-            local screen_end_x, screen_end_y = get_holomap_from_world(world_x, world_y, screen_w, screen_h)
-            
-            update_ui_line(screen_beg_x, screen_beg_y, screen_end_x, screen_end_y, color_grey_dark)
-            
-            update_ui_text(cx, cy, "X", 100, 0, icon_col, 0)
-            update_ui_text(cx + 15, cy, string.format("%.3f", world_x / 500), 100, 0, text_col, 0)
-            cy = cy + 10
-            
-            update_ui_text(cx, cy, "Y", 100, 0, icon_col, 0)
-            update_ui_text(cx + 15, cy, string.format("%.3f", world_y / 500), 100, 0, text_col, 0)
-            cy = cy + 10
-            
+            local drag_x, drag_y = get_holomap_from_world(g_ruler_x, g_ruler_y, screen_w, screen_h)
+
+            local team_col = update_get_team_color(update_get_screen_team_id())
+
+            update_ui_circle(drag_x, drag_y, 2, 4, team_col)
+            update_ui_line(drag_x, drag_y, g_pointer_pos_x, g_pointer_pos_y, team_col)
+
+            local dist_screen = vec2_dist(vec2(drag_x, drag_y), vec2(g_pointer_pos_x, g_pointer_pos_y))
+            local angle = math.atan(g_pointer_pos_y - drag_y, g_pointer_pos_x - drag_x)
+            local bearing = 90 + angle / math.pi * 180
+            if bearing < 0 then bearing = bearing + 360 end
+
+            if dist_screen > 5 then
+                local function rotate(x, y, a)
+                    local s = math.sin(a)
+                    local c = math.cos(a)
+                    return x * c - y * s, x * s + y * c
+                end
+
+                local rad = 10
+
+                if dist_screen > rad then
+                    local step =  math.pi / 180 * 20
+                    local bearing_rad =  bearing / 180 * math.pi
+
+                    update_ui_push_offset(drag_x, drag_y)
+                    update_ui_begin_triangles()
+
+                    for a = 0, bearing_rad, step do
+                        local a_next = math.min(bearing_rad, a + step)
+                        local p0 = vec2(rotate(0, -rad, a))
+                        local p1 = vec2(rotate(0, -rad, a_next))
+                        update_ui_add_triangle(vec2(0, 0), p0, p1, mult_alpha(team_col, 0.1))
+                        update_ui_line(math.floor(p0:x()), math.floor(p0:y()), math.floor(p1:x()), math.floor(p1:y()), team_col)
+                    end
+
+                    update_ui_end_triangles()
+                    update_ui_pop_offset()
+                end
+
+                update_ui_push_offset(g_pointer_pos_x, g_pointer_pos_y)
+                update_ui_begin_triangles()
+                update_ui_add_triangle(vec2(rotate(0, 0, angle)), vec2(rotate(-10, -4, angle)), vec2(rotate(-10, 4, angle)), team_col)
+                update_ui_end_triangles()
+                update_ui_pop_offset()
+            end
+
+            update_ui_image(cx, cy, atlas_icons.column_angle, icon_col, 0)
+            update_ui_text(cx + 15, cy, string.format("%.0f deg", bearing), 100, 0, text_col, 0)
+            cy = cy - 10
+
             local dist = vec2_dist(vec2(g_ruler_x, g_ruler_y), vec2(world_x, world_y))
 
             if dist < 10000 then
@@ -726,15 +766,7 @@ function update(screen_w, screen_h, ticks)
                 update_ui_text(cx + 15, cy, string.format("%.2f ", dist / 1000) .. update_get_loc(e_loc.acronym_kilometers), 100, 0, text_col, 0)
             end
 
-            cy = cy + 10
-
-            local bearing = 90 - math.atan(world_y - g_ruler_y, world_x - g_ruler_x) / math.pi * 180
-
-            if bearing < 0 then bearing = bearing + 360 end
-
-            update_ui_image(cx, cy, atlas_icons.column_angle, icon_col, 0)
-            update_ui_text(cx + 15, cy, string.format("%.0f deg", bearing), 100, 0, text_col, 0)
-            cy = cy + 10
+            cy = cy - 10
         else                
             if g_highlighted_vehicle_id > 0 then
                 local highlighted_vehicle = update_get_map_vehicle_by_id(g_highlighted_vehicle_id)
@@ -770,39 +802,17 @@ function update(screen_w, screen_h, ticks)
                     end
                 end
             end
-        
-            local cy = screen_h - 15
-            local cx = 15
-            
-            local icon_col = color_grey_mid
-            local text_col = color_grey_dark
-            
-            local map_scale = 500
-            local map_scale_size = map_zoom
-            
-            while map_scale_size > 2000 and map_scale < 16000 do
-                map_scale_size = map_scale_size / 2
-                map_scale = map_scale * 2
-            end
-            
-            if map_scale < 10000 then
-                update_ui_image(cx, cy, atlas_icons.column_distance, icon_col, 0)
-                update_ui_text(cx + 15, cy, string.format("%.0f ", map_scale) .. update_get_loc(e_loc.acronym_meters), 100, 0, text_col, 0)
-            else
-                update_ui_image(cx, cy, atlas_icons.column_distance, icon_col, 0)
-                update_ui_text(cx + 15, cy, string.format("%.0f ", map_scale / 1000) .. update_get_loc(e_loc.acronym_kilometers), 100, 0, text_col, 0)
-            end
-            
-            cy = cy - 10
-
-            update_ui_text(cx, cy, "Y", 100, 0, icon_col, 0)
-            update_ui_text(cx + 15, cy, string.format("%.3f", world_y / 500), 100, 0, text_col, 0)
-            cy = cy - 10
-            
-            update_ui_text(cx, cy, "X", 100, 0, icon_col, 0)
-            update_ui_text(cx + 15, cy, string.format("%.3f", world_x / 500), 100, 0, text_col, 0)
-            cy = cy - 10
         end
+            
+        render_map_scale(screen_w, screen_h)
+
+        update_ui_text(cx, cy, "Y", 100, 0, icon_col, 0)
+        update_ui_text(cx + 15, cy, string.format("%.0f", world_y), 100, 0, text_col, 0)
+        cy = cy - 10
+        
+        update_ui_text(cx, cy, "X", 100, 0, icon_col, 0)
+        update_ui_text(cx + 15, cy, string.format("%.0f", world_x), 100, 0, text_col, 0)
+        cy = cy - 10
 
         local label_x = 24
         local label_y = 16
@@ -864,7 +874,7 @@ function update(screen_w, screen_h, ticks)
         
         -- render cursor last
         render_cursor(world_x, world_y, screen_w, screen_h)
-
+        
         g_dismiss_counter = 0
         g_notification_time = 0
     end
@@ -878,8 +888,10 @@ function update(screen_w, screen_h, ticks)
 end
 
 function render_cursor(world_x, world_y, screen_w, screen_h)
-    local cursor_x, cursor_y = get_holomap_from_world(world_x, world_y, screen_w, screen_h)
-    update_ui_image_rot(cursor_x, cursor_y, atlas_icons.map_icon_crosshair, color_white, math.pi / 4)
+    if not (update_get_is_focus_local() and g_is_mouse_mode) then
+        local cursor_x, cursor_y = get_holomap_from_world(world_x, world_y, screen_w, screen_h)
+        update_ui_image_rot(cursor_x, cursor_y, atlas_icons.map_icon_crosshair, color_white, 0)
+    end
 end
 
 function input_event(event, action)
@@ -1907,4 +1919,40 @@ function render_selection(screen_w, screen_h)
     end
     
     return false
+end
+
+function get_grid_spacing()
+    local grid_spacing = 500
+    local camera_size = g_map_size + g_map_size_offset
+
+    while camera_size > 2000 and grid_spacing < 16000 do
+        camera_size = camera_size / 2
+        grid_spacing = grid_spacing * 2
+    end
+
+    return grid_spacing
+end
+
+function render_map_scale(screen_w, screen_h)
+    if g_is_render_holomap_grids then
+
+        local grid_spacing = get_grid_spacing()
+        local text = iff( grid_spacing >= 1000, math.floor(grid_spacing / 1000) .. update_get_loc(e_loc.acronym_kilometers), math.floor(grid_spacing) .. update_get_loc(e_loc.acronym_meters) )
+
+        local sx, _ = get_holomap_from_world(0, 0, screen_w, screen_h)
+        local ex, _ = get_holomap_from_world(grid_spacing, 0, screen_w, screen_h)
+        local dx = ex - sx
+
+        update_ui_push_offset(screen_w - dx/2 - 15, screen_h - 12)
+
+        local w = update_ui_get_text_size(text, 32, 0)
+        update_ui_text(-w/2, -10, text, w, 1, color_grey_mid, 0)
+        
+        update_ui_rectangle(-dx/2, 0, 1, 4, color_grey_dark)
+        update_ui_rectangle(0, 2, 1, 2, color_grey_dark)
+        update_ui_rectangle(dx/2 - 1, 0, 1, 4, color_grey_dark)
+        update_ui_rectangle(-dx/2, 4, dx, 1, color_grey_dark)
+
+        update_ui_pop_offset()
+    end
 end
