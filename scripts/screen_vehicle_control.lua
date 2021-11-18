@@ -1512,7 +1512,7 @@ function update(screen_w, screen_h, ticks)
         end
 
         if get_is_selection() == false then
-            if update_get_active_input_type() == e_active_input.gamepad then
+            if update_get_active_input_type() == e_active_input.gamepad or update_get_is_focus_local() == false then
                 local crosshair_color = color8(255, 255, 255, 255)
 
                 if g_highlighted_vehicle_id > 0 or g_highlighted_waypoint_id > 0 then

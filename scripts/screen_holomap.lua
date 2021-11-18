@@ -178,7 +178,9 @@ function update(screen_w, screen_h, ticks)
     end
     
     if holomap_override(screen_w, screen_h, ticks) then
-        render_cursor(world_x, world_y, screen_w, screen_h)
+--        if g_is_mouse_mode and is_local then
+--            render_cursor(world_x, world_y, screen_w, screen_h)
+--        end
         return
     end
 

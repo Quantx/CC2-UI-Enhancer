@@ -552,8 +552,12 @@ function imgui_barge_table(ui, barges)
         local dist_to_target = 0
         local waypoint = barge:get_waypoint(0)
         local text_action = get_action_text(action)
+        local text_color = get_action_color(action)
         local text_destination, col_destination = get_destination_data(destination_id, destination_type)
         local text_dist = "---"
+        
+        local capacity = barge:get_inventory_capacity()
+        local weight = barge:get_inventory_weight()
         
         if waypoint:get() then
             local waypoint_pos_xz = waypoint:get_position_xz()
@@ -607,7 +611,7 @@ function imgui_barge_table(ui, barges)
                 render_button_bg(w / 2 - 9, h / 2 - 9, 18, 18, color8(0, 0, 0, 128))
                 update_ui_image_rot(w / 2, h / 2, item_data.icon, item_col, 0)
             else
-                update_ui_text(2, 3, "---", w, 0, color_grey_dark, 0)
+                update_ui_text(2, 3, tostring(weight) .. update_get_loc(e_loc.upp_kg), w, 0, color_grey_dark, 0)
             end
 
             update_ui_pop_clip()
@@ -615,7 +619,7 @@ function imgui_barge_table(ui, barges)
 
         local columns = { 
             { w=column_widths[1], margin=column_margins[1], value=tostring(display_id) },
-            { w=column_widths[2], margin=column_margins[2], value=text_action },
+            { w=column_widths[2], margin=column_margins[2], value=text_action, col=text_color },
             { w=column_widths[3], margin=column_margins[3], value=text_destination, col=col_destination },
             { w=column_widths[4], margin=column_margins[4], value=column_item_transfer, row_h = iff(is_transferring, 13, nil) },
             { w=column_widths[5], margin=column_margins[5], value=text_dist },
@@ -642,6 +646,18 @@ function get_action_text(action_type)
     }
 
     return text[action_type] or "---"
+end
+
+function get_action_color(action_type)
+    local color = {
+        [e_barge_action_type.idle] = color_status_bad,
+        [e_barge_action_type.travel] = color_status_ok,
+        [e_barge_action_type.load] = color_status_warning,
+        [e_barge_action_type.unload] = color_status_warning,
+        [e_barge_action_type.wait] = color_white,
+    }
+
+    return color[action_type] or color_grey_dark
 end
 
 function get_destination_data(destination_id, destination_type)
@@ -996,14 +1012,16 @@ function render_map_details(screen_vehicle, screen_w, screen_h, is_tab_active)
     end
 
     if is_tab_active then
-        if g_is_mouse_mode == false then
-            update_ui_image(screen_w / 2 - 5, screen_h / 2 - 5, atlas_icons.map_icon_crosshair, iff(g_tab_map.hovered_id ~= 0, color_black, color_white), 0)
+        if g_is_mouse_mode == false or update_get_is_focus_local() == false then
+            update_ui_image(g_tab_map.cursor_pos_x - 5, g_tab_map.cursor_pos_y - 5, atlas_icons.map_icon_crosshair, iff(g_tab_map.hovered_id ~= 0, color_black, color_white), 0)
         end
     end
 end
 
 function render_map_ui(screen_w, screen_h, x, y, w, h, screen_vehicle, is_tab_active)
     local ui = g_ui
+
+    local is_local = update_get_is_focus_local()
 
     if is_tab_active then
         if g_tab_map.selected_barge_id ~= 0 then
@@ -2005,7 +2023,14 @@ function tab_stock_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_
     g_tab_stock.is_overlay = false
     render_inventory_stats(0, 0, w, 10, screen_vehicle)
 
+    local is_local = update_get_is_focus_local()
     local window = ui:begin_window("##inventory", 5, 10, w - 10, h - 10, nil, is_tab_active and g_tab_stock.selected_item == -1, 1)
+        if is_local then
+            g_tab_stock.scroll_pos = window.scroll_y
+        else
+            window.scroll_y = g_tab_stock.scroll_pos
+        end
+    
         local selected_item, selected_row, selected_col, sx, sy, sw, sh = imgui_vehicle_inventory_table(ui, screen_vehicle)
         ui:divider(0, 3)
         ui:divider(0, 10)
