@@ -1673,6 +1673,11 @@ function render_ground_hud(screen_w, screen_h, vehicle)
         local col_red = color8(255, 0, 0, 255)
         render_warning_text(hud_pos:x(), hud_min:y() - 10, update_get_loc(e_loc.upp_dmg_critical), col_red)
     end
+    
+    if get_is_fuel_warning(vehicle) then
+        render_warning_text(hud_pos:x(), warning_y, "FUEL LOW", col_red)
+        warning_y = warning_y - 10
+    end
 end
 
 function render_flight_hud(screen_w, screen_h, is_render_center, vehicle)
@@ -1698,6 +1703,11 @@ function render_flight_hud(screen_w, screen_h, is_render_center, vehicle)
 
     if is_stall then
         render_warning_text(hud_pos:x(), warning_y, update_get_loc(e_loc.upp_stall), col_red)
+        warning_y = warning_y - 10
+    end
+    
+    if get_is_fuel_warning(vehicle) then
+        render_warning_text(hud_pos:x(), warning_y, "FUEL LOW", col_red)
         warning_y = warning_y - 10
     end
 
@@ -2448,6 +2458,7 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
             data.missile = missile_target
             data.type = 2
             data.id = laser_id
+            data.team = vehicle:get_team_id()
             data.is_laser_target = true
             data.is_observed = true
 
