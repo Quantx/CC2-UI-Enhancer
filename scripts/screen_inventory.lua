@@ -2151,8 +2151,11 @@ function imgui_item_description(ui, vehicle, item_data, is_inventory, is_active)
     local cx = window.cx
     local cy = window.cy
 
-    update_ui_image(math.floor(cx + 5), cy, atlas_icons.column_weight, color_grey_dark, 0)
-    update_ui_text(math.floor(cx + 15), cy, item_data.mass, math.floor(icon_w) - 15, 0, color_grey_dark, 0)
+    if update_get_resource_item_hidden(item_data.index) == false then
+        update_ui_image(math.floor(cx + 5), cy, atlas_icons.column_weight, color_grey_dark, 0)
+        update_ui_text(math.floor(cx + 15), cy, item_data.mass, math.floor(icon_w) - 15, 0, color_grey_dark, 0)
+    end
+
     cx = cx + icon_w
 
     if is_inventory then
