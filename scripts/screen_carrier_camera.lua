@@ -4,7 +4,7 @@ g_vehicle_id = 0
 
 function update(screen_w, screen_h, ticks) 
     if update_get_is_focus_local() then
-        g_state_counter = g_state_counter + 1
+        g_state_counter = g_state_counter + ticks
     else
         g_state_counter = 0
     end

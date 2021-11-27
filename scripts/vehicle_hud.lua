@@ -2256,6 +2256,11 @@ function render_mouse_flight_axis(pos)
 
         if settings.mouse_flight_mode ~= e_mouse_flight_mode.disabled and (settings.ui_show_mouse_joystick_on_hud or settings.mouse_joystick_mode == e_mouse_joystick_mode.offset) then
             local flight_axis = update_get_mouse_flight_axis()
+            local invert_x = iff(settings.mouse_flight_inv_x, -1, 1)
+            local invert_y = iff(settings.mouse_flight_inv_y, -1, 1)
+            flight_axis:x(flight_axis:x() * invert_x)
+            flight_axis:y(flight_axis:y() * invert_y)
+            
             local max_axis = clamp(math.max(math.abs(flight_axis:x()), math.abs(flight_axis:y())), 0, 1)
             local alpha = clamp((max_axis + 0.1) / 0.2, 0, 1)
             local col_line = color8(255, 255, 255, math.floor(180 * alpha))
