@@ -2021,7 +2021,7 @@ function tab_stock_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_
     update_ui_push_offset(x, y)
 
     g_tab_stock.is_overlay = false
-    render_inventory_stats(0, 0, w, 10, screen_vehicle)
+    local selected_bar = render_inventory_stats(0, 0, w, 10, screen_vehicle)
 
     local is_local = update_get_is_focus_local()
     local window = ui:begin_window("##inventory", 5, 10, w - 10, h - 10, nil, is_tab_active and g_tab_stock.selected_item == -1, 1)
@@ -2039,10 +2039,10 @@ function tab_stock_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_
             g_tab_stock.selected_item = selected_item
             g_tab_stock.selected_item_modify_amount = 0
         end
-
-        if is_tab_active and selected_row ~= -1 and selected_col > 1 then
+        
+        if is_tab_active and selected_row ~= -1 and selected_col > 1 and selected_bar == 0 then
             local region_w, region_h = ui:get_region()
-            
+        
             sx = sx + sw / 2
 
             if g_is_mouse_mode and g_is_pointer_hovered then
@@ -2060,6 +2060,18 @@ function tab_stock_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_
             render_tooltip(0, window.view_y, region_w - 5, region_h, sx, sy + sh / 2, text_w + 4, text_h + 2, sh / 2 + 4, callback_render_tooltip, color_button_bg_inactive)
         end
     ui:end_window()
+    
+    if selected_bar > 0 then
+        local tooltip_text = { update_get_loc(e_loc.carrier_stock), update_get_loc(e_loc.in_barges), update_get_loc(e_loc.pending_order), "Free Space" }
+        local text = tooltip_text[selected_bar]
+        local text_w, text_h = update_ui_get_text_size(text, 100, 1)
+
+        local function callback_render_tooltip(w, h) 
+            update_ui_text(2, 1, text, w - 2, 1, color_grey_mid, 0)
+        end
+
+        render_tooltip(0, 0, screen_w, screen_h, g_pointer_pos_x, 10, text_w + 4, text_h + 2, 0, callback_render_tooltip, color_button_bg_inactive)
+    end
     
     if is_tab_active then
         update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_ud)
@@ -2154,11 +2166,6 @@ function tab_stock_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_
     update_ui_pop_offset()
 end
 
-function update_ui_bar(x, w, h, color)
-    update_ui_rectangle(x, 1, w, h, color)
-    return x + w
-end
-
 function get_ordered_weight(vehicle)
     local ordered_weight = 0.0
     for _, category in pairs(g_item_categories) do
@@ -2198,54 +2205,52 @@ function render_carrier_load_graph(x, y, w, h, vehicle)
     local carrier_weight = vehicle:get_inventory_weight()
 
     local bar_length_mult = (w-2) / 100
-    local ordered_length = bar_length_mult * (ordered_weight / capacity * 100)
-    local barge_length = bar_length_mult * (barge_weight / capacity * 100)
-    local carrier_length = bar_length_mult * (carrier_weight / capacity * 100)
+    local ordered_length = math.floor(bar_length_mult * (ordered_weight / capacity * 100))
+    local barge_length   = math.floor(bar_length_mult * (barge_weight   / capacity * 100))
+    local carrier_length = math.floor(bar_length_mult * (carrier_weight / capacity * 100))
 
-    local cursor = 1
+    local cx = 1
 
-    local color_grey_mid2 = color8(32, 32, 32, 255)
+    local bars = {
+        { width=carrier_length, col=color_white },
+        { width=barge_length,   col=color_grey_mid },
+        { width=ordered_length, col=color8(32, 32, 32, 255) },
+    }
 
-    local total_length = math.floor(ordered_length + barge_length + carrier_length)
-    local mid_length = math.floor(barge_length + carrier_length)
+    local hover_v = (g_pointer_pos_y >= 16 and g_pointer_pos_y < (16 + h - 3))
 
-    ordered_length = math.floor(ordered_length)
-    barge_length = math.floor(barge_length)
-    carrier_length = math.floor(carrier_length)
+    local selected_bar = 0
 
-    -- Assign leftover pixels consistently to avoid jitter
-    local midroundings = mid_length - barge_length - carrier_length -- carrier + barge weights must always reach the mid point
-    if barge_length > 0 and midroundings > 0 then
-        barge_length = barge_length + midroundings
-        midroundings = 0
+    for i, b in ipairs(bars) do
+        update_ui_rectangle(cx, 1, b.width, h - 3, b.col)
+        
+        local ex = cx + b.width
+        
+        if hover_v and g_pointer_pos_x >= (x + cx) and g_pointer_pos_x < math.min(x + w - 1, x + ex) then
+            selected_bar = i
+        end
+        
+        cx = ex
     end
-    if midroundings > 0 then
-        carrier_length = carrier_length + midroundings
-        midroundings = 0
+    
+    if selected_bar == 0 and hover_v and g_pointer_pos_x >= x and g_pointer_pos_x < x + w - 1 then
+        selected_bar = #bars + 1
+    end
+    
+
+    local border_color = color_grey_dark
+    local blink_speed = 16
+
+    if ordered_weight + barge_weight + carrier_weight > capacity and g_animation_time % blink_speed > (blink_speed / 2) then
+        border_color = color_status_bad
     end
 
-    local toproundings = total_length - ordered_length - barge_length - carrier_length -- total bar length must always reach the far point
-    if ordered_length > 0 and toproundings > 0 then
-        ordered_length = ordered_length + toproundings
-        toproundings = 0
-    end
-    if barge_length > 0 and toproundings > 0 then
-        barge_length = barge_length + toproundings
-        toproundings = 0
-    end
-    if toproundings > 0 then
-        carrier_length = carrier_length + toproundings
-        toproundings = 0
-    end
-
-    cursor = update_ui_bar(cursor, carrier_length, h-3, color_white)
-    cursor = update_ui_bar(cursor, barge_length, h-3, color_grey_mid)
-    cursor = update_ui_bar(cursor, ordered_length, h-3, color_grey_mid2)
-
-    update_ui_rectangle_outline(0, 0, w, h-1, iff(ordered_weight + barge_weight + carrier_weight > capacity, color_status_bad, color_grey_dark))
+    update_ui_rectangle_outline(0, 0, w, h-1, border_color)
 
     update_ui_pop_clip()
     update_ui_pop_offset()
+
+    return selected_bar
 end
 
 function render_inventory_stats(x, y, w, h, vehicle)
@@ -2254,22 +2259,25 @@ function render_inventory_stats(x, y, w, h, vehicle)
 
     local col = iff(g_focused_screen == g_screens.inventory, color_grey_dark, color_grey_dark)
 
+    local cursor_y = -1
     local cursor_x = 10
-    update_ui_image(cursor_x, 0, atlas_icons.column_weight, col, 0)
+    update_ui_image(cursor_x, cursor_y, atlas_icons.column_weight, col, 0)
     cursor_x = cursor_x + 10
 
     local capacity = vehicle:get_inventory_capacity()
     local weight = vehicle:get_inventory_weight()
     local used_space = weight / capacity * 100
 
-    update_ui_text(cursor_x, 0, string.format("%.1f%%", used_space), w - cursor_x, 0, col, 0)
-    render_carrier_load_graph(60, 1, 75, h-2, vehicle)
-    update_ui_text(cursor_x, 0, weight .. "/" .. capacity .. update_get_loc(e_loc.upp_kg), w - cursor_x - 10, 2, col, 0)
+    update_ui_text(cursor_x, cursor_y, string.format("%.1f%%", used_space), w - cursor_x, 0, col, 0)
+    local selected_bar = render_carrier_load_graph(60, cursor_y + 1, 75, h-2, vehicle)
+    update_ui_text(cursor_x, cursor_y, weight .. "/" .. capacity .. update_get_loc(e_loc.upp_kg), w - cursor_x - 10, 2, col, 0)
 
     update_ui_line(0, h - 1, w, h - 1, col)
 
     update_ui_pop_clip()
     update_ui_pop_offset()
+    
+    return selected_bar
 end
 
 function tab_stock_input_event(input, action)
