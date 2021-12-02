@@ -216,7 +216,7 @@ function update(screen_w, screen_h, ticks)
     end
 
     update_ui_rectangle(0, 0, screen_w, 14, color_black)
-    update_ui_line(0, 14, screen_w, 14, iff(is_hoverable, iff(g_focused_screen == g_screens.active_tab, color_white, color_highlight), color_grey_dark))
+    update_ui_rectangle(0, 14, screen_w, 1, iff(is_hoverable, iff(g_focused_screen == g_screens.active_tab, color_white, color_highlight), color_grey_dark))
     
     local cx = 10
 
@@ -1353,11 +1353,11 @@ function render_barge_inventory_status(x, y, w, h, barge)
     update_ui_text(10, 9, get_barge_inventory_item_count(barge), 100, 0, color_grey_dark, 0)
     update_ui_pop_offset()
 
-    update_ui_line(left_w, 0, left_w, h, color_white)
+    update_ui_rectangle(left_w, 0, 1, h, color_white)
 
     render_barge_item_transfer_status(left_w, 0, right_w, h, barge)
 
-    update_ui_line(0, h, w, h, color_white)
+    update_ui_rectangle(0, h, w, 1, color_white)
 
     update_ui_pop_offset()
 end
@@ -2259,7 +2259,7 @@ function render_inventory_stats(x, y, w, h, vehicle)
 
     local col = iff(g_focused_screen == g_screens.inventory, color_grey_dark, color_grey_dark)
 
-    local cursor_y = -1
+    local cursor_y = 0
     local cursor_x = 10
     update_ui_image(cursor_x, cursor_y, atlas_icons.column_weight, col, 0)
     cursor_x = cursor_x + 10
@@ -2272,7 +2272,7 @@ function render_inventory_stats(x, y, w, h, vehicle)
     local selected_bar = render_carrier_load_graph(60, cursor_y + 1, 75, h-2, vehicle)
     update_ui_text(cursor_x, cursor_y, weight .. "/" .. capacity .. update_get_loc(e_loc.upp_kg), w - cursor_x - 10, 2, col, 0)
 
-    update_ui_line(0, h - 1, w, h - 1, col)
+    update_ui_rectangle(0, h - 1, w, 1, col)
 
     update_ui_pop_clip()
     update_ui_pop_offset()
