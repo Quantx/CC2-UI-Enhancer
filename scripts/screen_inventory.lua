@@ -2154,6 +2154,100 @@ function tab_stock_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_
     update_ui_pop_offset()
 end
 
+function update_ui_bar(x, w, h, color)
+    update_ui_rectangle(x, 1, w, h, color)
+    return x + w
+end
+
+function get_ordered_weight(vehicle)
+    local ordered_weight = 0.0
+    for _, category in pairs(g_item_categories) do
+        if #category.items > 0 then
+            for _, item in pairs(category.items) do
+                if update_get_resource_item_hidden(item.index) == false then
+                     ordered_weight = ordered_weight + (clamp(vehicle:get_inventory_order(item.index), -99999, 99999) * item.mass)
+                end
+            end
+        end
+    end
+
+    return ordered_weight
+end
+
+function get_barge_weight(vehicle)
+    local vehicle_team = vehicle:get_team()
+    local vehicle_filter = function(v)
+        return v:get_definition_index() == e_game_object_type.chassis_sea_barge and v:get_team() == vehicle_team
+    end
+
+    local barge_weight = 0.0
+    for _, barge in iter_vehicles(vehicle_filter) do
+        barge_weight = barge_weight + barge:get_inventory_weight()
+    end
+
+    return barge_weight
+end
+
+function render_carrier_load_graph(x, y, w, h, vehicle)
+    update_ui_push_offset(x, y)
+    update_ui_push_clip(0, 0, w, h)
+
+    local capacity = vehicle:get_inventory_capacity()
+    local ordered_weight = get_ordered_weight(vehicle)
+    local barge_weight = get_barge_weight(vehicle)
+    local carrier_weight = vehicle:get_inventory_weight()
+
+    local bar_length_mult = (w-2) / 100
+    local ordered_length = bar_length_mult * (ordered_weight / capacity * 100)
+    local barge_length = bar_length_mult * (barge_weight / capacity * 100)
+    local carrier_length = bar_length_mult * (carrier_weight / capacity * 100)
+
+    local cursor = 1
+
+    local color_grey_mid2 = color8(32, 32, 32, 255)
+
+    local total_length = math.floor(ordered_length + barge_length + carrier_length)
+    local mid_length = math.floor(barge_length + carrier_length)
+
+    ordered_length = math.floor(ordered_length)
+    barge_length = math.floor(barge_length)
+    carrier_length = math.floor(carrier_length)
+
+    -- Assign leftover pixels consistently to avoid jitter
+    local midroundings = mid_length - barge_length - carrier_length -- carrier + barge weights must always reach the mid point
+    if barge_length > 0 and midroundings > 0 then
+        barge_length = barge_length + midroundings
+        midroundings = 0
+    end
+    if midroundings > 0 then
+        carrier_length = carrier_length + midroundings
+        midroundings = 0
+    end
+
+    local toproundings = total_length - ordered_length - barge_length - carrier_length -- total bar length must always reach the far point
+    if ordered_length > 0 and toproundings > 0 then
+        ordered_length = ordered_length + toproundings
+        toproundings = 0
+    end
+    if barge_length > 0 and toproundings > 0 then
+        barge_length = barge_length + toproundings
+        toproundings = 0
+    end
+    if toproundings > 0 then
+        carrier_length = carrier_length + toproundings
+        toproundings = 0
+    end
+
+    cursor = update_ui_bar(cursor, carrier_length, h-3, color_white)
+    cursor = update_ui_bar(cursor, barge_length, h-3, color_grey_mid)
+    cursor = update_ui_bar(cursor, ordered_length, h-3, color_grey_mid2)
+
+    update_ui_rectangle_outline(0, 0, w, h-1, iff(ordered_weight + barge_weight + carrier_weight > capacity, color_status_bad, color_grey_dark))
+
+    update_ui_pop_clip()
+    update_ui_pop_offset()
+end
+
 function render_inventory_stats(x, y, w, h, vehicle)
     update_ui_push_offset(x, y)
     update_ui_push_clip(0, 0, w, h)
@@ -2169,6 +2263,7 @@ function render_inventory_stats(x, y, w, h, vehicle)
     local used_space = weight / capacity * 100
 
     update_ui_text(cursor_x, 0, string.format("%.1f%%", used_space), w - cursor_x, 0, col, 0)
+    render_carrier_load_graph(60, 1, 75, h-2, vehicle)
     update_ui_text(cursor_x, 0, weight .. "/" .. capacity .. update_get_loc(e_loc.upp_kg), w - cursor_x - 10, 2, col, 0)
 
     update_ui_line(0, h - 1, w, h - 1, col)
