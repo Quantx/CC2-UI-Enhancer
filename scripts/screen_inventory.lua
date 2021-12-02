@@ -2205,11 +2205,11 @@ function render_carrier_load_graph(x, y, w, h, vehicle)
     local carrier_weight = vehicle:get_inventory_weight()
 
     local bar_length_mult = (w-2) / 100
-    local ordered_length = math.floor(bar_length_mult * (ordered_weight / capacity * 100))
-    local barge_length   = math.floor(bar_length_mult * (barge_weight   / capacity * 100))
-    local carrier_length = math.floor(bar_length_mult * (carrier_weight / capacity * 100))
+    local ordered_length = bar_length_mult * (ordered_weight / capacity * 100)
+    local barge_length   = bar_length_mult * (barge_weight   / capacity * 100)
+    local carrier_length = bar_length_mult * (carrier_weight / capacity * 100)
 
-    local cx = 1
+    local cx = 0
 
     local bars = {
         { width=carrier_length, col=color_white },
@@ -2221,19 +2221,24 @@ function render_carrier_load_graph(x, y, w, h, vehicle)
 
     local selected_bar = 0
 
+    local cumulative_length_wanted = 0
+
     for i, b in ipairs(bars) do
-        update_ui_rectangle(cx, 1, b.width, h - 3, b.col)
+        cumulative_length_wanted = cumulative_length_wanted + b.width
+        local render_width = math.floor(cumulative_length_wanted - cx)
+
+        update_ui_rectangle(cx + 1, 1, render_width, h - 3, b.col)
         
-        local ex = cx + b.width
+        local ex = cx + render_width
         
-        if hover_v and g_pointer_pos_x >= (x + cx) and g_pointer_pos_x < math.min(x + w - 1, x + ex) then
+        if hover_v and g_pointer_pos_x >= (x + cx + 1) and g_pointer_pos_x < math.min(x + w - 1, x + ex + 1) then
             selected_bar = i
         end
         
         cx = ex
     end
     
-    if selected_bar == 0 and hover_v and g_pointer_pos_x >= x and g_pointer_pos_x < x + w - 1 then
+    if selected_bar == 0 and hover_v and g_pointer_pos_x >= x + 1 and g_pointer_pos_x < x + w - 1 then
         selected_bar = #bars + 1
     end
     
