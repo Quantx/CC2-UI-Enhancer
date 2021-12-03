@@ -2040,7 +2040,7 @@ function tab_stock_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_
             g_tab_stock.selected_item_modify_amount = 0
         end
         
-        if is_tab_active and selected_row ~= -1 and selected_col > 1 and selected_bar == 0 then
+        if is_tab_active and selected_row ~= -1 and selected_col > 1 and g_pointer_pos_y > y + 10 then
             local region_w, region_h = ui:get_region()
         
             sx = sx + sw / 2
@@ -2205,16 +2205,13 @@ function render_carrier_load_graph(x, y, w, h, vehicle)
     local carrier_weight = vehicle:get_inventory_weight()
 
     local bar_length_mult = (w-2) / 100
-    local ordered_length = bar_length_mult * (ordered_weight / capacity * 100)
-    local barge_length   = bar_length_mult * (barge_weight   / capacity * 100)
-    local carrier_length = bar_length_mult * (carrier_weight / capacity * 100)
-
+    
     local cx = 0
 
     local bars = {
-        { width=carrier_length, col=color_white },
-        { width=barge_length,   col=color_grey_mid },
-        { width=ordered_length, col=color8(32, 32, 32, 255) },
+        { width=(bar_length_mult * (carrier_weight / capacity * 100)), col=color_white },
+        { width=(bar_length_mult * (barge_weight   / capacity * 100)), col=color_grey_mid },
+        { width=(bar_length_mult * (ordered_weight / capacity * 100)), col=color8(32, 32, 32, 255) },
     }
 
     local hover_v = (g_pointer_pos_y >= 16 and g_pointer_pos_y < (16 + h - 3))
