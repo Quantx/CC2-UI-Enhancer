@@ -11,7 +11,7 @@ g_selection_vehicle_id = 0
 g_selection_waypoint_id = 0
 g_selection_attack_target_index = -1
 g_selection_attack_target_vehicle_id = 0
-g_selected_child_vehicle_index = -1
+g_selected_child_vehicle_id = 0
 g_is_selection_map = false
 g_map_render_mode = 1
 g_is_drag_pan_map = false
@@ -251,7 +251,7 @@ function undock_by_bay_index(carrier_vehicle, bay_index)
     local child_vehicle_id = carrier_vehicle:get_attached_vehicle_id(bay_index)
 
     if child_vehicle_id >= 0 then
-        g_selected_child_vehicle_index = update_get_map_vehicle_index_by_id(child_vehicle_id)
+        g_selected_child_vehicle_id = child_vehicle_id
     end
     
     g_selection_vehicle_id = 0
@@ -516,7 +516,7 @@ function parse()
     g_selection_vehicle_id = parse_s32("", g_selection_vehicle_id)
     g_selection_waypoint_id = parse_s32("", g_selection_waypoint_id)
     g_selection_attack_target_index = parse_s32("", g_selection_attack_target_index)
-    g_selected_child_vehicle_index = parse_s32("", g_selected_child_vehicle_index)
+    g_selected_child_vehicle_id = parse_s32("", g_selected_child_vehicle_id)
     g_is_selection_map = parse_bool("", g_is_selection_map)
     g_map_render_mode = parse_s32("mode", g_map_render_mode)
     g_cursor_pos_x = parse_f32("", g_cursor_pos_x)
@@ -1204,7 +1204,7 @@ function update(screen_w, screen_h, ticks)
                                     update_ui_image(screen_pos_x - icon_offset, screen_pos_y - icon_offset, atlas_icons.map_icon_vehicle_control, element_color, 0)
                                 end
                             end
-                        elseif g_selected_child_vehicle_index == i then
+                        elseif g_selected_child_vehicle_id == vehicle:get_id() then
                             -- render as selected child vehicle
 
                             local parent_vehicle = update_get_map_vehicle_by_id(vehicle_attached_parent_id)
@@ -1365,10 +1365,10 @@ function update(screen_w, screen_h, ticks)
             else
                 g_drag_vehicle_id = 0
             end
-        elseif g_selected_child_vehicle_index >= 0 then
+        elseif g_selected_child_vehicle_id ~= 0 then
             -- drag
 
-            local drag_vehicle = update_get_map_vehicle_by_index(g_selected_child_vehicle_index)
+            local drag_vehicle = update_get_map_vehicle_by_id(g_selected_child_vehicle_id)
 
             if drag_vehicle:get() then
                 local vehicle_pos_xz = drag_vehicle:get_position_xz()
@@ -1384,10 +1384,7 @@ function update(screen_w, screen_h, ticks)
                 end
 
                 update_ui_line(screen_pos_x, screen_pos_y, g_cursor_pos_x, g_cursor_pos_y, color8(255, 255, 255, 255))
-                
-                if g_drag_distance > 2 then
-                    drag_start_pos = vehicle_pos_xz
-                end
+                drag_start_pos = vehicle_pos_xz
             end
         elseif g_highlighted_vehicle_id > 0 and g_highlighted_waypoint_id == 0 then
             -- render highlighted tooltip
@@ -1563,7 +1560,7 @@ function update_interaction_ui()
     if g_screen_index == 1 then
         update_add_ui_interaction(update_get_loc(e_loc.interaction_back), e_game_input.back)
     elseif get_is_selection() == false then
-        if g_selected_child_vehicle_index ~= -1 then
+        if g_selected_child_vehicle_id ~= 0 then
             update_add_ui_interaction(update_get_loc(e_loc.interaction_cancel), e_game_input.back)
             update_add_ui_interaction(update_get_loc(e_loc.interaction_set_waypoint), e_game_input.interact_a)
             update_add_ui_interaction_special(update_get_loc(e_loc.interaction_pan), e_ui_interaction_special.map_pan)
@@ -1640,11 +1637,11 @@ function input_event(event, action)
         else
             if action == e_input_action.press then
                 if event == e_input.action_a or event == e_input.pointer_1 then
-                    if g_selected_child_vehicle_index >= 0 then
+                    if g_selected_child_vehicle_id ~= 0 then
                         -- add waypoint to vehicle
 
                         local world_x, world_y = get_world_from_screen(g_cursor_pos_x, g_cursor_pos_y, g_camera_pos_x, g_camera_pos_y, g_camera_size, 256, 256)
-                        local child_vehicle = update_get_map_vehicle_by_index(g_selected_child_vehicle_index)
+                        local child_vehicle = update_get_map_vehicle_by_id(g_selected_child_vehicle_id)
                         
                         if child_vehicle:get() then
                             child_vehicle:clear_waypoints()
@@ -1652,7 +1649,7 @@ function input_event(event, action)
                             child_vehicle:add_waypoint(world_x, world_y)
                         end
 
-                        g_selected_child_vehicle_index = -1
+                        g_selected_child_vehicle_id = 0
                     elseif g_highlighted_vehicle_id > 0 and g_highlighted_waypoint_id == 0 then
                         local highlighted_vehicle = update_get_map_vehicle_by_id(g_highlighted_vehicle_id)
 
@@ -1682,8 +1679,8 @@ function input_event(event, action)
                         end
                     end
                 elseif event == e_input.back then
-                    if g_selected_child_vehicle_index >= 0 then
-                        g_selected_child_vehicle_index = -1
+                    if g_selected_child_vehicle_id ~= 0 then
+                        g_selected_child_vehicle_id = 0
                     elseif g_drag_vehicle_id > 0 then
                         g_drag_vehicle_id = 0
                         g_drag_waypoint_id = 0
@@ -1697,7 +1694,7 @@ function input_event(event, action)
                         g_is_drag_pan_map = false
                     end
 
-                    if g_drag_vehicle_id == g_highlighted_vehicle_id and g_drag_waypoint_id == g_highlighted_waypoint_id and g_selected_child_vehicle_index == -1 then
+                    if g_drag_vehicle_id == g_highlighted_vehicle_id and g_drag_waypoint_id == g_highlighted_waypoint_id and g_selected_child_vehicle_id == 0 then
                         -- tap
 
                         local drag_threshold = 3

@@ -255,6 +255,10 @@ function update(screen_w, screen_h, tick_fraction, delta_time, local_peer_id, ve
                 if def == e_game_object_type.chassis_carrier then
                     render_carrier_hud(screen_w, screen_h, vehicle)
                 end
+
+                if def == e_game_object_type.chassis_land_turret then
+                    render_turret_hud(screen_w, screen_h, vehicle)
+                end
             end
 
             render_attachment_hotbar(screen_w, screen_h, vehicle)
@@ -1650,6 +1654,21 @@ function render_ground_hud(screen_w, screen_h, vehicle)
     render_fuel_gauge(vec2(hud_min:x() + hud_size:x() - 16, hud_pos:y() + 45 - 50), 50, vehicle, col)
     render_damage_gauge(vec2(hud_min:x() + hud_size:x() - 1, hud_pos:y() + 45 - 50), 50, vehicle, col)
     render_control_mode(vec2(hud_min:x() + hud_size:x() - 16, hud_pos:y() + 45 + 5), vehicle, col)
+
+    if get_is_damage_warning(vehicle) then
+        local col_red = color8(255, 0, 0, 255)
+        render_warning_text(hud_pos:x(), hud_min:y() - 10, update_get_loc(e_loc.upp_dmg_critical), col_red)
+    end
+end
+
+function render_turret_hud(screen_w, screen_h, vehicle)
+    local hud_size = vec2(230, 140)
+    local hud_min = vec2((screen_w - hud_size:x()) / 2, (screen_h - hud_size:y()) / 2)
+    local hud_pos = vec2(hud_min:x() + hud_size:x() / 2, hud_min:y() + hud_size:y() / 2)
+    local col = color8(0, 255, 0, 255)
+
+    render_compass(vec2(hud_pos:x(), hud_min:y() + hud_size:y()), col)
+    render_damage_gauge(vec2(hud_min:x() + hud_size:x() - 1, hud_pos:y() + 45 - 50), 50, vehicle, col)
 
     if get_is_damage_warning(vehicle) then
         local col_red = color8(255, 0, 0, 255)
