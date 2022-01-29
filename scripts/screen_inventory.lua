@@ -2021,7 +2021,7 @@ function tab_stock_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_
     update_ui_push_offset(x, y)
 
     g_tab_stock.is_overlay = false
-    local selected_bar = render_inventory_stats(0, 0, w, 10, screen_vehicle)
+    local bar_text = render_inventory_stats(0, 0, w, 10, screen_vehicle)
 
     local is_local = update_get_is_focus_local()
     local window = ui:begin_window("##inventory", 5, 10, w - 10, h - 10, nil, is_tab_active and g_tab_stock.selected_item == -1, 1)
@@ -2040,7 +2040,7 @@ function tab_stock_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_
             g_tab_stock.selected_item_modify_amount = 0
         end
         
-        if is_tab_active and selected_row ~= -1 and selected_col > 1 and g_pointer_pos_y > y + 10 then
+        if is_tab_active and selected_row ~= -1 and selected_col > 1 and g_pointer_pos_y > y + 10 and bar_text == "" then
             local region_w, region_h = ui:get_region()
         
             sx = sx + sw / 2
@@ -2061,13 +2061,11 @@ function tab_stock_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_
         end
     ui:end_window()
     
-    if selected_bar > 0 then
-        local tooltip_text = { update_get_loc(e_loc.carrier_stock), update_get_loc(e_loc.in_barges), update_get_loc(e_loc.pending_order), "Free Space" }
-        local text = tooltip_text[selected_bar]
-        local text_w, text_h = update_ui_get_text_size(text, 100, 1)
+    if bar_text ~= "" then
+        local text_w, text_h = update_ui_get_text_size(bar_text, 100, 1)
 
         local function callback_render_tooltip(w, h) 
-            update_ui_text(2, 1, text, w - 2, 1, color_grey_mid, 0)
+            update_ui_text(2, 1, bar_text, w - 2, 1, color_grey_mid, 0)
         end
 
         render_tooltip(0, 0, screen_w, screen_h, g_pointer_pos_x, 10, text_w + 4, text_h + 2, 0, callback_render_tooltip, color_button_bg_inactive)
@@ -2239,6 +2237,16 @@ function render_carrier_load_graph(x, y, w, h, vehicle)
         selected_bar = #bars + 1
     end
     
+    local tooltip_text = ""
+    if selected_bar > 0 then
+        local tooltip_texts = { 
+            update_get_loc(e_loc.carrier_stock) .. "\n" .. string.format("%.0fKG", carrier_weight), 
+            update_get_loc(e_loc.in_barges) .. "\n" .. string.format("%.0fKG", barge_weight), 
+            update_get_loc(e_loc.pending_order)  .. "\n" .. string.format("%.0fKG", ordered_weight), 
+            "Free Space" .. "\n" .. string.format("%.0fKG", capacity - carrier_weight - barge_weight - ordered_weight) 
+        }
+        tooltip_text = tooltip_texts[selected_bar]
+    end
 
     local border_color = color_grey_dark
     local blink_speed = 16
@@ -2252,7 +2260,7 @@ function render_carrier_load_graph(x, y, w, h, vehicle)
     update_ui_pop_clip()
     update_ui_pop_offset()
 
-    return selected_bar
+    return tooltip_text
 end
 
 function render_inventory_stats(x, y, w, h, vehicle)
@@ -2271,7 +2279,7 @@ function render_inventory_stats(x, y, w, h, vehicle)
     local used_space = weight / capacity * 100
 
     update_ui_text(cursor_x, cursor_y, string.format("%.1f%%", used_space), w - cursor_x, 0, col, 0)
-    local selected_bar = render_carrier_load_graph(60, cursor_y + 1, 75, h-2, vehicle)
+    local tooltip_text = render_carrier_load_graph(60, cursor_y + 1, 75, h-2, vehicle)
     update_ui_text(cursor_x, cursor_y, weight .. "/" .. capacity .. update_get_loc(e_loc.upp_kg), w - cursor_x - 10, 2, col, 0)
 
     update_ui_rectangle(0, h - 1, w, 1, col)
@@ -2279,7 +2287,7 @@ function render_inventory_stats(x, y, w, h, vehicle)
     update_ui_pop_clip()
     update_ui_pop_offset()
     
-    return selected_bar
+    return tooltip_text
 end
 
 function tab_stock_input_event(input, action)
