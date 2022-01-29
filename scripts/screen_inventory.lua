@@ -2212,7 +2212,7 @@ function render_carrier_load_graph(x, y, w, h, vehicle)
         { width=(bar_length_mult * (ordered_weight / capacity * 100)), col=color8(32, 32, 32, 255) },
     }
 
-    local hover_v = (g_pointer_pos_y >= 16 and g_pointer_pos_y < (16 + h - 3))
+    local hover_v = (g_pointer_pos_y >= 17 and g_pointer_pos_y < (17 + h - 3))
 
     local selected_bar = 0
 
