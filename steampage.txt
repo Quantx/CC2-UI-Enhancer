@@ -1,0 +1,103 @@
+If you wish to contribute to the development of the UI Enhancer mod, feel free to submit a pull request to the official Github repository: https://github.com/Quantx/CC2-UI-Enhancer
+
+Logistics Screen
+[list]
+[*]Add barge ID's to the tooltip
+[*]Improved color coding
+[*]Added inventory screen weight indicator bar courtesy of Rcomian
+[*]Synced the scroll positions of the tabs
+[/list]
+
+Navigation Screen
+[list]
+[*]Added island names to the map
+[*]Added an option to toggle map names on and off
+[*]Added weather statistics
+[*]Added torpedoes
+[*]Added carrier waypoints (These can be set/removed from the holomap. May not be visible on all map display modes)
+[*]Added vehicle links to navigation screens
+[*]Allowed panning on the navigation screens
+[/list]
+
+Compass Screen
+[list]
+[*]Added heading and directional indicator for the next waypoint
+[/list]
+
+Propulsion Screen
+[list]
+[*]Added aircraft takeoff / landing info to assist helmsmen with angling the carrier
+[/list]
+
+Sonar Screen
+[list]
+[*]Added mute button to sonar screen
+[/list]
+
+Carrier Weapons Screen
+[list]
+[*]Weapon status now visible at all times
+[*]Added weapon healthbar
+[*]Added indicator for remaining ammo in carrier inventory
+[*]Added player names to carrier support weapon screen
+[/list]
+
+CCTV Screen
+[list]
+[*]Added camera view from docking and undocking vehicles
+[/list]
+
+Vehicle Hud
+[list]
+[*]Added shell drop indicator added for the heavy cannon (Thanks JetfireBlack!)
+[*]Added directional indicator for chassis when controlling the turret of a ground vehicle
+[*]Friendly vehicles are now blue, hostile vehicles are now red
+[*]Player names show up above the friendly vehicles they're controlling
+[*]All attachments can now lock/unlock targets
+[*]Always show friendly vehicles
+[*]Always show distance to highlighted vehicle
+[*]Highlighted vehicle's text is now much more readable
+[*]Fixed CWIS and Aircraft Chaingun crosshair disappearing when locking a target
+[*]Show all weapons on highlighted vehicle info
+[/list]
+
+Landing Screen
+[list]
+[*]Now shows far more detail about aircraft (Huge thanks to ambispess)
+[*]Added ground units info to screen
+[*]Click on screen to see landing patterns (Click on the left / right side of the screen to pin/unpin the current view)
+[/list]
+
+Holomap
+[list]
+[*]Added bootup sequence (Launch the carrier or press either of the focus buttons on the holomap to skip)
+[*]Synced cursor across clients
+[*]Added vehicle waypoints (with altitude tooltips)
+[*]Added vehicle weapon range on hover
+[*]Added weather statistics to the different visibility modes
+[*]Added self destruct message
+[*]Added island names
+[*]Added island difficulty indicators
+[*]Added island factory types
+[*]Added island capture progress
+[*]Added map tools (Hold "E" or whatever your "interaction a" key is bound to. Then drag the mouse somewhere else on the map)
+[*]Added map scale
+[*]Added vehicle tooltips
+[*]Added player names to vehicle tooltips
+[*]Added mission time and day/night cycle to cartographic view
+[*]Added carrier loadout (click on carrier when tooltip shows)
+[*]Added vehicle loadouts (click on vehicle when tooltip shows)
+[*]Added carrier waypoints (Press "R" or whatever your a "interaction b" key is bound to to set a waypoint for the carrier. Set a waypoint on the carrier itself to clear all waypoints. Note: the person helming the carrier must also have this mod to see the waypoints. )
+[/list]
+
+Vehicle Control Screen
+[list]
+[*]Added rudimentary CCTV support when driving vehicles ( NOTE: This feature has not been fully implemented by the developers, expect it to be buggy! )
+[*]Added toggle to turn CCTV view off (Click on the vehicle control map to open the options menu then scroll down)
+[*]Added grid and X/Y grid references in terms of 500m grid squares
+[*]Added toggle to show carrier waypoints
+[*]Holomap cursor now visible on vehicle control screen
+[*]Show all vehicle weapons on tooltip
+[*]Added tooltips for waypoint altitude
+[*]Added player names to vehicle tooltips
+[/list]
