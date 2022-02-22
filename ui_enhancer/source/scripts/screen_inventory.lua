@@ -79,7 +79,7 @@ g_screens = {
     active_tab = 1,
 }
 
-g_focused_screen = g_screens.menu
+g_focused_screen = g_screens.active_tab
 g_active_tab = g_tabs.stock
 g_hovered_tab = -1
 
@@ -362,7 +362,7 @@ function input_event(event, action)
 end
 
 function exit_screen()
-    g_focused_screen = g_screens.menu
+    g_focused_screen = g_screens.active_tab
     g_hovered_tab = -1
     update_set_screen_state_exit()
 end
@@ -413,7 +413,14 @@ function tab_barges_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen
         table.insert(barges, barge)
     end
 
-    ui:begin_window("##barges", 5, 0, w - 10, h, nil, is_tab_active and g_tab_barges.selected_item == -1, 1)
+    local is_local = update_get_is_focus_local()
+    local barge_window = ui:begin_window("##barges", 5, 0, w - 10, h, nil, is_tab_active and g_tab_barges.selected_item == -1, 1, is_local)
+        if is_local then
+            g_tab_barges.scroll_pos = barge_window.scroll_y
+        else
+            barge_window.scroll_y = g_tab_barges.scroll_pos
+        end
+    
         local selected_item = imgui_barge_table(ui, barges)
         ui:divider(0, 3)
         ui:divider(0, 10)
@@ -432,8 +439,7 @@ function tab_barges_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen
         update_add_ui_interaction(update_get_loc(e_loc.interaction_back), e_game_input.back)
         update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_ud)
 
-        local display_id = selected_barge:get_id()
-        local window = ui:begin_window(update_get_loc(e_loc.upp_barge_id).. " " .. display_id .. "##selectedbarge", 60, 2, w - 120, 103, atlas_icons.column_distance, is_tab_active, 2)
+        local window = ui:begin_window(update_get_loc(e_loc.upp_barge_id).. " " .. selected_barge:get_id() .. "##selectedbarge", 60, 2, w - 120, 103, atlas_icons.column_distance, is_tab_active, 2)
             local inventory_capacity = selected_barge:get_inventory_capacity()
             local inventory_weight = selected_barge:get_inventory_weight()
             local hp_factor = selected_barge:get_hitpoints() / selected_barge:get_total_hitpoints()
@@ -526,7 +532,9 @@ function imgui_barge_table(ui, barges)
     local selected_item = -1
     local is_active = window.is_active
 
-    local column_widths = { 24, 46, 70, 60, 38, 5 }
+    local id_w = update_ui_get_text_size("0000", 10000, 0) + 8
+
+    local column_widths = { id_w, 46, 67, 57, 38, 5 }
     local column_margins = { 5, 2, 2, 0, 2, 1 }
 
     local header_columns = {
@@ -545,6 +553,7 @@ function imgui_barge_table(ui, barges)
         local dist_to_target = 0
         local waypoint = barge:get_waypoint(0)
         local text_action = get_action_text(action)
+        local text_color = get_action_color(action)
         local text_destination, col_destination = get_destination_data(destination_id, destination_type)
         local text_dist = "---"
         
@@ -569,10 +578,10 @@ function imgui_barge_table(ui, barges)
         local function column_health(w, h, is_selected)
             local hp_factor = barge:get_hitpoints() / barge:get_total_hitpoints()
             update_ui_push_offset(math.floor(w / 2), 2)
-            update_ui_rectangle(0, 0, 2, 10, color_grey_dark)
+            update_ui_rectangle(0, -1, 2, 10, color_grey_dark)
 
             local bar_h = math.ceil(10 * hp_factor)
-            update_ui_rectangle(0, 10 - bar_h, 2, bar_h, get_color_hp(hp_factor))
+            update_ui_rectangle(0, 9 - bar_h, 2, bar_h, get_color_hp(hp_factor))
             update_ui_pop_offset()
         end
 
@@ -611,7 +620,7 @@ function imgui_barge_table(ui, barges)
 
         local columns = { 
             { w=column_widths[1], margin=column_margins[1], value=tostring(display_id) },
-            { w=column_widths[2], margin=column_margins[2], value=text_action },
+            { w=column_widths[2], margin=column_margins[2], value=text_action, col=text_color },
             { w=column_widths[3], margin=column_margins[3], value=text_destination, col=col_destination },
             { w=column_widths[4], margin=column_margins[4], value=column_item_transfer, row_h = iff(is_transferring, 13, nil) },
             { w=column_widths[5], margin=column_margins[5], value=text_dist },
@@ -638,6 +647,18 @@ function get_action_text(action_type)
     }
 
     return text[action_type] or "---"
+end
+
+function get_action_color(action_type)
+    local color = {
+        [e_barge_action_type.idle] = color_status_bad,
+        [e_barge_action_type.travel] = color_status_ok,
+        [e_barge_action_type.load] = color_status_warning,
+        [e_barge_action_type.unload] = color_status_warning,
+        [e_barge_action_type.wait] = color_white,
+    }
+
+    return color[action_type] or color_grey_dark
 end
 
 function get_destination_data(destination_id, destination_type)
@@ -871,7 +892,9 @@ function render_map_details(screen_vehicle, screen_w, screen_h, is_tab_active)
 
     for _, tile in iter_tiles() do 
         local tile_position = tile:get_position_xz()
+        
         local screen_pos_x, screen_pos_y = get_screen_from_world(tile_position:x(), tile_position:y(), g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
+        
         local tile_icon_color = g_map_colors.inactive
         local tile_icon_bg = color_black
 
@@ -888,9 +911,9 @@ function render_map_details(screen_vehicle, screen_w, screen_h, is_tab_active)
             local name = tile:get_name()
             local name_factor = clamp(invlerp(g_tab_map.camera_size,  g_tab_map.camera_size_min, g_tab_map.camera_size_max * 0.35), 0, 1)
             local tile_size = tile:get_size()
-            local _, name_pos_y = get_screen_from_world(tile_position:x(), tile_position:y() + tile_size:y() / 2, g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
+            local name_pos_x, name_pos_y = get_screen_from_world(tile_position:x(), tile_position:y() + tile_size:y() / 2, g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
 
-            update_ui_text(screen_pos_x - 100, math.min(screen_pos_y - 14, name_pos_y), name, 200, 1, color8_lerp(color8(0, 255, 255, 10), color_empty, name_factor), 0)
+            update_ui_text(name_pos_x - 100, math.min(screen_pos_y - 14, name_pos_y), name, 200, 1, color8_lerp(color8(0, 255, 255, 10), color_empty, name_factor), 0)
 
             update_ui_rectangle(screen_pos_x - 5, screen_pos_y - 4, 10, 8, tile_icon_bg)
             update_ui_rectangle(screen_pos_x - 4, screen_pos_y - 5, 8, 10, tile_icon_bg)
@@ -997,8 +1020,8 @@ function render_map_details(screen_vehicle, screen_w, screen_h, is_tab_active)
 end
 
 function render_map_ui(screen_w, screen_h, x, y, w, h, screen_vehicle, is_tab_active)
-    local ui = g_u
-    
+    local ui = g_ui
+
     local is_local = update_get_is_focus_local()
 
     if is_tab_active then
@@ -1063,17 +1086,15 @@ function render_map_ui(screen_w, screen_h, x, y, w, h, screen_vehicle, is_tab_ac
             update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_ud)
 
             local facility_tile = update_get_tile_by_id(g_tab_map.selected_facility_id)
- 
+
             if facility_tile:get() and facility_tile:get_team_control() == screen_vehicle:get_team() then
                 local category_data = g_item_categories[facility_tile:get_facility_category()]
                 
                 render_map_facility_ui(screen_w, screen_h, x, y, w, h, category_data, facility_tile, screen_vehicle, is_tab_active and g_tab_map.selected_facility_inventory == false)
-                
+
                 if g_tab_map.selected_facility_inventory then
                     render_map_facility_inventory(x + 15, y + 5, w - 30, h - 15, category_data, facility_tile, is_tab_active)
                 end
-            else
-                g_tab_map.selected_facility_id = 0
             end
         else
             local zoom_factor = invlerp(g_tab_map.camera_size, g_tab_map.camera_size_min, g_tab_map.camera_size_max)
@@ -1111,11 +1132,11 @@ function render_barge_inventory_status(x, y, w, h, barge)
     update_ui_text(10, 9, get_barge_inventory_item_count(barge), 100, 0, color_grey_dark, 0)
     update_ui_pop_offset()
 
-    update_ui_line(left_w, 0, left_w, h, color_white)
+    update_ui_rectangle(left_w, 0, 1, h, color_white)
 
     render_barge_item_transfer_status(left_w, 0, right_w, h, barge)
 
-    update_ui_line(0, h, w, h, color_white)
+    update_ui_rectangle(0, h, w, 1, color_white)
 
     update_ui_pop_offset()
 end
@@ -1163,6 +1184,7 @@ function render_map_facility_ui(screen_w, screen_h, x, y, w, h, category_data, f
     local left_w = w - 75
     local right_w = w - left_w
 
+    local is_local = update_get_is_focus_local()
     local is_windows_active = is_active and g_tab_map.selected_facility_item == -1 and g_tab_map.selected_facility_queue_item == -1
 
     if is_windows_active and g_is_mouse_mode and g_is_pointer_hovered and g_is_pointer_pressed == false then
@@ -1173,7 +1195,13 @@ function render_map_facility_ui(screen_w, screen_h, x, y, w, h, category_data, f
         end
     end
 
-    ui:begin_window(category_data.name .. "##facility", 5, y, left_w - 5, h - 5, category_data.icon, is_windows_active and g_tab_map.selected_panel == 0, 2)
+    local window = ui:begin_window(category_data.name .. "##facility", 5, y, left_w - 5, h - 5, category_data.icon, is_windows_active and g_tab_map.selected_panel == 0, 2)
+        if is_local then
+            g_tab_map.panel_scroll_pos[0] = window.scroll_y
+        else
+            window.scroll_y = g_tab_map.panel_scroll_pos[0]
+        end
+    
         if category_data.index == 0 then 
             if ui:list_item(update_get_loc(e_loc.upp_inventory), true) then
                 g_tab_map.selected_facility_inventory = true
@@ -1228,7 +1256,7 @@ function render_map_facility_ui(screen_w, screen_h, x, y, w, h, category_data, f
                 local item_count = math.min(facility_tile:get_facility_inventory_count(items_unlocked[i].index), 99999)
 
                 local columns = {}
-                
+
                 if is_show_item_stock then
                     columns = {
                         { w=column_widths[1], margin=column_margins[1], value=atlas_icons.column_stock, col=color_grey_mid, is_border=false },
@@ -1272,13 +1300,19 @@ function render_map_facility_ui(screen_w, screen_h, x, y, w, h, category_data, f
         ui:spacer(5)
 
     ui:end_window()
-    
+
     ui:begin_window(update_get_loc(e_loc.upp_status).."##facilitystatus", left_w, y, right_w - 5, 35, atlas_icons.map_icon_factory, false, 1)
         local region_w, region_h = ui:get_region()
         render_map_facility_queue(5, 3, region_w - 10, region_h, facility_tile)
     ui:end_window()
 
-    ui:begin_window(update_get_loc(e_loc.upp_queue).."##facilityqueue", left_w, y + 24, right_w - 5, h - 29, atlas_icons.column_pending, is_windows_active and g_tab_map.selected_panel == 1, 2)
+    window = ui:begin_window(update_get_loc(e_loc.upp_queue).."##facilityqueue", left_w, y + 24, right_w - 5, h - 29, atlas_icons.column_pending, is_windows_active and g_tab_map.selected_panel == 1, 2)
+        if is_local then
+            g_tab_map.panel_scroll_pos[1] = window.scroll_y
+        else
+            window.scroll_y = g_tab_map.panel_scroll_pos[1]
+        end
+        
         local queue_count = facility_tile:get_facility_production_queue_count()
 
         for i = 0, queue_count - 1 do
@@ -1353,9 +1387,9 @@ function render_map_facility_ui(screen_w, screen_h, x, y, w, h, category_data, f
         if item ~= nil then
             local window = ui:begin_window(item.name .. "##facilityitem", 30, y + 10, w - 60, h - 30, atlas_icons.column_stock, true, 2)
                 imgui_item_description(ui, screen_vehicle, item, false, true)
-                
+
                 local production_count = facility_tile:get_facility_production_queue_item_type(item.index)
-                
+
                 imgui_table_header(ui, {
                     { w=134, margin=5, value=update_get_loc(e_loc.upp_queue) },
                     { w=10, margin=0, value=atlas_icons.column_stock },
@@ -1363,7 +1397,7 @@ function render_map_facility_ui(screen_w, screen_h, x, y, w, h, category_data, f
                 })
 
                 ui:spacer(1)
-                
+
                 local result = ui:button_group({ "+1", "+10", "+100", "+1000" }, true)
 
                 if result == 0 then
@@ -1384,7 +1418,14 @@ end
 
 function render_map_facility_inventory(x, y, w, h, category_data, facility_tile, is_active)
     local ui = g_ui
-    ui:begin_window(update_get_loc(e_loc.upp_inventory) .. "##facility_inventory", x, y, w, h, atlas_icons.column_stock, is_active, 2)
+    local is_local = update_get_is_focus_local()
+    local window = ui:begin_window(update_get_loc(e_loc.upp_inventory) .. "##facility_inventory", x, y, w, h, atlas_icons.column_stock, is_active, 2)
+        if is_local then
+            g_tab_map.panel_scroll_pos[2] = window.scroll_y
+        else
+            window.scroll_y = g_tab_map.panel_scroll_pos[2]
+        end
+        
         imgui_facility_inventory_table(ui, facility_tile)
         ui:divider(0, 3)
         ui:divider(0, 10)
@@ -1429,7 +1470,7 @@ function get_node_tooltip_h(tooltip_w, id, type)
 
         if tile:get() then
             local is_player_tile = tile:get_team_control() == update_get_screen_team_id()
-          
+
             if is_player_tile == false then
                 local unlocks = get_tile_blueprint_unlocks(tile)
 
@@ -1746,10 +1787,14 @@ function tab_map_input_event(input, action)
                 elseif g_tab_map.selected_facility_item ~= -1 then
                     g_tab_map.selected_facility_item = -1
                 elseif g_is_mouse_mode then
-                    g_tab_map.selected_panel = 0
-                    g_tab_map.selected_facility_id = 0
+                    if g_tab_map.selected_panel == 2 then
+                        g_tab_map.selected_panel = 0
+                    else
+                        g_tab_map.selected_panel = 0
+                        g_tab_map.selected_facility_id = 0
+                    end
                 else
-                    if g_tab_map.selected_panel == 1 then
+                    if g_tab_map.selected_panel > 0 then
                         g_tab_map.selected_panel = 0
                     else
                         g_tab_map.selected_facility_id = 0
@@ -1997,7 +2042,7 @@ function tab_stock_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_
     update_ui_push_offset(x, y)
 
     g_tab_stock.is_overlay = false
-    render_inventory_stats(0, 0, w, 10, screen_vehicle)
+    local bar_text = render_inventory_stats(0, 0, w, 10, screen_vehicle)
 
     local is_local = update_get_is_focus_local()
     local window = ui:begin_window("##inventory", 5, 10, w - 10, h - 10, nil, is_tab_active and g_tab_stock.selected_item == -1, 1)
@@ -2015,10 +2060,10 @@ function tab_stock_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_
             g_tab_stock.selected_item = selected_item
             g_tab_stock.selected_item_modify_amount = 0
         end
-
-        if is_tab_active and selected_row ~= -1 and selected_col > 1 then
+        
+        if is_tab_active and selected_row ~= -1 and selected_col > 1 and g_pointer_pos_y > y + 10 and bar_text == "" then
             local region_w, region_h = ui:get_region()
-            
+        
             sx = sx + sw / 2
 
             if g_is_mouse_mode and g_is_pointer_hovered then
@@ -2036,6 +2081,16 @@ function tab_stock_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_
             render_tooltip(0, window.view_y, region_w - 5, region_h, sx, sy + sh / 2, text_w + 4, text_h + 2, sh / 2 + 4, callback_render_tooltip, color_button_bg_inactive)
         end
     ui:end_window()
+    
+    if bar_text ~= "" then
+        local text_w, text_h = update_ui_get_text_size(bar_text, 100, 1)
+
+        local function callback_render_tooltip(w, h) 
+            update_ui_text(2, 1, bar_text, w - 2, 1, color_grey_mid, 0)
+        end
+
+        render_tooltip(0, 0, screen_w, screen_h, g_pointer_pos_x, 10, text_w + 4, text_h + 2, 0, callback_render_tooltip, color_button_bg_inactive)
+    end
     
     if is_tab_active then
         update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_ud)
@@ -2130,27 +2185,130 @@ function tab_stock_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_
     update_ui_pop_offset()
 end
 
+function get_ordered_weight(vehicle)
+    local ordered_weight = 0.0
+    for _, category in pairs(g_item_categories) do
+        if #category.items > 0 then
+            for _, item in pairs(category.items) do
+                if update_get_resource_item_hidden(item.index) == false then
+                     ordered_weight = ordered_weight + (clamp(vehicle:get_inventory_order(item.index), -99999, 99999) * item.mass)
+                end
+            end
+        end
+    end
+
+    return ordered_weight
+end
+
+function get_barge_weight(vehicle)
+    local vehicle_team = vehicle:get_team()
+    local vehicle_filter = function(v)
+        return v:get_definition_index() == e_game_object_type.chassis_sea_barge and v:get_team() == vehicle_team
+    end
+
+    local barge_weight = 0.0
+    for _, barge in iter_vehicles(vehicle_filter) do
+        barge_weight = barge_weight + barge:get_inventory_weight()
+    end
+
+    return barge_weight
+end
+
+function render_carrier_load_graph(x, y, w, h, vehicle)
+    update_ui_push_offset(x, y)
+    update_ui_push_clip(0, 0, w, h)
+
+    local capacity = vehicle:get_inventory_capacity()
+    local ordered_weight = get_ordered_weight(vehicle)
+    local barge_weight = get_barge_weight(vehicle)
+    local carrier_weight = vehicle:get_inventory_weight()
+
+    local bar_length_mult = (w-2) / 100
+    
+    local cx = 0
+
+    local bars = {
+        { width=(bar_length_mult * (carrier_weight / capacity * 100)), col=color_white },
+        { width=(bar_length_mult * (barge_weight   / capacity * 100)), col=color_grey_mid },
+        { width=(bar_length_mult * (ordered_weight / capacity * 100)), col=color8(32, 32, 32, 255) },
+    }
+
+    local hover_v = (g_pointer_pos_y >= 17 and g_pointer_pos_y < (17 + h - 3))
+
+    local selected_bar = 0
+
+    local cumulative_length_wanted = 0
+
+    for i, b in ipairs(bars) do
+        cumulative_length_wanted = cumulative_length_wanted + b.width
+        local render_width = math.floor(cumulative_length_wanted - cx)
+
+        update_ui_rectangle(cx + 1, 1, render_width, h - 3, b.col)
+        
+        local ex = cx + render_width
+        
+        if hover_v and g_pointer_pos_x >= (x + cx + 1) and g_pointer_pos_x < math.min(x + w - 1, x + ex + 1) then
+            selected_bar = i
+        end
+        
+        cx = ex
+    end
+    
+    if selected_bar == 0 and hover_v and g_pointer_pos_x >= x + 1 and g_pointer_pos_x < x + w - 1 then
+        selected_bar = #bars + 1
+    end
+    
+    local tooltip_text = ""
+    if selected_bar > 0 then
+        local tooltip_texts = { 
+            update_get_loc(e_loc.carrier_stock) .. "\n" .. string.format("%.0fKG", carrier_weight), 
+            update_get_loc(e_loc.in_barges) .. "\n" .. string.format("%.0fKG", barge_weight), 
+            update_get_loc(e_loc.pending_order)  .. "\n" .. string.format("%.0fKG", ordered_weight), 
+            "Free Space" .. "\n" .. string.format("%.0fKG", capacity - carrier_weight - barge_weight - ordered_weight) 
+        }
+        tooltip_text = tooltip_texts[selected_bar]
+    end
+
+    local border_color = color_grey_dark
+    local blink_speed = 16
+
+    if ordered_weight + barge_weight + carrier_weight > capacity and g_animation_time % blink_speed > (blink_speed / 2) then
+        border_color = color_status_bad
+    end
+
+    update_ui_rectangle_outline(0, 0, w, h-1, border_color)
+
+    update_ui_pop_clip()
+    update_ui_pop_offset()
+
+    return tooltip_text
+end
+
 function render_inventory_stats(x, y, w, h, vehicle)
     update_ui_push_offset(x, y)
     update_ui_push_clip(0, 0, w, h)
 
     local col = iff(g_focused_screen == g_screens.inventory, color_grey_dark, color_grey_dark)
 
+    local cursor_y = 0
     local cursor_x = 10
-    update_ui_image(cursor_x, 0, atlas_icons.column_weight, col, 0)
+    update_ui_image(cursor_x, cursor_y, atlas_icons.column_weight, col, 0)
     cursor_x = cursor_x + 10
 
     local capacity = vehicle:get_inventory_capacity()
     local weight = vehicle:get_inventory_weight()
     local used_space = weight / capacity * 100
 
-    update_ui_text(cursor_x, 0, string.format("%.1f%%", used_space), w - cursor_x, 0, col, 0)
-    update_ui_text(cursor_x, 0, weight .. "/" .. capacity .. update_get_loc(e_loc.upp_kg), w - cursor_x - 10, 2, col, 0)
+    update_ui_text(cursor_x, cursor_y, string.format("%.1f%%", used_space), w - cursor_x, 0, col, 0)
+    local tooltip_text = render_carrier_load_graph(60, cursor_y + 1, 75, h-2, vehicle)
+    update_ui_text(cursor_x, cursor_y, weight .. "/" .. capacity .. update_get_loc(e_loc.upp_kg), w - cursor_x - 10, 2, col, 0)
 
-    update_ui_line(0, h - 1, w, h - 1, col)
+    update_ui_rectangle(0, h - 1, w, 1, col)
 
     update_ui_pop_clip()
     update_ui_pop_offset()
+    
+    return tooltip_text
 end
 
 function tab_stock_input_event(input, action)
