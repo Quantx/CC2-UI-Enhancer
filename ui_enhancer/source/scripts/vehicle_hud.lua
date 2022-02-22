@@ -747,9 +747,10 @@ function render_attachment_info(info_pos, map_data, vehicle, attachment, alpha, 
     end
 
     -- Render observation camera data
-
-    if attachment_def == e_game_object_type.attachment_camera_observation or attachment_def == e_game_object_type.attachment_turret_carrier_camera 
-        or attachment_def == e_game_object_type.attachment_camera_plane then
+    if attachment_def == e_game_object_type.attachment_camera_observation
+    or attachment_def == e_game_object_type.attachment_turret_carrier_camera
+    or attachment_def == e_game_object_type.attachment_camera_plane
+    then
         local weapon_type = attachment:get_weapon_target_type()
         local weapon_names = {
             [0] = update_get_loc(e_loc.upp_crs_msl),
@@ -764,12 +765,12 @@ function render_attachment_info(info_pos, map_data, vehicle, attachment, alpha, 
         local is_target_data_set = attachment:get_is_weapon_target_data_set()
         local is_active = attachment:get_is_active()
         local is_target_data_complete = false
-
+    
         if is_target_data_set then
             local target_state = attachment:get_weapon_target_state()
             is_target_data_complete = target_state == e_team_target_state.cancelled or target_state == e_team_target_state.complete or target_state == e_team_target_state.failed
         end
-
+        
         local weapon_col = iff(is_active == false or is_target_data_complete, colors.green, colors.grey)
         update_ui_image(pos:x(), pos:y(), atlas_icons.column_weapon, weapon_col, 0)
         update_ui_text(pos:x() + 12, pos:y(), weapon_text, 200, 0, weapon_col, 0)
@@ -798,7 +799,7 @@ function render_attachment_info(info_pos, map_data, vehicle, attachment, alpha, 
                 update_add_ui_interaction(iff(is_active, update_get_loc(e_loc.interaction_cancel), update_get_loc(e_loc.interaction_fire)), e_game_input.attachment_fire)
             end
         end
-
+        
         if is_active == false or is_target_data_complete then
             if g_weapon_list_factor > 0 then
                 local list_h = (#weapon_names + 1) * 10
@@ -1048,7 +1049,6 @@ function render_attachment_hud(screen_w, screen_h, map_data, tick_fraction, vehi
     local def = attachment:get_definition_index()
 
     is_render_center = false
-
     if def == e_game_object_type.attachment_camera_vehicle_control
     then
         -- no special hud for vehicle control camera
@@ -2397,7 +2397,7 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
     local target_hover_world_radius = 4
 
     local is_render_own_team = true --get_is_vision_render_own_team(attachment_def)
-    local is_target_lock_behaviour = true --get_is_vision_target_lock_behaviour(attachment_def)
+    local is_target_lock_behaviour = get_is_vision_target_lock_behaviour(attachment_def)
     local is_target_observation_behaviour = get_is_vision_target_observation_behaviour(attachment_def)
     local is_vision_reveal_targets = get_is_vision_reveal_targets(attachment_def)
     local is_show_target_distance = true --get_is_vision_show_target_distance(attachment_def)
@@ -2702,7 +2702,7 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
     end
 
     if is_target_lock_behaviour then
-        update_add_ui_interaction(iff(g_selected_target_id == 0, update_get_loc(e_loc.interaction_lock_target), update_get_loc(e_loc.interaction_clear_target)), e_game_input.cycle_target)
+        update_add_ui_interaction(iff(g_selected_target_id == 0, update_get_loc(e_loc.interaction_lock_target), update_get_loc(e_loc.interaction_clear_target)), e_game_input.toggle_stabilisation_mode)
         toggle_vision_target(target_hovered, vehicle_team)
     end
 end
