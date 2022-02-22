@@ -248,6 +248,8 @@ function update(screen_w, screen_h, tick_fraction, delta_time, local_peer_id, ve
                 end
 
                 if def == e_game_object_type.chassis_sea_barge
+                or def == e_game_object_type.chassis_sea_ship_light
+                or def == e_game_object_type.chassis_sea_ship_heavy
                 then
                     render_barge_hud(screen_w, screen_h, vehicle)
                 end
@@ -653,7 +655,7 @@ function render_attachment_info(info_pos, map_data, vehicle, attachment, alpha, 
             pos:y(pos:y() + 10)
 
             if attachment:get_type() == "camera" or attachment:get_type() == "turret" then
-                if attachment_def ~= e_game_object_type.attachment_turret_robot_dog_capsule and attachment_def ~= e_game_object_type.attachment_turret_plane_chaingun then
+                if attachment_def ~= e_game_object_type.attachment_turret_robot_dog_capsule and attachment_def ~= e_game_object_type.attachment_turret_plane_chaingun and attachment_def ~= e_game_object_type.attachment_turret_rocket_pod then
                     if attachment:get_type() == "turret" then
                         update_add_ui_interaction(update_get_loc(e_loc.interaction_zoom), e_game_input.attachment_primary)
                     end
@@ -2355,7 +2357,9 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
     }
     
     local range = 5000
+    local range_ships = 10000
     local range_sq = range * range
+    local range_ships_sq = range_ships * range_ships
     local safe_zone_min = vec2(100, 40)
     local safe_zone_max = vec2(screen_w - 100, screen_h - 30)
 
@@ -2398,7 +2402,9 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
         local pos = v:get_position()
         local dist_sq = vec3_dist_sq(pos, vehicle_pos)
 
-        if dist_sq < range_sq then
+        local observe_range_sq = iff(get_is_vehicle_sea(v:get_definition_index()), range_ships_sq, range_sq)
+
+        if dist_sq < observe_range_sq then
             local screen_pos, is_clamped = world_to_screen_clamped(pos, safe_zone_min, safe_zone_max)
 
             local data = {}
@@ -2645,12 +2651,14 @@ function toggle_vision_target(nearest_target)
             g_selected_target_type = 1
         end
         
-        update_add_ui_interaction(iff(g_selected_target_id == 0, update_get_loc(e_loc.interaction_lock_target), update_get_loc(e_loc.interaction_clear_target)), e_game_input.cycle_target)
+        update_add_ui_interaction(update_get_loc(e_loc.interaction_lock_target), e_game_input.toggle_stabilisation_mode)
     elseif g_selected_target_id ~= 0 then
         if g_is_input_cycle_target_next or g_is_input_cycle_target_prev then
             g_selected_target_id = 0
             g_selected_target_type = 0
         end
+
+        update_add_ui_interaction(update_get_loc(e_loc.interaction_clear_target), e_game_input.toggle_stabilisation_mode)
     end
 end
 
@@ -2703,23 +2711,13 @@ end
 
 function get_is_vision_target_lock_behaviour(attachment_def)
     return attachment_def == e_game_object_type.attachment_turret_rocket_pod
-        or attachment_def == e_game_object_type.attachment_turret_missile
         or attachment_def == e_game_object_type.attachment_hardpoint_missile_ir
         or attachment_def == e_game_object_type.attachment_hardpoint_missile_laser
         or attachment_def == e_game_object_type.attachment_hardpoint_missile_aa
         or attachment_def == e_game_object_type.attachment_hardpoint_bomb_1
         or attachment_def == e_game_object_type.attachment_hardpoint_bomb_2
         or attachment_def == e_game_object_type.attachment_hardpoint_bomb_3
-        or attachment_def == e_game_object_type.attachment_turret_carrier_missile
-        or attachment_def == e_game_object_type.attachment_turret_carrier_missile_silo
-        or attachment_def == e_game_object_type.attachment_turret_ciws
         or attachment_def == e_game_object_type.attachment_turret_plane_chaingun
-        or attachment_def == e_game_object_type.attachment_turret_15mm
-        or attachment_def == e_game_object_type.attachment_turret_30mm
-        or attachment_def == e_game_object_type.attachment_turret_40mm
-        or attachment_def == e_game_object_type.attachment_turret_heavy_cannon
-        or attachment_def == e_game_object_type.attachment_turret_battle_cannon
-        or attachment_def == e_game_object_type.attachment_turret_carrier_main_gun
 end
 
 function get_is_vision_render_land(attachment_def)

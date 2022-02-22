@@ -386,6 +386,7 @@ atlas_icons = {
     map_icon_load = 0,
     map_icon_unload = 0,
     column_trash = 0,
+    icon_chassis_sea_ship_light = 0,
 }
 
 function begin_load()
@@ -435,6 +436,7 @@ function get_attachment_icons(definition_index)
         [e_game_object_type.attachment_sonic_pulse_generator] = {  atlas_icons.icon_attachment_sonic_pulse_generator, atlas_icons.icon_attachment_16_sonic_pulse_generator},
         [e_game_object_type.attachment_smoke_launcher_explosive] = { atlas_icons.icon_attachment_smoke_launcher_explosive, atlas_icons.icon_attachment_16_smoke_launcher_explosive},
         [e_game_object_type.attachment_smoke_launcher_stream] = { atlas_icons.icon_attachment_smoke_launcher_stream, atlas_icons.icon_attachment_16_smoke_launcher_stream},
+        [e_game_object_type.attachment_turret_carrier_torpedo] = { atlas_icons.icon_attachment_air_torpedo, atlas_icons.icon_attachment_16_air_torpedo },
     }
 
     local def_data = def_map[definition_index] or def_map[-1]
@@ -799,4 +801,22 @@ end
 
 function mult_alpha(col, alpha) 
     return color8(col:r(), col:g(), col:b(), math.floor(col:a() * alpha))  
+end
+
+function countif(table, pred)
+    local count = 0
+    
+    for _, v in pairs(table) do
+        if pred(v) then count = count + 1 end
+    end
+
+    return count
+end
+
+function findif(table, pred)
+    for k, v in pairs(table) do
+        if pred(v) then return v, k end
+    end
+
+    return nil
 end

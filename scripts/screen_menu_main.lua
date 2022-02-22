@@ -14,6 +14,13 @@ g_screens = {
 	host_new_game_type = 12,
 	load_game_error = 13,
 	vr_multiplayer_warning = 14,
+	mods = 15,
+	mod_upload = 16,
+	mod_upload_selection = 17,
+	mod_upload_loading = 18,
+	mod_upload_error = 19,
+	mod_upload_complete = 20,
+	mod_upload_select_existing = 21,
 }
 
 g_region_icon = 0
@@ -22,6 +29,11 @@ g_is_menu_active_prev = true
 g_screen_index = g_screens.main
 g_screen_nav_stack = {}
 g_selected_team_index = 0
+g_selected_mod_id = 0
+g_selected_mod_overwrite = nil
+g_selected_mod_confirm = false
+g_disable_mods_confirm = false
+g_mod_upload_visibility = e_mod_visibility.public
 
 g_ui = nil
 g_keyboard_state = 0
@@ -39,6 +51,7 @@ g_connect_address = ""
 g_connect_type = e_network_connect_type.steam_id
 g_network_error = ""
 g_load_game_error = ""
+g_mod_upload_error = ""
 
 function get_words_from_string(str)
 	local words = {}
@@ -116,6 +129,13 @@ function update(screen_w, screen_h, ticks)
 				else
 					nav_set_screen(g_screens.host)
 				end
+			end
+
+			ui:divider()
+
+			if ui:list_item(update_get_loc(e_loc.upp_mods), true) then
+				update_refresh_workshop_published_mods()
+				nav_set_screen(g_screens.mods)
 			end
 
 			ui:divider()
@@ -422,7 +442,7 @@ function update(screen_w, screen_h, ticks)
 			ui:begin_window(update_get_loc(e_loc.upp_network_error), win_x, win_y, win_w, win_h, atlas_icons.column_controlling_peer, is_active)
 			local region_w, region_h = ui:get_region()
 
-			local error_text = iff(#g_network_error > 0, g_network_error, "network error: unknown error")
+			local error_text = iff(#g_network_error > 0, g_network_error, update_get_loc(e_loc.network_error) .. ": " .. update_get_loc(e_loc.network_error_unknown_error))
 			update_ui_text(0, region_h / 2 - 10, error_text, region_w, 1, color_status_bad, 0)
 
 			ui:end_window()
@@ -433,6 +453,375 @@ function update(screen_w, screen_h, ticks)
 			update_ui_text(0, region_h / 2 - 10, g_load_game_error, region_w, 1, color_status_bad, 0)
 
 			ui:end_window()
+		elseif g_screen_index == g_screens.mods then
+			local mods = update_get_mod_details()
+			local selected_mod = findif(mods, function(m) return m.id == g_selected_mod_id end)
+
+			if selected_mod == nil then
+				g_selected_mod_id = 0
+				g_selected_mod_confirm = false
+			end
+
+			local is_restart_warning = update_get_is_mod_restart_required()
+			local text_restart_warning = update_get_loc(e_loc.restart_to_apply_changes)
+			local _, text_warning_h = update_ui_get_text_size(text_restart_warning, win_w - 4, 0)
+
+			text_warning_h = text_warning_h + 4
+			win_h = win_h - text_warning_h - 2
+			update_ui_rectangle_outline(win_x, win_y + win_h + 2, win_w, text_warning_h, iff(is_restart_warning, color_status_bad, color_grey_dark))
+			update_ui_text(win_x + 2, win_y + win_h + 4, text_restart_warning, win_w - 4, 0, iff(is_restart_warning, color_status_bad, color_grey_dark), 0)
+
+			ui:begin_window(update_get_loc(e_loc.upp_mods), win_x, win_y, win_w, win_h, atlas_icons.column_repair, is_active and selected_mod == nil and g_disable_mods_confirm == false)
+			local region_w, region_h = ui:get_region()
+
+			if ui:list_item(update_get_loc(e_loc.upp_upload_to_workshop), true) then
+				nav_set_screen(g_screens.mod_upload)
+			end
+
+			local active_mod_count = countif(mods, function(m) return m.is_enabled end)
+			local active_mod_text = active_mod_count .. "/" .. #mods
+			local active_mod_text_w = update_ui_get_text_size(active_mod_text, region_w, 2)
+
+			imgui_table_header(ui, { 
+				{ w=region_w - active_mod_text_w - 5, margin=5, value=update_get_loc(e_loc.upp_installed_mods) }, 
+				{ w=active_mod_text_w, margin=0, value=active_mod_text }
+			})
+
+			ui:spacer(1)
+
+			if #mods == 0 then
+				ui:text_basic(update_get_loc(e_loc.no_mods_installed))
+			else
+				if ui:button(update_get_loc(e_loc.upp_disable_all), active_mod_count > 0, 1) then
+					g_disable_mods_confirm = true
+				end
+
+				local mods_steam = {}
+				local mods_local = {}
+
+				for _, mod in ipairs(mods) do
+					table.insert(iff(mod.type == e_mod_type.steam, mods_steam, mods_local), mod)
+				end
+
+				if #mods_steam > 0 then
+					ui:header(update_get_loc(e_loc.upp_steam_mods))
+				end
+
+				for _, mod in ipairs(mods_steam) do
+					if ui:mod_details(mod.manifest.name, mod.manifest.author, mod.is_enabled) then
+						g_selected_mod_id = mod.id
+						g_selected_mod_confirm = false
+					end
+				end
+
+				if #mods_local > 0 then
+					ui:header(update_get_loc(e_loc.upp_local_mods))
+				end
+
+				for _, mod in ipairs(mods_local) do
+					if ui:mod_details(mod.manifest.name, mod.manifest.author, mod.is_enabled) then
+						g_selected_mod_id = mod.id
+						g_selected_mod_confirm = false
+					end
+				end
+			end
+
+			ui:end_window()
+
+			if g_disable_mods_confirm then
+				ui.window_col_active = color_status_bad
+				ui:begin_window_dialog(update_get_loc(e_loc.upp_sure), screen_w / 2, screen_h / 2, win_w - 20, winh, atlas_icons.hud_warning, is_active)
+				
+				ui:text_basic(update_get_loc(e_loc.confirm_disable_all_mods), color_grey_dark)
+				
+				local action_index = ui:end_window_dialog(update_get_loc(e_loc.upp_no), update_get_loc(e_loc.upp_yes))
+
+				if action_index == 0 then
+					g_disable_mods_confirm = false
+				elseif action_index == 1 then
+					for _, mod in ipairs(mods) do
+						update_set_is_mod_enabled(mod.id, false)
+					end
+
+					g_disable_mods_confirm = false
+				end
+			elseif selected_mod then
+				local incompatible_mods = update_get_mod_incompatible_active_mods(selected_mod.id)
+				local is_show_mod_confirm = false
+
+				ui:begin_window(update_get_loc(e_loc.upp_details), win_x + 20, win_y + 20, win_w - 40, win_h - 40, atlas_icons.column_pending, is_active and g_selected_mod_confirm == false, 2)
+				ui:spacer(2)
+
+				local is_enabled = iff(selected_mod.is_enabled, 1, 0)
+				is_enabled, is_modified = ui:combo(update_get_loc(e_loc.mod), is_enabled, { update_get_loc(e_loc.combo_disabled), update_get_loc(e_loc.combo_enabled) })
+				
+				if is_modified then 
+					if is_enabled and #incompatible_mods > 0 then
+						is_show_mod_confirm = true
+					else
+						update_set_is_mod_enabled(selected_mod.id, is_enabled == 1)
+					end
+				end
+
+				if #incompatible_mods > 0 then
+					ui:text_basic(#incompatible_mods .. " " .. update_get_loc(e_loc.incompatible), color_status_bad)
+				end
+
+				ui:divider()
+
+				ui:text_basic(selected_mod.manifest.name, color_grey_mid)
+				ui:text_basic(selected_mod.manifest.author, color_grey_dark)
+				ui:spacer(8)
+				ui:text_basic(selected_mod.manifest.description, color_grey_dark)
+				ui:spacer(3)
+				ui:end_window()
+
+				if g_selected_mod_confirm then
+					ui.window_col_active = color_status_bad
+					ui:begin_window_dialog(update_get_loc(e_loc.upp_sure), screen_w / 2, screen_h / 2, win_w - 20, winh, atlas_icons.hud_warning, is_active)
+					ui:text_basic(update_get_loc(e_loc.incompatible_mods_warning), color_grey_dark)
+					
+					for _, v in ipairs(incompatible_mods) do
+						local data = findif(mods, function(m) return m.id == v end)
+
+						if data then
+							ui:text_basic("  " .. data.manifest.name, color_status_dark_red)
+						end
+					end
+
+					ui:spacer(2)
+
+					local action_index = ui:end_window_dialog(update_get_loc(e_loc.upp_cancel), update_get_loc(e_loc.upp_confirm))
+
+					if action_index == 0 then
+						g_selected_mod_confirm = false
+					elseif action_index == 1 then
+						update_set_is_mod_enabled(selected_mod.id, true)
+						g_selected_mod_confirm = false
+					end
+				end
+
+				if is_show_mod_confirm then
+					g_selected_mod_confirm = true
+					local window_confirm = ui:get_create_window(update_get_loc(e_loc.upp_sure))
+					window_confirm.selected_index_x = 0
+				end
+			end
+		elseif g_screen_index == g_screens.mod_upload then
+			local mods = update_get_mod_details()
+			local hovered_mod = nil
+
+			local details_h = 34
+
+			ui:begin_window(update_get_loc(e_loc.upp_upload_to_workshop), win_x, win_y, win_w, win_h - details_h - 2, atlas_icons.column_controlling_peer, is_active)
+			ui:header(update_get_loc(e_loc.upp_local_mods))
+
+			local user_mod_count = 0
+
+			for _, mod in ipairs(mods) do
+				if mod.type == e_mod_type.user then
+					user_mod_count = user_mod_count + 1
+
+					if ui:list_item(mod.manifest.name, true) then
+						g_selected_mod_id = mod.id
+						nav_set_screen(g_screens.mod_upload_selection)
+					end
+
+					if ui:is_item_selected() then
+						hovered_mod = mod
+					end
+				end
+			end
+
+			if user_mod_count == 0 then
+				ui:text_basic(update_get_loc(e_loc.no_local_mods_found), color_grey_dark)
+			end
+
+			ui:end_window()
+
+			update_ui_push_offset(win_x, win_y + win_h - details_h)
+			update_ui_rectangle_outline(0, 0, win_w, details_h, color_grey_dark)
+			
+			local path = "---"
+			if hovered_mod then
+				path = hovered_mod.system_folder:gsub("\\", "/")
+			end
+
+			update_ui_text(4, 2, path, win_w - 8, 0, color_grey_dark, 0)
+
+			update_ui_pop_offset()
+		elseif g_screen_index == g_screens.mod_upload_selection then
+			local mods = update_get_mod_details()
+			local selected_mod = findif(mods, function(m) return m.id == g_selected_mod_id end)
+			local is_show_mod_confirm = false
+
+			if selected_mod == nil then
+				g_selected_mod_id = 0
+				g_selected_mod_confirm = false
+				nav_back()
+			end
+
+			local window = ui:begin_window(update_get_loc(e_loc.upp_upload_to_workshop), win_x, win_y, win_w, win_h, atlas_icons.column_controlling_peer, is_active and g_selected_mod_confirm == false)
+			window.label_bias = 0.6
+
+			if selected_mod then
+				ui:header(update_get_loc(e_loc.upp_upload))
+				
+				g_mod_upload_visibility = ui:combo(update_get_loc(e_loc.mod_visibility), g_mod_upload_visibility, { update_get_loc(e_loc.mod_visibility_public), update_get_loc(e_loc.mod_visibility_friends), update_get_loc(e_loc.mod_visibility_private) })
+
+				if ui:list_item(update_get_loc(e_loc.upp_new_workshop_item), true) then
+					is_show_mod_confirm = true
+				end
+
+				if ui:list_item(update_get_loc(e_loc.upp_update_existing_item), true) then
+					nav_set_screen(g_screens.mod_upload_select_existing)
+				end
+
+				ui:header(update_get_loc(e_loc.upp_details))
+				window.label_bias = 0.05
+				ui:stat(atlas_icons.column_repair, selected_mod.manifest.name, color_white)
+				ui:stat(atlas_icons.column_profile, selected_mod.manifest.author, color_grey_mid)
+				ui:stat(atlas_icons.column_load, selected_mod.system_folder:gsub("\\", "/"), color_grey_dark)
+				ui:spacer(8)
+				ui:stat(atlas_icons.text_ellipsis, selected_mod.manifest.description, color_grey_dark)
+			end
+
+			ui:end_window()
+
+			if g_selected_mod_confirm then
+				ui:begin_window_dialog(update_get_loc(e_loc.upp_sure), screen_w / 2, screen_h / 2, win_w - 20, winh, atlas_icons.hud_warning, is_active)
+				
+				ui:text_basic(update_get_loc(e_loc.workshop_agreement), color_grey_dark)
+				ui:text_basic(update_get_loc(e_loc.confirm_upload_mod), color_grey_dark)
+				
+				local action_index = ui:end_window_dialog(update_get_loc(e_loc.upp_no), update_get_loc(e_loc.upp_yes))
+
+				if action_index == 0 then
+					g_selected_mod_confirm = false
+				elseif action_index == 1 then
+					update_create_workshop_mod(selected_mod.id, g_mod_upload_visibility)
+					nav_set_screen(g_screens.mod_upload_loading)
+
+					g_selected_mod_confirm = false
+				end
+			end
+
+			if is_show_mod_confirm then
+				g_selected_mod_confirm = true
+				local window_confirm = ui:get_create_window(update_get_loc(e_loc.upp_sure))
+				window_confirm.selected_index_x = 0
+			end
+		elseif g_screen_index == g_screens.mod_upload_loading then
+			local workshop_upload_status = update_get_mod_workshop_upload_status()
+
+			ui:begin_window(update_get_loc(e_loc.upp_upload_to_workshop), win_x, win_y, win_w, win_h, atlas_icons.column_controlling_peer, is_active)
+			local region_w, region_h = ui:get_region()
+
+			local loading_text = update_get_loc(e_loc.uploading)
+            local dot_count = math.floor(g_animation_time / (30 / 4)) % 4
+
+            for i = 1, dot_count, 1 do
+                loading_text = loading_text .. "."
+            end
+
+            local cx = region_w / 2 - 40
+            local cy = region_h / 2 - 5
+            update_ui_text(cx, cy, loading_text, 100, 0, color_white, 0)
+
+            local anim = g_animation_time / 30.0
+            local bound_left = cx
+            local bound_right = bound_left + 75
+            local left = bound_left + (bound_right - bound_left) * math.abs(math.sin((anim - math.pi / 2) % (math.pi / 2))) ^ 4
+            local right = left + (bound_right - left) * math.abs(math.sin(anim % (math.pi / 2)))
+
+            update_ui_rectangle(left, cy + 12, right - left, 1, color_status_ok)
+            update_ui_rectangle(bound_right + bound_left - right, cy - 3, right - left, 1, color_status_ok)
+
+			ui:end_window()
+
+			if workshop_upload_status.is_uploading == false then
+				if workshop_upload_status.is_error then
+					g_mod_upload_error = workshop_upload_status.error_message
+					nav_back()
+					nav_set_screen(g_screens.mod_upload_error)
+				else
+					nav_back()
+					nav_set_screen(g_screens.mod_upload_complete)
+				end
+			end
+		elseif g_screen_index == g_screens.mod_upload_error then
+			ui:begin_window(update_get_loc(e_loc.upp_upload_to_workshop), win_x, win_y, win_w, win_h, atlas_icons.column_controlling_peer, is_active)
+			local region_w, region_h = ui:get_region()
+
+			local error_text = iff(#g_mod_upload_error > 0, g_mod_upload_error, update_get_loc(e_loc.upload_error) .. ": " .. update_get_loc(e_loc.upload_error_unknown_error))
+			update_ui_text(0, region_h / 2 - 10, error_text, region_w, 1, color_status_bad, 0)
+
+			ui:end_window()
+		elseif g_screen_index == g_screens.mod_upload_complete then
+			ui:begin_window(update_get_loc(e_loc.upp_upload_to_workshop), win_x, win_y, win_w, win_h, atlas_icons.column_controlling_peer, is_active)
+			local region_w, region_h = ui:get_region()
+
+			update_ui_text(0, region_h / 2 - 10, update_get_loc(e_loc.upload_complete), region_w, 1, color_status_ok, 0)
+
+			ui:end_window()
+		elseif g_screen_index == g_screens.mod_upload_select_existing then
+			local is_show_mod_confirm = false
+
+			ui:begin_window(update_get_loc(e_loc.upp_update_existing_item), win_x, win_y, win_w, win_h, atlas_icons.column_controlling_peer, is_active and g_selected_mod_confirm == false)
+			local published_mods = update_get_workshop_published_mods()
+
+			ui:header(update_get_loc(e_loc.upp_steam_mods))
+
+			if published_mods.is_loading then
+				local char_index = math.floor(g_animation_time / 4) % 4
+				local load_text = update_get_loc(e_loc.waiting_for_details) .. " " .. string.sub("/-\\|", char_index + 1, char_index + 1)
+				ui:text_basic(load_text, color_grey_dark)
+			end
+
+			if (published_mods.items == nil or #published_mods.items == 0) and published_mods.is_loading == false then
+				ui:text_basic(update_get_loc(e_loc.no_mods_published), color_grey_dark)
+			elseif published_mods.items ~= nil then
+				for _, mod in ipairs(published_mods.items) do
+					if ui:list_item(mod.name, true) then
+						is_show_mod_confirm = true
+						g_selected_mod_overwrite = mod
+					end
+				end
+			end
+
+			ui:end_window()
+
+			if g_selected_mod_confirm then
+				if g_selected_mod_overwrite == nil then
+					g_selected_mod_confirm = false
+				else
+					ui.window_col_active = color_status_bad
+					ui:begin_window_dialog(update_get_loc(e_loc.upp_sure), screen_w / 2, screen_h / 2, win_w - 20, winh, atlas_icons.hud_warning, is_active)
+					
+					ui:text_basic(update_get_loc(e_loc.workshop_agreement), color_grey_dark)
+					ui:text_basic(update_get_loc(e_loc.following_mod_will_be_overwritten) .. ":", color_status_bad)
+					ui:text_basic("  " .. g_selected_mod_overwrite.name, color_status_dark_red)
+					ui:text_basic(update_get_loc(e_loc.confirm_upload_mod), color_grey_dark)
+
+					local action_index = ui:end_window_dialog(update_get_loc(e_loc.upp_no), update_get_loc(e_loc.upp_yes))
+	
+					if action_index == 0 then
+						g_selected_mod_confirm = false
+					elseif action_index == 1 then
+						update_update_workshop_mod(g_selected_mod_id, g_selected_mod_overwrite.published_id, g_mod_upload_visibility)
+						nav_back()
+						nav_set_screen(g_screens.mod_upload_loading)
+	
+						g_selected_mod_confirm = false
+					end
+				end
+			end
+
+			if is_show_mod_confirm then
+				g_selected_mod_confirm = true
+				local window_confirm = ui:get_create_window(update_get_loc(e_loc.upp_sure))
+				window_confirm.selected_index_x = 0
+			end
 		end
 
 		imgui_menu_focus_overlay(ui, screen_w, screen_h, update_get_loc(e_loc.upp_game), ticks)
@@ -507,6 +896,16 @@ function update_interaction_ui()
 		end
 	elseif g_screen_index == g_screens.join_meta and is_meta_set == false then
 		update_add_ui_interaction(update_get_loc(e_loc.interaction_cancel), e_game_input.back)
+	elseif g_screen_index == g_screens.mods and g_disable_mods_confirm then
+		update_add_ui_interaction(update_get_loc(e_loc.interaction_cancel), e_game_input.back)
+	elseif g_screen_index == g_screens.mods and g_selected_mod_id ~= 0 then
+		if g_selected_mod_confirm then
+			update_add_ui_interaction(update_get_loc(e_loc.interaction_cancel), e_game_input.back)
+		else
+			update_add_ui_interaction(update_get_loc(e_loc.interaction_back), e_game_input.back)
+		end
+	elseif g_screen_index == g_screens.mod_upload_loading then
+		update_add_ui_interaction("", e_game_input.back)
 	elseif #g_screen_nav_stack > 0 then
 		update_add_ui_interaction(update_get_loc(e_loc.interaction_back), e_game_input.back)
 
@@ -515,6 +914,10 @@ function update_interaction_ui()
 		end
 	else
 		update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_ud)
+	end
+
+	if is_gamepad_scroll() then
+		update_add_ui_interaction_special(update_get_loc(e_loc.interaction_scroll), e_ui_interaction_special.gamepad_scroll)
 	end
 end
 
@@ -541,8 +944,19 @@ function input_event(event, action)
 
 	if action == e_input_action.release then
 		if event == e_input.back then
-			if g_edit_text ~= nil then
+			if g_screen_index == g_screens.mod_upload_loading then
+				-- player should wait for upload to complete
+			elseif g_edit_text ~= nil then
 				g_edit_text = nil
+			elseif g_selected_mod_confirm then
+				g_selected_mod_confirm = false
+			elseif g_disable_mods_confirm then
+				g_disable_mods_confirm = false
+			elseif g_screen_index == g_screens.mod_upload_selection then
+				g_selected_mod_id = 0
+				nav_back()
+			elseif g_screen_index == g_screens.mods and g_selected_mod_id ~= 0 then
+				g_selected_mod_id = 0
 			else
 				nav_back()
 			end
@@ -561,6 +975,9 @@ function input_scroll(dy)
 end
 
 function input_axis(x, y, z, w)
+	if is_gamepad_scroll() then
+		g_ui:input_scroll_gamepad(w)
+	end
 end
 
 function input_text(text)
@@ -629,19 +1046,27 @@ function imgui_game_customisation(ui, is_multiplayer)
 	local island_count_per_team = update_get_new_game_island_count_per_team()
 	local base_difficulty = update_get_new_game_base_difficulty()
 	local loadout_type = update_get_new_game_loadout_type()
+	local blueprints_type = update_get_new_game_blueprints()
 	local is_tutorial = update_get_new_game_is_tutorial()
 
 	local loadout_type_names = { 
 		update_get_loc(e_loc.loadout_default), 
-		update_get_loc(e_loc.loadout_intermediate), 
-		update_get_loc(e_loc.loadout_expert) 
+		update_get_loc(e_loc.loadout_minimal), 
+		update_get_loc(e_loc.loadout_complete) 
 	}
+
+	local blueprints_type_names = { 
+		update_get_loc(e_loc.unlocked_blueprints_default), 
+		update_get_loc(e_loc.unlocked_blueprints_none), 
+		update_get_loc(e_loc.unlocked_blueprints_all) 
+	}
+
 	local is_modified = false
 
 	ui:header(update_get_loc(e_loc.upp_game_settings))
 
 	if is_multiplayer == false then
-		if base_difficulty ~= 1 or loadout_type ~= 0 then
+		if base_difficulty ~= 1 or loadout_type ~= 0 or blueprints_type ~= 0 then
 			ui:combo(update_get_loc(e_loc.tutorial), 0, { update_get_loc(e_loc.tutorial_unavailable) }, false)
 		else
 			local tutorial = iff(is_tutorial, 0, 1)
@@ -680,6 +1105,9 @@ function imgui_game_customisation(ui, is_multiplayer)
 
 	loadout_type, is_modified = ui:combo(update_get_loc(e_loc.loadout), loadout_type, loadout_type_names)
 	if is_modified then update_set_new_game_loadout_type(loadout_type) end
+
+	blueprints_type, is_modified = ui:combo(update_get_loc(e_loc.unlocked_blueprints), blueprints_type, blueprints_type_names)
+	if is_modified then update_set_new_game_blueprints(blueprints_type) end
 
 	window.label_bias = label_bias
 end
@@ -765,4 +1193,8 @@ function request_join_game(address, connect_type, server_name)
 	elseif connect_type == e_network_connect_type.token then
 		update_ui_event("request_server_meta_token", address)
 	end
+end
+
+function is_gamepad_scroll()
+	return (g_screen_index == g_screens.mods and g_selected_mod_id ~= 0) or g_selected_mod_confirm
 end

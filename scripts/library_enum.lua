@@ -125,8 +125,10 @@ e_attack_type = {
     rockets = 8,
 	airlift = 9,
 	deploy = 10,
+	order_main_gun = 11,
+	order_cruise_missile = 12,
 
-	count = 11,
+	count = 13,
 }
 
 e_waypoint_type = {
@@ -1346,8 +1348,8 @@ e_loc = {
 	combo_enabled = 1204,
 	combo_disabled = 1205,
 	loadout_default = 1206,
-	loadout_intermediate = 1207,
-	loadout_expert = 1208,
+	loadout_minimal = 1207,
+	loadout_complete = 1208,
 	connection_lost = 1209,
 	vehicle_bay_light = 1210,
 	tut_close_pause_menu = 1211,
@@ -1558,8 +1560,57 @@ e_loc = {
 	virus_bot_retired = 1416,
 	in_barges = 1417,
 	acronym_thousand = 1418,
+	hundred_mm_cannon = 1419,
+	upp_mods = 1420,
+	upp_installed_mods = 1421,
+	restart_to_apply_changes = 1422,
+	no_mods_installed = 1423,
+	mod = 1424,
+	incompatible = 1425,
+	incompatible_mods_warning = 1426,
+	upp_disable_all = 1427,
+	confirm_disable_all_mods = 1428,
+	upp_upload_to_workshop = 1429,
+	upp_local_mods = 1430,
+	upp_steam_mods = 1431,
+	upload_error = 1432,
+	upload_error_unknown_error = 1433,
+	upload_error_upload_in_progress = 1434,
+	upload_error_upload_failed = 1435,
+	upload_error_reupload_steam_mod = 1436,
+	upload_error_invalid_manifest = 1437,
+	upload_error_no_content = 1438,
+	upload_error_no_thumbnail = 1439,
+	upload_error_unexpected_content_format = 1440,
+	upload_complete = 1441,
+	upp_upload = 1442,
+	upp_new_workshop_item = 1443,
+	upp_update_existing_item = 1444,
+	uploading = 1445,
+	no_mods_published = 1446,
+	no_local_mods_found = 1447,
+	confirm_upload_mod = 1448,
+	following_mod_will_be_overwritten = 1449,
+	workshop_agreement = 1450,
+	mod_visibility = 1451,
+	mod_visibility_public = 1452,
+	mod_visibility_private = 1453,
+	mod_visibility_friends = 1454,
+	unlocked_blueprints = 1455,
+	unlocked_blueprints_default = 1456,
+	unlocked_blueprints_none = 1457,
+	unlocked_blueprints_all = 1458,
+	upload_error_failed_to_copy_content = 1459,
+	upload_error_failed_to_delete_upload_folder = 1460,
+	needlefish_chassis_aa = 1461,
+	needlefish_chassis_torpedo = 1462,
+	needlefish_chassis_gun = 1463,
+	needlefish_chassis_missile = 1464,
+	needlefish_chassis_desc = 1465,
+	upp_attack_type_main_gun = 1466,
+	upp_attack_type_cruise_missile = 1467,
 
-	count = 1419,
+	count = 1468,
 }
 
 e_barge_destination_type = {
@@ -1638,10 +1689,8 @@ e_game_input = {
 	dpad_up = 16,
 	dpad_down = 17,
 	attachment_primary = 18,
-	attachment_secondary = 19,
 	attachment_fire = 20,
 	camera_zoom = 21,
-	cycle_target = 22,
 	toggle_control_mode = 23,
 	toggle_stabilisation_mode = 24,
 	select_attachment_1 = 25,
@@ -1835,4 +1884,15 @@ e_mouse_flight_mode = {
 e_carrier_order_operation = {
 	modify = 0,
 	delete = 1,
+}
+
+e_mod_type = {
+	user = 0,
+	steam = 1,
+}
+
+e_mod_visibility = {
+	public = 0,
+	friends = 1,
+	private = 2,
 }

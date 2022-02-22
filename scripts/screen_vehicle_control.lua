@@ -45,6 +45,7 @@ g_go_code_time = 100000
 g_color_attack_order = color_status_dark_red
 g_color_airlift_order = color_status_ok
 g_color_waypoint = color8(0, 255, 255, 8)
+g_color_resupply = color8(0, 255, 128, 32)
 
 g_is_mouse_mode = false
 g_pointer_pos_x = 0
@@ -348,7 +349,9 @@ function render_selection_attack_target(screen_w, screen_h)
         local is_attack_type_torpedo_single_capable = selected_vehicle:get_is_attack_type_capable(e_attack_type.torpedo_single)
         local is_attack_type_gun_capable = selected_vehicle:get_is_attack_type_capable(e_attack_type.gun)
         local is_attack_type_rockets_capable = selected_vehicle:get_is_attack_type_capable(e_attack_type.rockets)
-
+        local is_attack_type_order_main_gun_capable = selected_vehicle:get_is_attack_type_capable(e_attack_type.order_main_gun)
+        local is_attack_type_order_cruise_missile_capable = selected_vehicle:get_is_attack_type_capable(e_attack_type.order_cruise_missile)
+        
         if is_attack_type_any_capable == false then
             ui:text_basic(update_get_loc(e_loc.no_attack_options_available), color_grey_dark)
         else
@@ -360,6 +363,8 @@ function render_selection_attack_target(screen_w, screen_h)
             if is_attack_type_torpedo_single_capable and ui:list_item(update_get_loc(e_loc.upp_torpedo), true) then attack_type = e_attack_type.torpedo_single end
             if is_attack_type_gun_capable and ui:list_item(update_get_loc(e_loc.upp_gun), true) then attack_type = e_attack_type.gun end
             if is_attack_type_rockets_capable and ui:list_item(update_get_loc(e_loc.upp_rockets), true) then attack_type = e_attack_type.rockets end
+            if is_attack_type_order_main_gun_capable and ui:list_item(update_get_loc(e_loc.upp_attack_type_main_gun), true) then attack_type = e_attack_type.order_main_gun end
+            if is_attack_type_order_cruise_missile_capable and ui:list_item(update_get_loc(e_loc.upp_attack_type_cruise_missile), true) then attack_type = e_attack_type.order_cruise_missile end
         end
         
         ui:end_window()
@@ -777,7 +782,7 @@ function update(screen_w, screen_h, ticks)
 
         -- render weapon radius
 
-        local function render_weapon_radius(world_pos_x, world_pos_y, radius)
+        local function render_weapon_radius(world_pos_x, world_pos_y, radius, col)
             local steps = 16
             local step = math.pi * 2 / steps
             local angle_prev = 0               
@@ -789,12 +794,11 @@ function update(screen_w, screen_h, ticks)
                 local angle = step * i
                 local x0, y0 = get_screen_from_world(world_pos_x + math.cos(angle_prev) * radius, world_pos_y + math.sin(angle_prev) * radius, g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
                 local x1, y1 = get_screen_from_world(world_pos_x + math.cos(angle) * radius, world_pos_y + math.sin(angle) * radius, g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
-                local color = color8(32, 8, 8, 64)
 
-                update_ui_line(x0, y0, x1, y1, color)
+                update_ui_line(x0, y0, x1, y1, col)
 
-                color = color8(32, 8, 8, math.floor(32 * (math.sin(g_animation_time * 0.15) * 0.5 + 0.5)))
-                update_ui_add_triangle(vec2(x0, y0), vec2(x1, y1), vec2(screen_pos_x, screen_pos_y), color)
+                local fill_col = color8(col:r(), col:g(), col:b(), math.floor(col:a() / 2 * (math.sin(g_animation_time * 0.15) * 0.5 + 0.5)))
+                update_ui_add_triangle(vec2(x0, y0), vec2(x1, y1), vec2(screen_pos_x, screen_pos_y), fill_col)
 
                 angle_prev = angle
             end
@@ -811,7 +815,15 @@ function update(screen_w, screen_h, ticks)
                     local world_x, world_y = get_world_from_screen(g_cursor_pos_x, g_cursor_pos_y, g_camera_pos_x, g_camera_pos_y, g_camera_size, 256, 256)
 
                     if weapon_range > 0 then
-                        render_weapon_radius(world_x, world_y, weapon_range)
+                        render_weapon_radius(world_x, world_y, weapon_range, color8(32, 8, 8, 64))
+                    end
+
+                    local def = weapon_radius_vehicle:get_definition_index()
+
+                    if def == e_game_object_type.chassis_sea_ship_light or def == e_game_object_type.chassis_sea_ship_heavy then
+                        local team_carrier = screen_vehicle
+                        local vehicle_pos_xz = team_carrier:get_position_xz()
+                        render_weapon_radius(vehicle_pos_xz:x(), vehicle_pos_xz:y(), 500, color8(0, 255, 128, 8))
                     end
                 end
             end
@@ -827,7 +839,15 @@ function update(screen_w, screen_h, ticks)
                         local vehicle_pos_xz = weapon_radius_vehicle:get_position_xz()
 
                         if weapon_range > 0 then
-                            render_weapon_radius(vehicle_pos_xz:x(), vehicle_pos_xz:y(), weapon_range)
+                            render_weapon_radius(vehicle_pos_xz:x(), vehicle_pos_xz:y(), weapon_range, color8(32, 8, 8, 64))
+                        end
+                    end
+
+                    if weapon_radius_vehicle:get_team() == update_get_screen_team_id() then
+                        if def == e_game_object_type.chassis_sea_ship_light or def == e_game_object_type.chassis_sea_ship_heavy then
+                            local team_carrier = screen_vehicle
+                            local vehicle_pos_xz = team_carrier:get_position_xz()
+                            render_weapon_radius(vehicle_pos_xz:x(), vehicle_pos_xz:y(), 500, color8(0, 255, 128, 8))
                         end
                     end
                 end
@@ -904,9 +924,7 @@ function update(screen_w, screen_h, ticks)
                         -- render waypoints
                         
                         local vehicle_support_id = vehicle:get_supporting_vehicle_id()
-
                         local waypoint_count = vehicle:get_waypoint_count()
-                        
                         local waypoint_pos_x_prev = screen_pos_x
                         local waypoint_pos_y_prev = screen_pos_y
                         
@@ -930,6 +948,32 @@ function update(screen_w, screen_h, ticks)
                                     local parent_screen_pos_x, parent_screen_pos_y = get_screen_from_world(parent_pos_xz:x(), parent_pos_xz:y(), g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
 
                                     render_dashed_line(screen_pos_x, screen_pos_y, parent_screen_pos_x, parent_screen_pos_y, waypoint_color)
+                                end
+                            end
+
+                            local vehicle_resupply_id = vehicle:get_resupply_vehicle_id()
+
+                            if vehicle_resupply_id ~= 0 then
+                                local resupply_vehicle = update_get_map_vehicle_by_id(vehicle_resupply_id)
+
+                                if resupply_vehicle:get() then
+                                    local resupply_pos_xz = resupply_vehicle:get_position_xz()
+                                    local resupply_screen_pos_x, resupply_screen_pos_y = get_screen_from_world(resupply_pos_xz:x(), resupply_pos_xz:y(), g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
+
+                                    local fuel_factor = vehicle:get_fuel_factor()
+                                    local ammo_factor = vehicle:get_ammo_factor()
+                                    local is_resupplying = math.floor(fuel_factor * 100 + 0.5) < 100 or math.floor(ammo_factor * 100 + 0.5) < 100
+                                    local color = color8(g_color_resupply:r(), g_color_resupply:g(), g_color_resupply:b(), g_color_resupply:a())
+                                    
+                                    if is_resupplying == false then
+                                        color:a(color:a() / 4)
+                                    end
+
+                                    render_dashed_line(resupply_screen_pos_x, resupply_screen_pos_y, screen_pos_x, screen_pos_y, color)
+
+                                    if get_grid_spacing() < 2000 and g_animation_time % 20 > 10 and is_resupplying then
+                                        update_ui_image((screen_pos_x + resupply_screen_pos_x) / 2 - 3, (screen_pos_y + resupply_screen_pos_y) / 2 - 4, atlas_icons.column_stock, color, 0)
+                                    end
                                 end
                             end
 
@@ -1178,6 +1222,10 @@ function update(screen_w, screen_h, ticks)
 
                                 if fuel_factor < 0.5 and get_is_render_fuel_indicator(vehicle) then
                                     local icon_color = iff(fuel_factor < 0.25, color8(255, 0, 0, 255), color8(255, 255, 0, 255))
+
+                                    if vehicle:get_resupply_vehicle_id() ~= 0 and g_animation_time % 20 > 10 then
+                                        icon_color = g_color_resupply
+                                    end
 
                                     if is_highlight then
                                         icon_color = color_white

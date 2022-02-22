@@ -250,6 +250,8 @@ function get_chassis_image_by_definition_index(index)
         return atlas_icons.icon_chassis_rotor_large
     elseif index == e_game_object_type.chassis_land_turret then
         return atlas_icons.icon_chassis_turret
+    elseif index == e_game_object_type.chassis_sea_ship_light then
+        return atlas_icons.icon_chassis_sea_ship_light
     end
 
     return atlas_icons.icon_chassis_unknown

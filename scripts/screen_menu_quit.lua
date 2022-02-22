@@ -34,7 +34,7 @@ function update(screen_w, screen_h, ticks)
 
             ui:end_window()
         else
-            ui:begin_window(update_get_loc(e_loc.upp_sure), 30, screen_h / 2 - 20, screen_w - 60, 45, nil, g_selected_panel == 1)
+            ui:begin_window_dialog(update_get_loc(e_loc.upp_sure), screen_w / 2, screen_h / 2, screen_w - 60, screen_h - 40, nil, g_selected_panel == 1)
             
                 if ui:button(update_get_loc(e_loc.upp_no), true, 1) then
                     g_selected_panel = 0

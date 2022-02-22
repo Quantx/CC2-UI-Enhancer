@@ -367,7 +367,7 @@ lib_imgui = {
     --
     --------------------------------------------------------------------------------
 
-    begin_window = function(self, title, x, y, w, h, icon, is_active, type, is_selection_enabled, is_col_active)
+    begin_window = function(self, title, x, y, w, h, icon, is_active, win_type, is_selection_enabled, is_col_active, align)
         if w == nil or h == nil then
             w, h = self:get_region()
         end
@@ -384,6 +384,19 @@ lib_imgui = {
         local window = self:get_create_window(window_id)
         local scroll_h = window.cy
         local selected_y = window.selected_y
+
+        if type(h) == "table" then
+            local constraints = h
+            h = scroll_h + iff(win_type == 1, 0, 12)
+
+            if constraints.min ~= nil then h = math.max(h, constraints.min) end
+            if constraints.max ~= nil then h = math.min(h, constraints.max) end
+        end
+
+        if align ~= nil then
+            x = x - w * align[1]
+            y = y - h * align[2]
+        end
 
         if is_active then
             if self.is_mouse_hovered and update_get_active_input_type() == e_active_input.keyboard then
@@ -420,7 +433,7 @@ lib_imgui = {
             end
         end
 
-        type = type or 0
+        win_type = win_type or 0
 
         window.cx = 0
         window.cy = 1
@@ -469,8 +482,8 @@ lib_imgui = {
         local content_w = w
         local content_h = h
 
-        if type == 0 or type == 2 then
-            if type == 2 then
+        if win_type == 0 or win_type == 2 then
+            if win_type == 2 then
                 update_ui_rectangle(0, 0, w, h, color_black)
             end
 
@@ -486,8 +499,8 @@ lib_imgui = {
             window.offset_count = window.offset_count + 1
         end
 
-        local content_w = w - iff(type == 1, 0, 2)
-        local content_h = h - iff(type == 1, 0, 12)
+        local content_w = w - iff(win_type == 1, 0, 2)
+        local content_h = h - iff(win_type == 1, 0, 12)
 
         -- mouse drag scroll
 
@@ -567,6 +580,16 @@ lib_imgui = {
         end
 
         self:pop_window()
+    end,
+
+    begin_window_dialog = function(self, title, cx, cy, w, max_h, icon, is_active)
+        return self:begin_window(title, cx, cy, w, { max=max_h }, icon, is_active, 2, true, nil, { 0.5, 0.5 })
+    end,
+
+    end_window_dialog = function(self, text_no, text_yes)
+        local action_index = self:button_group({ text_no, text_yes }, { true, true })
+        self:end_window()
+        return action_index
     end,
 
     reset_scroll = function(self)
@@ -1247,7 +1270,7 @@ lib_imgui = {
             local is_left_clicked = is_hovered and (self.input_pointer_1 or self.input_pointer_1_repeat) and is_left_hovered
             local is_right_clicked = is_hovered and (self.input_pointer_1 or self.input_pointer_1_repeat) and is_right_hovered
 
-            update_add_ui_interaction(update_get_loc(e_loc.interaction_select), e_ui_interaction_special.gamepad_dpad_lr)
+            update_add_ui_interaction_special(update_get_loc(e_loc.interaction_select), e_ui_interaction_special.gamepad_dpad_lr)
 
             if (is_left_hovered or is_right_hovered) and update_get_active_input_type() == e_active_input.keyboard then
                 update_add_ui_interaction(update_get_loc(e_loc.interaction_select), e_game_input.interact_a)
@@ -1296,7 +1319,7 @@ lib_imgui = {
             local is_left_clicked = is_hovered and self.input_pointer_1 and is_left_hovered
             local is_right_clicked = is_hovered and self.input_pointer_1 and is_right_hovered
 
-            update_add_ui_interaction(update_get_loc(e_loc.interaction_select), e_ui_interaction_special.gamepad_dpad_lr)
+            update_add_ui_interaction_special(update_get_loc(e_loc.interaction_select), e_ui_interaction_special.gamepad_dpad_lr)
             
             if (is_left_hovered or is_right_hovered) and update_get_active_input_type() == e_active_input.keyboard then
                 update_add_ui_interaction(update_get_loc(e_loc.interaction_select), e_game_input.interact_a)
@@ -1386,7 +1409,7 @@ lib_imgui = {
             local is_left_clicked = is_hovered and self.input_pointer_1 and is_left_hovered
             local is_right_clicked = is_hovered and self.input_pointer_1 and is_right_hovered
 
-            update_add_ui_interaction(update_get_loc(e_loc.interaction_select), e_ui_interaction_special.gamepad_dpad_lr)
+            update_add_ui_interaction_special(update_get_loc(e_loc.interaction_select), e_ui_interaction_special.gamepad_dpad_lr)
             
             if (is_left_hovered or is_right_hovered) and update_get_active_input_type() == e_active_input.keyboard then
                 update_add_ui_interaction(update_get_loc(e_loc.interaction_select), e_game_input.interact_a)
@@ -1660,6 +1683,72 @@ lib_imgui = {
         update_ui_image(x + 5, y, atlas_icons.column_time, num_col, 0)
         update_ui_text(x + 15, y, text_time, w - 25, 0, time_col, 0)
         y = y + text_time_height + 2
+
+        local is_hovered = self:hoverable(x, window.cy, w, y - window.cy, true)
+
+        window.cy = y + 2
+
+        local is_action = false
+
+        if is_selected and is_active then
+            local is_clicked = is_hovered and self.input_pointer_1
+
+            if is_hovered or update_get_active_input_type() == e_active_input.gamepad then
+                update_add_ui_interaction(update_get_loc(e_loc.interaction_select), e_game_input.interact_a)
+            end
+
+            if self.input_action or is_clicked then
+                is_action = true
+                self.input_action = false
+                self.input_pointer_1 = false
+            end
+        end
+
+        return is_action
+    end,
+    
+    mod_details = function(self, name, author, is_enabled)
+        local window = self:get_window()
+        local x = window.cx
+        local y = window.cy
+        local w, h = self:get_region()
+        local is_active = window.is_active
+        local is_selected = window.selected_index_y == window.index_y and window.is_selection_enabled
+
+        local text_name = name
+        local text_desc = author
+
+        local text_col = iff(is_active, iff(is_selected, color_white, color_grey_dark), color_grey_dark)
+        local icon_col = iff(is_active, iff(is_selected, color_grey_dark, color_grey_dark), color_grey_dark)
+        local desc_col = iff(is_active, iff(is_selected, color_grey_mid, color_grey_dark), color_grey_dark)
+        local back_col = iff(is_active, iff(is_selected, color_highlight, color_button_bg), color_button_bg_inactive)
+        local check_col = iff(is_active, iff(is_enabled, color_status_ok, color_status_bad), iff(is_enabled, color_status_dark_green, color_status_dark_red))
+
+        local check_w = 16
+        local check_h = 10
+        local left_w = w - check_w - 4
+        local right_w = w - left_w - 2
+        update_ui_image(x + 5, y + 3, atlas_icons.column_repair, icon_col, 0)
+        
+        local _, text_name_height = update_ui_get_text_size(text_name, left_w - 25, 0)
+        local _, text_desc_height = update_ui_get_text_size(text_desc, left_w - 25, 0)
+        render_button_bg_outline(x + 2, y, w - 4, text_name_height + text_desc_height + 5, back_col)
+        
+        update_ui_text(x + 15, y + 3, text_name, left_w - 25, 0, text_col, 0)
+        
+        if is_enabled then
+            render_button_bg(x + left_w + 2 + check_w - check_h, y + 5, check_h - 4, check_h - 4, check_col, 1)
+        else
+            render_button_bg(x + left_w + 2, y + 5, check_h - 4, check_h - 4, check_col, 1)
+        end
+
+        render_button_bg_outline(x + left_w, y + 3, check_w, check_h, color_grey_dark, 2)
+
+        y = y + text_name_height + 3
+        
+        update_ui_image(x + 5, y, atlas_icons.column_profile, icon_col, 0)
+        update_ui_text(x + 15, y, text_desc, left_w - 25, 0, desc_col, 0)
+        y = y + text_desc_height + 2
 
         local is_hovered = self:hoverable(x, window.cy, w, y - window.cy, true)
 
@@ -2315,6 +2404,13 @@ function get_ui_vehicle_chassis_attachments(vehicle)
                 { i=0, x=0, y=0 }
             }
         }
+    elseif vehicle_definition_index == e_game_object_type.chassis_sea_ship_light then
+        vehicle_attachment_rows = {
+            {
+                { i=1, x=0, y=-5 },
+                { i=2, x=0, y=15 },
+            }
+        }
     end
 
     return vehicle_attachment_rows
@@ -2942,7 +3038,18 @@ function imgui_facility_inventory_table(ui, tile)
                 { w=column_widths[2], margin=column_margins[2], value=atlas_icons.column_stock },
             }
 
-            imgui_table_header(ui, header_columns)
+            local is_header = false
+
+            for _, item in pairs(category.items) do
+                if update_get_resource_item_hidden(item.index) == false then
+                    is_header = true
+                    break
+                end
+            end
+
+            if is_header then
+                imgui_table_header(ui, header_columns)
+            end
             
             for _, item in pairs(category.items) do
                 if update_get_resource_item_hidden(item.index) == false then
