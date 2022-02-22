@@ -25,15 +25,10 @@ g_tab_map = {
     selected_facility_id = 0,
     selected_facility_item = -1,
     selected_facility_queue_item = -1,
+    selected_facility_inventory = false,
     selected_barge_id = 0,
     selected_barge_waypoint_mode = false,
     selected_panel = 0,
-    
-    panel_scroll_pos = {
-        [0] = 0,
-        [1] = 0,
-        [2] = 0,
-    },
 }
 
 g_tab_stock = {
@@ -47,8 +42,6 @@ g_tab_stock = {
     selected_item = -1,
     selected_item_modify_amount = 0,
     is_confirm_discard = false,
-    
-    scroll_pos = 0,
 }
 
 g_tab_barges = {
@@ -60,8 +53,6 @@ g_tab_barges = {
     is_overlay = false,
 
     selected_item = -1,
-    
-    scroll_pos = 0,
 }
 
 g_tabs = {
@@ -78,7 +69,7 @@ g_screens = {
     active_tab = 1,
 }
 
-g_focused_screen = g_screens.active_tab
+g_focused_screen = g_screens.menu
 g_active_tab = g_tabs.stock
 g_hovered_tab = -1
 
@@ -139,13 +130,6 @@ function parse()
     g_tab_stock.selected_item_modify_amount = parse_s32("", g_tab_stock.selected_item_modify_amount)
     g_tab_stock.is_confirm_discard = parse_bool("", g_tab_stock.is_confirm_discard)
     g_tab_barges.selected_item = parse_s32("", g_tab_barges.selected_item)
-    
-    g_tab_map.panel_scroll_pos[0] = parse_f32("", g_tab_map.panel_scroll_pos[0])
-    g_tab_map.panel_scroll_pos[1] = parse_f32("", g_tab_map.panel_scroll_pos[1])
-    g_tab_map.panel_scroll_pos[2] = parse_f32("", g_tab_map.panel_scroll_pos[2])
-
-    g_tab_stock.scroll_pos = parse_f32("", g_tab_stock.scroll_pos)
-    g_tab_barges.scroll_pos = parse_f32("", g_tab_barges.scroll_pos)
 end
 
 function begin()
@@ -216,7 +200,7 @@ function update(screen_w, screen_h, ticks)
     end
 
     update_ui_rectangle(0, 0, screen_w, 14, color_black)
-    update_ui_rectangle(0, 14, screen_w, 1, iff(is_hoverable, iff(g_focused_screen == g_screens.active_tab, color_white, color_highlight), color_grey_dark))
+    update_ui_line(0, 14, screen_w, 14, iff(is_hoverable, iff(g_focused_screen == g_screens.active_tab, color_white, color_highlight), color_grey_dark))
     
     local cx = 10
 
@@ -361,7 +345,7 @@ function input_event(event, action)
 end
 
 function exit_screen()
-    g_focused_screen = g_screens.active_tab
+    g_focused_screen = g_screens.menu
     g_hovered_tab = -1
     update_set_screen_state_exit()
 end
@@ -412,14 +396,7 @@ function tab_barges_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen
         table.insert(barges, barge)
     end
 
-    local is_local = update_get_is_focus_local()
-    local barge_window = ui:begin_window("##barges", 5, 0, w - 10, h, nil, is_tab_active and g_tab_barges.selected_item == -1, 1, is_local)
-        if is_local then
-            g_tab_barges.scroll_pos = barge_window.scroll_y
-        else
-            barge_window.scroll_y = g_tab_barges.scroll_pos
-        end
-    
+    ui:begin_window("##barges", 5, 0, w - 10, h, nil, is_tab_active and g_tab_barges.selected_item == -1, 1)
         local selected_item = imgui_barge_table(ui, barges)
         ui:divider(0, 3)
         ui:divider(0, 10)
@@ -438,7 +415,8 @@ function tab_barges_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen
         update_add_ui_interaction(update_get_loc(e_loc.interaction_back), e_game_input.back)
         update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_ud)
 
-        local window = ui:begin_window(update_get_loc(e_loc.upp_barge_id).. " " .. selected_barge:get_id() .. "##selectedbarge", 60, 2, w - 120, 103, atlas_icons.column_distance, is_tab_active, 2)
+        local display_id = selected_barge:get_id()
+        local window = ui:begin_window(update_get_loc(e_loc.upp_barge_id).. " " .. display_id .. "##selectedbarge", 60, 2, w - 120, 103, atlas_icons.column_distance, is_tab_active, 2)
             local inventory_capacity = selected_barge:get_inventory_capacity()
             local inventory_weight = selected_barge:get_inventory_weight()
             local hp_factor = selected_barge:get_hitpoints() / selected_barge:get_total_hitpoints()
@@ -531,9 +509,7 @@ function imgui_barge_table(ui, barges)
     local selected_item = -1
     local is_active = window.is_active
 
-    local id_w = update_ui_get_text_size("0000", 10000, 0) + 8
-
-    local column_widths = { id_w, 46, 67, 57, 38, 5 }
+    local column_widths = { 24, 46, 70, 60, 38, 5 }
     local column_margins = { 5, 2, 2, 0, 2, 1 }
 
     local header_columns = {
@@ -552,12 +528,8 @@ function imgui_barge_table(ui, barges)
         local dist_to_target = 0
         local waypoint = barge:get_waypoint(0)
         local text_action = get_action_text(action)
-        local text_color = get_action_color(action)
         local text_destination, col_destination = get_destination_data(destination_id, destination_type)
         local text_dist = "---"
-        
-        local capacity = barge:get_inventory_capacity()
-        local weight = barge:get_inventory_weight()
         
         if waypoint:get() then
             local waypoint_pos_xz = waypoint:get_position_xz()
@@ -577,10 +549,10 @@ function imgui_barge_table(ui, barges)
         local function column_health(w, h, is_selected)
             local hp_factor = barge:get_hitpoints() / barge:get_total_hitpoints()
             update_ui_push_offset(math.floor(w / 2), 2)
-            update_ui_rectangle(0, -1, 2, 10, color_grey_dark)
+            update_ui_rectangle(0, 0, 2, 10, color_grey_dark)
 
             local bar_h = math.ceil(10 * hp_factor)
-            update_ui_rectangle(0, 9 - bar_h, 2, bar_h, get_color_hp(hp_factor))
+            update_ui_rectangle(0, 10 - bar_h, 2, bar_h, get_color_hp(hp_factor))
             update_ui_pop_offset()
         end
 
@@ -611,7 +583,7 @@ function imgui_barge_table(ui, barges)
                 render_button_bg(w / 2 - 9, h / 2 - 9, 18, 18, color8(0, 0, 0, 128))
                 update_ui_image_rot(w / 2, h / 2, item_data.icon, item_col, 0)
             else
-                update_ui_text(2, 3, tostring(weight) .. update_get_loc(e_loc.upp_kg), w, 0, color_grey_dark, 0)
+                update_ui_text(2, 3, "---", w, 0, color_grey_dark, 0)
             end
 
             update_ui_pop_clip()
@@ -619,7 +591,7 @@ function imgui_barge_table(ui, barges)
 
         local columns = { 
             { w=column_widths[1], margin=column_margins[1], value=tostring(display_id) },
-            { w=column_widths[2], margin=column_margins[2], value=text_action, col=text_color },
+            { w=column_widths[2], margin=column_margins[2], value=text_action },
             { w=column_widths[3], margin=column_margins[3], value=text_destination, col=col_destination },
             { w=column_widths[4], margin=column_margins[4], value=column_item_transfer, row_h = iff(is_transferring, 13, nil) },
             { w=column_widths[5], margin=column_margins[5], value=text_dist },
@@ -646,18 +618,6 @@ function get_action_text(action_type)
     }
 
     return text[action_type] or "---"
-end
-
-function get_action_color(action_type)
-    local color = {
-        [e_barge_action_type.idle] = color_status_bad,
-        [e_barge_action_type.travel] = color_status_ok,
-        [e_barge_action_type.load] = color_status_warning,
-        [e_barge_action_type.unload] = color_status_warning,
-        [e_barge_action_type.wait] = color_white,
-    }
-
-    return color[action_type] or color_grey_dark
 end
 
 function get_destination_data(destination_id, destination_type)
@@ -891,9 +851,7 @@ function render_map_details(screen_vehicle, screen_w, screen_h, is_tab_active)
 
     for _, tile in iter_tiles() do 
         local tile_position = tile:get_position_xz()
-        
         local screen_pos_x, screen_pos_y = get_screen_from_world(tile_position:x(), tile_position:y(), g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
-        
         local tile_icon_color = g_map_colors.inactive
         local tile_icon_bg = color_black
 
@@ -910,16 +868,16 @@ function render_map_details(screen_vehicle, screen_w, screen_h, is_tab_active)
             local name = tile:get_name()
             local name_factor = clamp(invlerp(g_tab_map.camera_size,  g_tab_map.camera_size_min, g_tab_map.camera_size_max * 0.35), 0, 1)
             local tile_size = tile:get_size()
-            local name_pos_x, name_pos_y = get_screen_from_world(tile_position:x(), tile_position:y() + tile_size:y() / 2, g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
+            local _, name_pos_y = get_screen_from_world(tile_position:x(), tile_position:y() + tile_size:y() / 2, g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
 
-            update_ui_text(name_pos_x - 100, math.min(screen_pos_y - 14, name_pos_y), name, 200, 1, color8_lerp(color8(0, 255, 255, 10), color_empty, name_factor), 0)
+            update_ui_text(screen_pos_x - 100, math.min(screen_pos_y - 14, name_pos_y), name, 200, 1, color8_lerp(color8(0, 255, 255, 10), color_empty, name_factor), 0)
 
             update_ui_rectangle(screen_pos_x - 5, screen_pos_y - 4, 10, 8, tile_icon_bg)
             update_ui_rectangle(screen_pos_x - 4, screen_pos_y - 5, 8, 10, tile_icon_bg)
             update_ui_image(screen_pos_x - 4, screen_pos_y - 4, category_data.icon, tile_col, 0)
         end
         
-        if category_data.index ~= 0 and tile:get_team_control() == vehicle_team then
+        if tile:get_team_control() == vehicle_team then
             local production_factor = tile:get_facility_production_factor()
             local queue_count = tile:get_facility_production_queue_count()
             
@@ -1012,16 +970,14 @@ function render_map_details(screen_vehicle, screen_w, screen_h, is_tab_active)
     end
 
     if is_tab_active then
-        if g_is_mouse_mode == false or update_get_is_focus_local() == false then
-            update_ui_image(g_tab_map.cursor_pos_x - 5, g_tab_map.cursor_pos_y - 5, atlas_icons.map_icon_crosshair, iff(g_tab_map.hovered_id ~= 0, color_black, color_white), 0)
+        if g_is_mouse_mode == false then
+            update_ui_image(screen_w / 2 - 5, screen_h / 2 - 5, atlas_icons.map_icon_crosshair, iff(g_tab_map.hovered_id ~= 0, color_black, color_white), 0)
         end
     end
 end
 
 function render_map_ui(screen_w, screen_h, x, y, w, h, screen_vehicle, is_tab_active)
     local ui = g_ui
-
-    local is_local = update_get_is_focus_local()
 
     if is_tab_active then
         if g_tab_map.selected_barge_id ~= 0 then
@@ -1085,234 +1041,14 @@ function render_map_ui(screen_w, screen_h, x, y, w, h, screen_vehicle, is_tab_ac
             update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_ud)
 
             local facility_tile = update_get_tile_by_id(g_tab_map.selected_facility_id)
-
+ 
             if facility_tile:get() and facility_tile:get_team_control() == screen_vehicle:get_team() then
                 local category_data = g_item_categories[facility_tile:get_facility_category()]
                 
-                if category_data.index ~= 0 and g_tab_map.selected_panel < 2 then
-                    local left_w = w - 75
-                    local right_w = w - left_w
-
-                    local is_windows_active = is_tab_active and g_tab_map.selected_facility_item == -1 and g_tab_map.selected_facility_queue_item == -1
-
-                    if is_windows_active and g_is_mouse_mode and g_is_pointer_hovered and g_is_pointer_pressed == false then
-                        if g_pointer_pos_x > left_w then
-                            g_tab_map.selected_panel = 1
-                        else
-                            g_tab_map.selected_panel = 0
-                        end
-                    end
-
-                    local window = ui:begin_window(category_data.name .. "##facility", 5, y, left_w - 5, h - 5, category_data.icon, is_windows_active and g_tab_map.selected_panel == 0, 2)
-                        if is_local then
-                            g_tab_map.panel_scroll_pos[0] = window.scroll_y
-                        else
-                            window.scroll_y = g_tab_map.panel_scroll_pos[0]
-                        end
-                    
-                        if update_get_active_input_type() == e_active_input.gamepad then
-                            if ui:list_item(update_get_loc(e_loc.upp_queue), true) then
-                                g_tab_map.selected_panel = 1
-                            end
-                        end
-
---[[                        
-                        if ui:list_item(update_get_loc(e_loc.upp_inventory), true) then
-                            g_tab_map.selected_panel = 2
-                        end
---]]
-                        local items_unlocked = {}
-                        local items_locked = {}
-                        local team_data = update_get_team(screen_vehicle:get_team())
-
-                        if team_data:get() then
-                            for i = 1, category_data.item_count do
-                                local item = category_data.items[i]
-
-                                if update_get_resource_item_hidden_facility_production(item.index) == false then
-                                    if team_data:get_is_blueprint_unlocked(item.index) then
-                                        table.insert(items_unlocked, item)
-                                    else
-                                        table.insert(items_locked, item)
-                                    end
-                                end
-                            end
-                        end
-
-                        local column_widths = { 13, 122, -1 }
-                        local column_margins = { 5, 2, 2 }
-
-                        if #items_unlocked > 0 then
-                            imgui_table_header(ui, {
-                                { w=column_widths[1] + column_widths[2], margin=column_margins[1], value=update_get_loc(e_loc.upp_blueprints) },
-                                { w=column_widths[3], margin=column_margins[3], value=atlas_icons.column_stock }
-                            })
-
-                            for i = 1, #items_unlocked do
-                                local item_count = math.min(facility_tile:get_facility_inventory_count(items_unlocked[i].index), 99999)
-
-                                local columns = {
-                                    { w=column_widths[1], margin=column_margins[1], value=atlas_icons.column_stock, col=color_grey_mid, is_border=false },
-                                    { w=column_widths[2], margin=column_margins[2], value=items_unlocked[i].name },
-                                    { w=column_widths[3], margin=column_margins[3], value=tostring(item_count), col=iff(item_count > 0, color_status_ok, color_status_bad) }
-                                }
-
-                                local is_action = imgui_table_entry(ui, columns, true)
-
-                                if is_action then
-                                    g_tab_map.selected_facility_item = items_unlocked[i].index
-                                end
-                            end
-                        end
-
-                        if #items_locked > 0 then
-                            imgui_table_header(ui, {
-                                { w=column_widths[1] + column_widths[2], margin=column_margins[1], value=update_get_loc(e_loc.upp_locked) },
-                                { w=column_widths[3], margin=column_margins[3], value=atlas_icons.column_stock }
-                            })
-
-                            for i = 1, #items_locked do
-                                local item_count = math.min(facility_tile:get_facility_inventory_count(items_locked[i].index), 99999)
-
-                                local columns = {
-                                    { w=column_widths[1], margin=column_margins[1], value=atlas_icons.column_locked, col=color_status_bad, is_border=false },
-                                    { w=column_widths[2], margin=column_margins[2], value=items_locked[i].name, col=color_status_bad },
-                                    { w=column_widths[3], margin=column_margins[3], value=tostring(item_count), col=color_grey_dark }
-                                }
-
-                                imgui_table_entry(ui, columns, false)
-                            end
-                        end
-
-                        ui:spacer(5)
-
-                    ui:end_window()
-                    
-                    ui:begin_window(update_get_loc(e_loc.upp_status).."##facilitystatus", left_w, y, right_w - 5, 35, atlas_icons.map_icon_factory, false, 1)
-                        local region_w, region_h = ui:get_region()
-                        render_map_facility_queue(5, 3, region_w - 10, region_h, facility_tile)
-                    ui:end_window()
-
-                    window = ui:begin_window(update_get_loc(e_loc.upp_queue).."##facilityqueue", left_w, y + 24, right_w - 5, h - 29, atlas_icons.column_pending, is_windows_active and g_tab_map.selected_panel == 1, 2)
-                        if is_local then
-                            g_tab_map.panel_scroll_pos[1] = window.scroll_y
-                        else
-                            window.scroll_y = g_tab_map.panel_scroll_pos[1]
-                        end
-                    
-                        local queue_count = facility_tile:get_facility_production_queue_count()
-
-                        for i = 0, queue_count - 1 do
-                            local item_type, item_count = facility_tile:get_facility_production_queue_item(i)
-                            local item_data = g_item_data[item_type]
-
-                            item_count = math.min(item_count, 99999)
-
-                            if item_data ~= nil then
-                                if imgui_item_button(ui, item_data, "x" .. item_count, true) then
-                                    g_tab_map.selected_facility_queue_item = i
-                                end
-
-                                if i == 0 then
-                                    ui:divider(0, 2)
-                                end
-                            end
-                        end
-
-                        ui:spacer(1)
-                    ui:end_window()
-
-                    if g_tab_map.selected_facility_queue_item ~= -1 then
-                        update_ui_rectangle(0, 0, screen_w, screen_h, color8(0, 0, 0, 200))
-                        local item_type, item_count = facility_tile:get_facility_production_queue_item(g_tab_map.selected_facility_queue_item)
-                        local item_data = g_item_data[item_type]
-
-                        if item_data ~= nil then
-                            local window = ui:begin_window(item_data.name .. "##queueitem", 30, y + 10, w - 60, h - 30, atlas_icons.column_pending, true, 2)
-                                imgui_item_description(ui, screen_vehicle, item_data, false, true)
-
-                                imgui_table_header(ui, {
-                                    { w=134, margin=5, value=update_get_loc(e_loc.upp_queue) },
-                                    { w=10, margin=0, value=atlas_icons.column_stock },
-                                    { w=-1, margin=0, value="x" .. item_count }
-                                })
-
-                                ui:spacer(1)
-
-                                local result = ui:button_group({ "X", "-1", "-10", "-100", "-1000" }, true)
-                                local remove_count = 0
-
-                                if result == 0 then
-                                    remove_count = item_count
-                                elseif result == 1 then
-                                    remove_count = 1
-                                elseif result == 2 then
-                                    remove_count = 10
-                                elseif result == 3 then
-                                    remove_count = 100
-                                elseif result == 4 then
-                                    remove_count = 1000
-                                end
-
-                                if remove_count > 0 then
-                                    facility_tile:set_facility_remove_production_queue_item(g_tab_map.selected_facility_queue_item, math.min(remove_count, item_count))
-
-                                    if remove_count >= item_count then
-                                        g_tab_map.selected_facility_queue_item = -1
-                                    end
-                                end
-                            ui:end_window()
-                        else
-                            g_tab_map.selected_facility_queue_item = -1
-                        end
-                    end
-
-                    if g_tab_map.selected_facility_item ~= -1 then
-                        update_ui_rectangle(0, 0, screen_w, screen_h, color8(0, 0, 0, 200))
-                        local item = g_item_data[g_tab_map.selected_facility_item]
-
-                        if item ~= nil then
-                            local window = ui:begin_window(item.name .. "##facilityitem", 30, y + 10, w - 60, h - 30, atlas_icons.column_stock, true, 2)
-                                imgui_item_description(ui, screen_vehicle, item, false, true)
-                                
-                                local production_count = facility_tile:get_facility_production_queue_item_type(item.index)
-                                
-                                imgui_table_header(ui, {
-                                    { w=134, margin=5, value=update_get_loc(e_loc.upp_queue) },
-                                    { w=10, margin=0, value=atlas_icons.column_stock },
-                                    { w=-1, margin=0, value="x" .. production_count }
-                                })
-
-                                ui:spacer(1)
-                                
-                                local result = ui:button_group({ "+1", "+10", "+100", "+1000" }, true)
-
-                                if result == 0 then
-                                    facility_tile:set_facility_add_production_queue_item(item.index, 1)
-                                elseif result == 1 then
-                                    facility_tile:set_facility_add_production_queue_item(item.index, 10)
-                                elseif result == 2 then
-                                    facility_tile:set_facility_add_production_queue_item(item.index, 100)
-                                elseif result == 3 then
-                                    facility_tile:set_facility_add_production_queue_item(item.index, 1000)
-                                end
-                            ui:end_window()
-                        else
-                            g_tab_map.selected_facility_item = -1
-                        end
-                    end
-                else
-                    local window = ui:begin_window(category_data.name .. "##warehouse", x + 15, y + 5, w - 30, h - 15, category_data.icon, is_tab_active, 2)
-                        if is_local then
-                            g_tab_map.panel_scroll_pos[2] = window.scroll_y
-                        else
-                            window.scroll_y = g_tab_map.panel_scroll_pos[2]
-                        end
-                        
-                        imgui_facility_inventory_table(ui, facility_tile)
-                        ui:divider(0, 3)
-                        ui:divider(0, 10)
-                    ui:end_window()
+                render_map_facility_ui(screen_w, screen_h, x, y, w, h, category_data, facility_tile, screen_vehicle, is_tab_active and g_tab_map.selected_facility_inventory == false)
+                
+                if g_tab_map.selected_facility_inventory then
+                    render_map_facility_inventory(x + 15, y + 5, w - 30, h - 15, category_data, facility_tile, is_tab_active)
                 end
             else
                 g_tab_map.selected_facility_id = 0
@@ -1353,11 +1089,11 @@ function render_barge_inventory_status(x, y, w, h, barge)
     update_ui_text(10, 9, get_barge_inventory_item_count(barge), 100, 0, color_grey_dark, 0)
     update_ui_pop_offset()
 
-    update_ui_rectangle(left_w, 0, 1, h, color_white)
+    update_ui_line(left_w, 0, left_w, h, color_white)
 
     render_barge_item_transfer_status(left_w, 0, right_w, h, barge)
 
-    update_ui_rectangle(0, h, w, 1, color_white)
+    update_ui_line(0, h, w, h, color_white)
 
     update_ui_pop_offset()
 end
@@ -1400,6 +1136,239 @@ function render_barge_item_transfer_status(x, y, w, h, barge)
     update_ui_pop_offset()
 end
 
+function render_map_facility_ui(screen_w, screen_h, x, y, w, h, category_data, facility_tile, screen_vehicle, is_active)
+    local ui = g_ui
+    local left_w = w - 75
+    local right_w = w - left_w
+
+    local is_windows_active = is_active and g_tab_map.selected_facility_item == -1 and g_tab_map.selected_facility_queue_item == -1
+
+    if is_windows_active and g_is_mouse_mode and g_is_pointer_hovered and g_is_pointer_pressed == false then
+        if g_pointer_pos_x > left_w then
+            g_tab_map.selected_panel = 1
+        else
+            g_tab_map.selected_panel = 0
+        end
+    end
+
+    ui:begin_window(category_data.name .. "##facility", 5, y, left_w - 5, h - 5, category_data.icon, is_windows_active and g_tab_map.selected_panel == 0, 2)
+        if category_data.index == 0 then 
+            if ui:list_item(update_get_loc(e_loc.upp_inventory), true) then
+                g_tab_map.selected_facility_inventory = true
+            end
+        end
+
+        if update_get_active_input_type() == e_active_input.gamepad then
+            if ui:list_item(update_get_loc(e_loc.upp_queue), true) then
+                g_tab_map.selected_panel = 1
+            end
+        end
+
+        local items_unlocked = {}
+        local items_locked = {}
+        local team_data = update_get_team(screen_vehicle:get_team())
+        local is_show_item_stock = false
+
+        if team_data:get() then
+            for i = 1, category_data.item_count do
+                local item = category_data.items[i]
+
+                if update_get_resource_item_hidden_facility_production(item.index) == false then
+                    if team_data:get_is_blueprint_unlocked(item.index) then
+                        table.insert(items_unlocked, item)
+
+                        if update_get_resource_item_hidden(item.index) == false then
+                            is_show_item_stock = true
+                        end
+                    else
+                        table.insert(items_locked, item)
+                    end
+                end
+            end
+        end
+
+        local column_widths = { 13, 122, -1 }
+        local column_margins = { 5, 2, 2 }
+
+        if #items_unlocked > 0 then
+            if is_show_item_stock then
+                imgui_table_header(ui, {
+                    { w=column_widths[1] + column_widths[2], margin=column_margins[1], value=update_get_loc(e_loc.upp_blueprints) },
+                    { w=column_widths[3], margin=column_margins[3], value=atlas_icons.column_stock }
+                })
+            else
+                imgui_table_header(ui, {
+                    { w=column_widths[1] + column_widths[2] + column_widths[3], margin=column_margins[1], value=update_get_loc(e_loc.upp_blueprints) },
+                })
+            end
+
+            for i = 1, #items_unlocked do
+                local item_count = math.min(facility_tile:get_facility_inventory_count(items_unlocked[i].index), 99999)
+
+                local columns = {}
+                
+                if is_show_item_stock then
+                    columns = {
+                        { w=column_widths[1], margin=column_margins[1], value=atlas_icons.column_stock, col=color_grey_mid, is_border=false },
+                        { w=column_widths[2], margin=column_margins[2], value=items_unlocked[i].name },
+                        { w=column_widths[3], margin=column_margins[3], value=tostring(item_count), col=iff(item_count > 0, color_status_ok, color_status_bad) }
+                    }
+                else
+                    columns = {
+                        { w=column_widths[1], margin=column_margins[1], value=atlas_icons.column_stock, col=color_grey_mid, is_border=false },
+                        { w=column_widths[2] + column_widths[3], margin=column_margins[2], value=items_unlocked[i].name },
+                    }
+                end
+
+                local is_action = imgui_table_entry(ui, columns, true)
+
+                if is_action then
+                    g_tab_map.selected_facility_item = items_unlocked[i].index
+                end
+            end
+        end
+
+        if #items_locked > 0 then
+            imgui_table_header(ui, {
+                { w=column_widths[1] + column_widths[2], margin=column_margins[1], value=update_get_loc(e_loc.upp_locked) },
+                { w=column_widths[3], margin=column_margins[3], value=atlas_icons.column_stock }
+            })
+
+            for i = 1, #items_locked do
+                local item_count = math.min(facility_tile:get_facility_inventory_count(items_locked[i].index), 99999)
+
+                local columns = {
+                    { w=column_widths[1], margin=column_margins[1], value=atlas_icons.column_locked, col=color_status_bad, is_border=false },
+                    { w=column_widths[2], margin=column_margins[2], value=items_locked[i].name, col=color_status_bad },
+                    { w=column_widths[3], margin=column_margins[3], value=tostring(item_count), col=color_grey_dark }
+                }
+
+                imgui_table_entry(ui, columns, false)
+            end
+        end
+
+        ui:spacer(5)
+
+    ui:end_window()
+    
+    ui:begin_window(update_get_loc(e_loc.upp_status).."##facilitystatus", left_w, y, right_w - 5, 35, atlas_icons.map_icon_factory, false, 1)
+        local region_w, region_h = ui:get_region()
+        render_map_facility_queue(5, 3, region_w - 10, region_h, facility_tile)
+    ui:end_window()
+
+    ui:begin_window(update_get_loc(e_loc.upp_queue).."##facilityqueue", left_w, y + 24, right_w - 5, h - 29, atlas_icons.column_pending, is_windows_active and g_tab_map.selected_panel == 1, 2)
+        local queue_count = facility_tile:get_facility_production_queue_count()
+
+        for i = 0, queue_count - 1 do
+            local item_type, item_count = facility_tile:get_facility_production_queue_item(i)
+            local item_data = g_item_data[item_type]
+
+            item_count = math.min(item_count, 99999)
+
+            if item_data ~= nil then
+                if imgui_item_button(ui, item_data, "x" .. item_count, true) then
+                    g_tab_map.selected_facility_queue_item = i
+                end
+
+                if i == 0 then
+                    ui:divider(0, 2)
+                end
+            end
+        end
+
+        ui:spacer(1)
+    ui:end_window()
+
+    if g_tab_map.selected_facility_queue_item ~= -1 then
+        update_ui_rectangle(0, 0, screen_w, screen_h, color8(0, 0, 0, 200))
+        local item_type, item_count = facility_tile:get_facility_production_queue_item(g_tab_map.selected_facility_queue_item)
+        local item_data = g_item_data[item_type]
+
+        if item_data ~= nil then
+            local window = ui:begin_window(item_data.name .. "##queueitem", 30, y + 10, w - 60, h - 30, atlas_icons.column_pending, true, 2)
+                imgui_item_description(ui, screen_vehicle, item_data, false, true)
+
+                imgui_table_header(ui, {
+                    { w=134, margin=5, value=update_get_loc(e_loc.upp_queue) },
+                    { w=10, margin=0, value=atlas_icons.column_stock },
+                    { w=-1, margin=0, value="x" .. item_count }
+                })
+
+                ui:spacer(1)
+
+                local result = ui:button_group({ "X", "-1", "-10", "-100", "-1000" }, true)
+                local remove_count = 0
+
+                if result == 0 then
+                    remove_count = item_count
+                elseif result == 1 then
+                    remove_count = 1
+                elseif result == 2 then
+                    remove_count = 10
+                elseif result == 3 then
+                    remove_count = 100
+                elseif result == 4 then
+                    remove_count = 1000
+                end
+
+                if remove_count > 0 then
+                    facility_tile:set_facility_remove_production_queue_item(g_tab_map.selected_facility_queue_item, math.min(remove_count, item_count))
+
+                    if remove_count >= item_count then
+                        g_tab_map.selected_facility_queue_item = -1
+                    end
+                end
+            ui:end_window()
+        else
+            g_tab_map.selected_facility_queue_item = -1
+        end
+    end
+
+    if g_tab_map.selected_facility_item ~= -1 then
+        update_ui_rectangle(0, 0, screen_w, screen_h, color8(0, 0, 0, 200))
+        local item = g_item_data[g_tab_map.selected_facility_item]
+
+        if item ~= nil then
+            local window = ui:begin_window(item.name .. "##facilityitem", 30, y + 10, w - 60, h - 30, atlas_icons.column_stock, true, 2)
+                imgui_item_description(ui, screen_vehicle, item, false, true)
+                
+                local production_count = facility_tile:get_facility_production_queue_item_type(item.index)
+                
+                imgui_table_header(ui, {
+                    { w=134, margin=5, value=update_get_loc(e_loc.upp_queue) },
+                    { w=10, margin=0, value=atlas_icons.column_stock },
+                    { w=-1, margin=0, value="x" .. production_count }
+                })
+
+                ui:spacer(1)
+                
+                local result = ui:button_group({ "+1", "+10", "+100", "+1000" }, true)
+
+                if result == 0 then
+                    facility_tile:set_facility_add_production_queue_item(item.index, 1)
+                elseif result == 1 then
+                    facility_tile:set_facility_add_production_queue_item(item.index, 10)
+                elseif result == 2 then
+                    facility_tile:set_facility_add_production_queue_item(item.index, 100)
+                elseif result == 3 then
+                    facility_tile:set_facility_add_production_queue_item(item.index, 1000)
+                end
+            ui:end_window()
+        else
+            g_tab_map.selected_facility_item = -1
+        end
+    end
+end
+
+function render_map_facility_inventory(x, y, w, h, category_data, facility_tile, is_active)
+    local ui = g_ui
+    ui:begin_window(update_get_loc(e_loc.upp_inventory) .. "##facility_inventory", x, y, w, h, atlas_icons.column_stock, is_active, 2)
+        imgui_facility_inventory_table(ui, facility_tile)
+        ui:divider(0, 3)
+        ui:divider(0, 10)
+    ui:end_window()
+end
+
 function render_map_facility_queue(x, y, w, h, tile)
     update_ui_push_offset(x, y)
     update_ui_push_clip(0, 0, w, h)
@@ -1438,26 +1407,24 @@ function get_node_tooltip_h(tooltip_w, id, type)
 
         if tile:get() then
             local is_player_tile = tile:get_team_control() == update_get_screen_team_id()
+          
+            if is_player_tile == false then
+                local unlocks = get_tile_blueprint_unlocks(tile)
 
-            if category_data.index ~= 0 then                
-                if is_player_tile == false then
-                    local unlocks = get_tile_blueprint_unlocks(tile)
+                if #unlocks > 0 then
+                    local cx = 18
+                    local cy = 13
 
-                    if #unlocks > 0 then
-                        local cx = 18
-                        local cy = 13
+                    for i = 1, #unlocks do
+                        cx = cx + 16
 
-                        for i = 1, #unlocks do
-                            cx = cx + 16
-
-                            if cx + 16 > tooltip_w - 5 then
-                                cx = 18
-                                cy = cy + 16
-                            end
+                        if cx + 16 > tooltip_w - 5 then
+                            cx = 18
+                            cy = cy + 16
                         end
-
-                        return cy + 18
                     end
+
+                    return cy + 18
                 end
             end
         end
@@ -1501,81 +1468,70 @@ function render_node_tooltip(w, h, id, type)
         if tile:get() then
             local is_player_tile = tile:get_team_control() == update_get_screen_team_id()
 
-            if category_data.index == 0 then
-                if is_player_tile then
-                    update_ui_image(5, h / 2 - 4, category_data.icon, g_map_colors.factory, 0)
-                    update_ui_text(18, h / 2 - 4, category_data.name, 200, 0, color_white, 0)
-                    update_ui_image(w - 13, h / 2 - 4, atlas_icons.column_transit, color_highlight, 0)
+            if is_player_tile then
+                local cy = 3
+
+                update_ui_image(5, cy, category_data.icon, g_map_colors.factory, 0)
+                update_ui_text(18, cy, category_data.name, 200, 0, color_white, 0)
+                update_ui_image(w - 13, cy, atlas_icons.column_transit, color_highlight, 0)
+
+                cy = cy + 10
+
+                local production_factor = tile:get_facility_production_factor()
+                local queue_count = tile:get_facility_production_queue_count()
+                local pending_item_count = 0
+
+                for i = 0, queue_count - 1 do
+                    local item_type, item_count = tile:get_facility_production_queue_item(i)
+                    pending_item_count = pending_item_count + item_count
+                end
+
+                pending_item_count = math.min(pending_item_count, 99999)
+
+                update_ui_image(5, cy, atlas_icons.column_stock, color_grey_dark, 0)
+                update_ui_text(18, cy, pending_item_count, 200, 0, color_grey_dark, 0)
+
+                local bar_w = w - 50 - 15
+                update_ui_rectangle(50, cy + 3, bar_w, 3, color_grey_dark)
+                update_ui_rectangle(50, cy + 3, bar_w * production_factor, 3, g_map_colors.progress)
+
+                if tile:get_facility_is_refit() then
+                    update_ui_image(w - 12, cy, atlas_icons.column_time, color_grey_dark, 0)
                 else
-                    update_ui_image(5, h / 2 - 4, category_data.icon, color_grey_dark, 0)
-                    update_ui_text(18, h / 2 - 4, category_data.name, 200, 0, color_grey_dark, 0)
+                    update_ui_image(w - 12, cy, atlas_icons.column_stock, color_grey_dark, 0)
                 end
             else
-                if is_player_tile then
-                    local cy = 3
+                local unlocks = get_tile_blueprint_unlocks(tile)
 
-                    update_ui_image(5, cy, category_data.icon, g_map_colors.factory, 0)
-                    update_ui_text(18, cy, category_data.name, 200, 0, color_white, 0)
-                    update_ui_image(w - 13, cy, atlas_icons.column_transit, color_highlight, 0)
+                if #unlocks > 0 then
+                    local cy = 3
+                    update_ui_image(5, cy, category_data.icon, color_grey_dark, 0)
+                    update_ui_text(18, cy, category_data.name, 200, 0, color_grey_dark, 0)
 
                     cy = cy + 10
+                    update_ui_image(8, cy + 4, atlas_icons.icon_tree_next, color_grey_dark, 0)
 
-                    local production_factor = tile:get_facility_production_factor()
-                    local queue_count = tile:get_facility_production_queue_count()
-                    local pending_item_count = 0
+                    local cx = 18
 
-                    for i = 0, queue_count - 1 do
-                        local item_type, item_count = tile:get_facility_production_queue_item(i)
-                        pending_item_count = pending_item_count + item_count
-                    end
+                    for i = 1, #unlocks do
+                        if g_animation_time % 40 > 20 then
+                            update_ui_image(cx, cy, unlocks[i].icon, color_button_bg_inactive, 0)
+                            update_ui_image(cx + 4, cy + 3, atlas_icons.column_locked, color_status_bad, 0)
+                        else
+                            update_ui_image(cx, cy, unlocks[i].icon, color_grey_mid, 0)
+                        end
 
-                    pending_item_count = math.min(pending_item_count, 99999)
+                        cx = cx + 16
 
-                    update_ui_image(5, cy, atlas_icons.column_stock, color_grey_dark, 0)
-                    update_ui_text(18, cy, pending_item_count, 200, 0, color_grey_dark, 0)
-
-                    local bar_w = w - 50 - 15
-                    update_ui_rectangle(50, cy + 3, bar_w, 3, color_grey_dark)
-                    update_ui_rectangle(50, cy + 3, bar_w * production_factor, 3, g_map_colors.progress)
-
-                    if tile:get_facility_is_refit() then
-                        update_ui_image(w - 12, cy, atlas_icons.column_time, color_grey_dark, 0)
-                    else
-                        update_ui_image(w - 12, cy, atlas_icons.column_stock, color_grey_dark, 0)
+                        if cx + 16 > w - 5 then
+                            cx = 18
+                            cy = cy + 16
+                        end
                     end
                 else
-                    local unlocks = get_tile_blueprint_unlocks(tile)
-
-                    if #unlocks > 0 then
-                        local cy = 3
-                        update_ui_image(5, cy, category_data.icon, color_grey_dark, 0)
-                        update_ui_text(18, cy, category_data.name, 200, 0, color_grey_dark, 0)
-
-                        cy = cy + 10
-                        update_ui_image(8, cy + 4, atlas_icons.icon_tree_next, color_grey_dark, 0)
-
-                        local cx = 18
-
-                        for i = 1, #unlocks do
-                            if g_animation_time % 40 > 20 then
-                                update_ui_image(cx, cy, unlocks[i].icon, color_button_bg_inactive, 0)
-                                update_ui_image(cx + 4, cy + 3, atlas_icons.column_locked, color_status_bad, 0)
-                            else
-                                update_ui_image(cx, cy, unlocks[i].icon, color_grey_mid, 0)
-                            end
-
-                            cx = cx + 16
-
-                            if cx + 16 > w - 5 then
-                                cx = 18
-                                cy = cy + 16
-                            end
-                        end
-                    else
-                        local cy = h / 2 - 4
-                        update_ui_image(5, cy, category_data.icon, color_grey_dark, 0)
-                        update_ui_text(18, cy, category_data.name, 200, 0, color_grey_dark, 0)
-                    end
+                    local cy = h / 2 - 4
+                    update_ui_image(5, cy, category_data.icon, color_grey_dark, 0)
+                    update_ui_text(18, cy, category_data.name, 200, 0, color_grey_dark, 0)
                 end
             end
         end
@@ -1698,10 +1654,7 @@ function get_node_data(id, type)
         if type == g_node_types.barge then
             return update_get_loc(e_loc.upp_barge), g_map_colors.barge, atlas_icons.icon_chassis_16_barge
         elseif type == g_node_types.carrier then
-            local v = update_get_map_vehicle_by_id(id)
-            local team_id = v:get_team() + 1
-            local name = string.upper( vessel_names[team_id] ) .. " " .. update_get_loc(e_loc.upp_carrier)
-            return name, g_map_colors.carrier, atlas_icons.icon_chassis_16_carrier
+            return update_get_loc(e_loc.upp_carrier), g_map_colors.carrier, atlas_icons.icon_chassis_16_carrier
         elseif type == g_node_types.tile then
             local tile = update_get_tile_by_id(id)
             local category_data = g_item_categories[tile:get_facility_category()]
@@ -1750,6 +1703,8 @@ function tab_map_input_event(input, action)
         elseif input == e_input.back then
             if g_tab_map.dragged_id ~= 0 then
                 clear_map_dragged()
+            elseif g_tab_map.selected_facility_inventory then
+                g_tab_map.selected_facility_inventory = false
             elseif g_tab_map.selected_barge_id ~= 0 then
                 if g_tab_map.selected_barge_waypoint_mode then
                     g_tab_map.selected_barge_waypoint_mode = false
@@ -1766,14 +1721,10 @@ function tab_map_input_event(input, action)
                 elseif g_tab_map.selected_facility_item ~= -1 then
                     g_tab_map.selected_facility_item = -1
                 elseif g_is_mouse_mode then
-                    if g_tab_map.selected_panel == 2 then
-                        g_tab_map.selected_panel = 0
-                    else
-                        g_tab_map.selected_panel = 0
-                        g_tab_map.selected_facility_id = 0
-                    end
+                    g_tab_map.selected_panel = 0
+                    g_tab_map.selected_facility_id = 0
                 else
-                    if g_tab_map.selected_panel > 0 then
+                    if g_tab_map.selected_panel == 1 then
                         g_tab_map.selected_panel = 0
                     else
                         g_tab_map.selected_facility_id = 0
@@ -2021,16 +1972,9 @@ function tab_stock_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_
     update_ui_push_offset(x, y)
 
     g_tab_stock.is_overlay = false
-    local selected_bar = render_inventory_stats(0, 0, w, 10, screen_vehicle)
+    render_inventory_stats(0, 0, w, 10, screen_vehicle)
 
-    local is_local = update_get_is_focus_local()
     local window = ui:begin_window("##inventory", 5, 10, w - 10, h - 10, nil, is_tab_active and g_tab_stock.selected_item == -1, 1)
-        if is_local then
-            g_tab_stock.scroll_pos = window.scroll_y
-        else
-            window.scroll_y = g_tab_stock.scroll_pos
-        end
-    
         local selected_item, selected_row, selected_col, sx, sy, sw, sh = imgui_vehicle_inventory_table(ui, screen_vehicle)
         ui:divider(0, 3)
         ui:divider(0, 10)
@@ -2039,10 +1983,10 @@ function tab_stock_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_
             g_tab_stock.selected_item = selected_item
             g_tab_stock.selected_item_modify_amount = 0
         end
-        
-        if is_tab_active and selected_row ~= -1 and selected_col > 1 and g_pointer_pos_y > y + 10 then
+
+        if is_tab_active and selected_row ~= -1 and selected_col > 1 then
             local region_w, region_h = ui:get_region()
-        
+            
             sx = sx + sw / 2
 
             if g_is_mouse_mode and g_is_pointer_hovered then
@@ -2060,18 +2004,6 @@ function tab_stock_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_
             render_tooltip(0, window.view_y, region_w - 5, region_h, sx, sy + sh / 2, text_w + 4, text_h + 2, sh / 2 + 4, callback_render_tooltip, color_button_bg_inactive)
         end
     ui:end_window()
-    
-    if selected_bar > 0 then
-        local tooltip_text = { update_get_loc(e_loc.carrier_stock), update_get_loc(e_loc.in_barges), update_get_loc(e_loc.pending_order), "Free Space" }
-        local text = tooltip_text[selected_bar]
-        local text_w, text_h = update_ui_get_text_size(text, 100, 1)
-
-        local function callback_render_tooltip(w, h) 
-            update_ui_text(2, 1, text, w - 2, 1, color_grey_mid, 0)
-        end
-
-        render_tooltip(0, 0, screen_w, screen_h, g_pointer_pos_x, 10, text_w + 4, text_h + 2, 0, callback_render_tooltip, color_button_bg_inactive)
-    end
     
     if is_tab_active then
         update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_ud)
@@ -2166,120 +2098,27 @@ function tab_stock_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_
     update_ui_pop_offset()
 end
 
-function get_ordered_weight(vehicle)
-    local ordered_weight = 0.0
-    for _, category in pairs(g_item_categories) do
-        if #category.items > 0 then
-            for _, item in pairs(category.items) do
-                if update_get_resource_item_hidden(item.index) == false then
-                     ordered_weight = ordered_weight + (clamp(vehicle:get_inventory_order(item.index), -99999, 99999) * item.mass)
-                end
-            end
-        end
-    end
-
-    return ordered_weight
-end
-
-function get_barge_weight(vehicle)
-    local vehicle_team = vehicle:get_team()
-    local vehicle_filter = function(v)
-        return v:get_definition_index() == e_game_object_type.chassis_sea_barge and v:get_team() == vehicle_team
-    end
-
-    local barge_weight = 0.0
-    for _, barge in iter_vehicles(vehicle_filter) do
-        barge_weight = barge_weight + barge:get_inventory_weight()
-    end
-
-    return barge_weight
-end
-
-function render_carrier_load_graph(x, y, w, h, vehicle)
-    update_ui_push_offset(x, y)
-    update_ui_push_clip(0, 0, w, h)
-
-    local capacity = vehicle:get_inventory_capacity()
-    local ordered_weight = get_ordered_weight(vehicle)
-    local barge_weight = get_barge_weight(vehicle)
-    local carrier_weight = vehicle:get_inventory_weight()
-
-    local bar_length_mult = (w-2) / 100
-    
-    local cx = 0
-
-    local bars = {
-        { width=(bar_length_mult * (carrier_weight / capacity * 100)), col=color_white },
-        { width=(bar_length_mult * (barge_weight   / capacity * 100)), col=color_grey_mid },
-        { width=(bar_length_mult * (ordered_weight / capacity * 100)), col=color8(32, 32, 32, 255) },
-    }
-
-    local hover_v = (g_pointer_pos_y >= 16 and g_pointer_pos_y < (16 + h - 3))
-
-    local selected_bar = 0
-
-    local cumulative_length_wanted = 0
-
-    for i, b in ipairs(bars) do
-        cumulative_length_wanted = cumulative_length_wanted + b.width
-        local render_width = math.floor(cumulative_length_wanted - cx)
-
-        update_ui_rectangle(cx + 1, 1, render_width, h - 3, b.col)
-        
-        local ex = cx + render_width
-        
-        if hover_v and g_pointer_pos_x >= (x + cx + 1) and g_pointer_pos_x < math.min(x + w - 1, x + ex + 1) then
-            selected_bar = i
-        end
-        
-        cx = ex
-    end
-    
-    if selected_bar == 0 and hover_v and g_pointer_pos_x >= x + 1 and g_pointer_pos_x < x + w - 1 then
-        selected_bar = #bars + 1
-    end
-    
-
-    local border_color = color_grey_dark
-    local blink_speed = 16
-
-    if ordered_weight + barge_weight + carrier_weight > capacity and g_animation_time % blink_speed > (blink_speed / 2) then
-        border_color = color_status_bad
-    end
-
-    update_ui_rectangle_outline(0, 0, w, h-1, border_color)
-
-    update_ui_pop_clip()
-    update_ui_pop_offset()
-
-    return selected_bar
-end
-
 function render_inventory_stats(x, y, w, h, vehicle)
     update_ui_push_offset(x, y)
     update_ui_push_clip(0, 0, w, h)
 
     local col = iff(g_focused_screen == g_screens.inventory, color_grey_dark, color_grey_dark)
 
-    local cursor_y = 0
     local cursor_x = 10
-    update_ui_image(cursor_x, cursor_y, atlas_icons.column_weight, col, 0)
+    update_ui_image(cursor_x, 0, atlas_icons.column_weight, col, 0)
     cursor_x = cursor_x + 10
 
     local capacity = vehicle:get_inventory_capacity()
     local weight = vehicle:get_inventory_weight()
     local used_space = weight / capacity * 100
 
-    update_ui_text(cursor_x, cursor_y, string.format("%.1f%%", used_space), w - cursor_x, 0, col, 0)
-    local selected_bar = render_carrier_load_graph(60, cursor_y + 1, 75, h-2, vehicle)
-    update_ui_text(cursor_x, cursor_y, weight .. "/" .. capacity .. update_get_loc(e_loc.upp_kg), w - cursor_x - 10, 2, col, 0)
+    update_ui_text(cursor_x, 0, string.format("%.1f%%", used_space), w - cursor_x, 0, col, 0)
+    update_ui_text(cursor_x, 0, weight .. "/" .. capacity .. update_get_loc(e_loc.upp_kg), w - cursor_x - 10, 2, col, 0)
 
-    update_ui_rectangle(0, h - 1, w, 1, col)
+    update_ui_line(0, h - 1, w, h - 1, col)
 
     update_ui_pop_clip()
     update_ui_pop_offset()
-    
-    return selected_bar
 end
 
 function tab_stock_input_event(input, action)

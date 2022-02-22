@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<data emscripten="false" win32="true" tvos="false" ios="false" macos="true">
+	<packages>
+		<package name="rom_0" archive_path="rom_0.zip" />
+	</packages>
+	<compilers>
+		<compiler name="xml" compiler="copy">
+			<input_extensions>
+				<input_extension value="xml" />
+			</input_extensions>
+			<parameters>
+			</parameters>
+		</compiler>
+		<compiler name="json" compiler="copy">
+			<input_extensions>
+				<input_extension value="json" />
+			</input_extensions>
+			<parameters>
+			</parameters>
+		</compiler>
+		<compiler name="mesh" compiler="mesh">
+			<input_extensions>
+				<input_extension value="fbx" />
+				<input_extension value="dae" />
+			</input_extensions>
+			<parameters>
+				<parameter value="material DEFAULT 0 23" />
+				<parameter value="material ADDITIVE 1 3" />
+				<parameter value="material GLASS 2 17" />
+				<parameter value="material ADDTEXTURE 3 23" />
+			</parameters>
+		</compiler>
+		<compiler name="mesh_children" compiler="mesh">
+			<input_extensions>
+				<input_extension value="fbx" />
+				<input_extension value="dae" />
+			</input_extensions>
+			<parameters>
+				<parameter value="material DEFAULT 0 23" />
+				<parameter value="material ADDITIVE 1 3" />
+				<parameter value="material GLASS 2 19" />
+				<parameter value="material ADDTEXTURE 3 23" />
+				<parameter value="children_as_files" />
+			</parameters>
+		</compiler>
+		<compiler name="character" compiler="anim">
+			<input_extensions>
+				<input_extension value="apr" />
+			</input_extensions>
+			<parameters>
+				<parameter value="material DEFAULT 0 8215" />
+				<parameter value="material ADDITIVE 1 8195" />
+				<parameter value="material GLASS 2 8209" />
+				<parameter value="merging 0" />
+			</parameters>
+		</compiler>
+		<compiler name="convex physics" compiler="physics">
+			<input_extensions>
+				<input_extension value="fbx" />
+				<input_extension value="dae" />
+			</input_extensions>
+			<parameters>
+				<parameter value="convex" />
+			</parameters>
+		</compiler>
+		<compiler name="triangle physics" compiler="physics">
+			<input_extensions>
+				<input_extension value="fbx" />
+				<input_extension value="dae" />
+			</input_extensions>
+			<parameters>
+				<parameter value="triangle" />
+				<parameter value="scaling 4" />
+			</parameters>
+		</compiler>
+		<compiler name="texture" compiler="texture">
+			<input_extensions>
+				<input_extension value="png" />
+			</input_extensions>
+			<parameters>
+				<parameter value="tiling_mode repeat" />
+				<parameter value="mipmap" />
+			</parameters>
+		</compiler>
+		<compiler name="texture (large)" compiler="texture">
+			<input_extensions>
+				<input_extension value="png" />
+			</input_extensions>
+			<parameters>
+				<parameter value="tiling_mode repeat" />
+				<parameter value="mipmap" />
+				<parameter value="reduction_factor 1" />
+			</parameters>
+		</compiler>
+		<compiler name="texture (32bit)" compiler="texture">
+			<input_extensions>
+				<input_extension value="pbm" />
+			</input_extensions>
+			<parameters>
+				<parameter value="tiling_mode repeat" />
+				<parameter value="format rgb_32" />
+			</parameters>
+		</compiler>
+		<compiler name="texture (pixel)" compiler="texture">
+			<input_extensions>
+				<input_extension value="png" />
+			</input_extensions>
+			<parameters>
+				<parameter value="tiling_mode repeat" />
+				<parameter value="filter_mode nearest" />
+				<parameter value="mipmap" />
+			</parameters>
+		</compiler>
+		<compiler name="texture (ambient)" compiler="texture">
+			<input_extensions>
+				<input_extension value="png" />
+			</input_extensions>
+			<parameters>
+				<parameter value="tiling_mode repeat" />
+				<parameter value="format r_8" />
+				<parameter value="mipmap" />
+			</parameters>
+		</compiler>
+		<compiler name="atlas" compiler="atlas">
+			<input_extensions>
+				<input_extension value="txt" />
+			</input_extensions>
+			<parameters>
+				<parameter value="filter_mode nearest" />
+				<parameter value="mipmap" />
+			</parameters>
+		</compiler>
+		<compiler name="atlas (smooth)" compiler="atlas">
+			<input_extensions>
+				<input_extension value="txt" />
+			</input_extensions>
+			<parameters>
+				<parameter value="mipmap" />
+			</parameters>
+		</compiler>
+		<compiler name="atlas (ui)" compiler="atlas">
+			<input_extensions>
+				<input_extension value="txt" />
+			</input_extensions>
+			<parameters>
+				<parameter value="filter_mode nearest" />
+			</parameters>
+		</compiler>
+		<compiler name="glsl shader" compiler="copy">
+			<input_extensions>
+				<input_extension value="glsl" />
+			</input_extensions>
+			<parameters>
+			</parameters>
+		</compiler>
+		<compiler name="audio" compiler="audio">
+			<input_extensions>
+				<input_extension value="wav" />
+			</input_extensions>
+			<parameters>
+			</parameters>
+		</compiler>
+		<compiler name="audio (tiled)" compiler="audio">
+			<input_extensions>
+				<input_extension value="wav" />
+			</input_extensions>
+			<parameters>
+				<parameter value="tile 5" />
+			</parameters>
+		</compiler>
+		<compiler name="lua script" compiler="copy">
+			<input_extensions>
+				<input_extension value="lua" />
+			</input_extensions>
+			<parameters>
+			</parameters>
+		</compiler>
+		<compiler name="csv" compiler="copy">
+			<input_extensions>
+				<input_extension value="csv" />
+			</input_extensions>
+			<parameters>
+			</parameters>
+		</compiler>
+		<compiler name="font" compiler="copy">
+			<input_extensions>
+				<input_extension value="ttf" />
+			</input_extensions>
+			<parameters>
+			</parameters>
+		</compiler>
+	</compilers>
+</data>
