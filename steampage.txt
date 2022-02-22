@@ -53,7 +53,6 @@ Vehicle Hud
 [*]Added directional indicator for chassis when controlling the turret of a ground vehicle
 [*]Friendly vehicles are now blue, hostile vehicles are now red
 [*]Player names show up above the friendly vehicles they're controlling
-[*]All attachments can now lock/unlock targets
 [*]Always show friendly vehicles
 [*]Always show distance to highlighted vehicle
 [*]Highlighted vehicle's text is now much more readable
