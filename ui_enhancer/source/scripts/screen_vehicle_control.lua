@@ -898,7 +898,6 @@ function update(screen_w, screen_h, ticks)
                         local vehicle_pos_xz = weapon_radius_vehicle:get_position_xz()
 
                         if weapon_range > 0 then
-                            render_weapon_radius(vehicle_pos_xz:x(), vehicle_pos_xz:y(), weapon_range)
                             render_weapon_radius(vehicle_pos_xz:x(), vehicle_pos_xz:y(), weapon_range, color8(32, 8, 8, 64))
                         end
                     end
