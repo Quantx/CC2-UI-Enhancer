@@ -2845,6 +2845,7 @@ end
 
 function get_is_vision_target_lock_behaviour(attachment_def)
     return attachment_def == e_game_object_type.attachment_turret_rocket_pod
+        or attachment_def == e_game_object_type.attachment_turret_missile
         or attachment_def == e_game_object_type.attachment_hardpoint_missile_ir
         or attachment_def == e_game_object_type.attachment_hardpoint_missile_laser
         or attachment_def == e_game_object_type.attachment_hardpoint_missile_aa
