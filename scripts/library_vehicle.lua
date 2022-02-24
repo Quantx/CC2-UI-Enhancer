@@ -228,6 +228,10 @@ function get_attachment_data_by_definition_index(index)
             name = update_get_loc(e_loc.upp_smoke_launcher_stream),
             icon16 = atlas_icons.icon_attachment_16_smoke_launcher_stream,
         },
+        [e_game_object_type.attachment_turret_carrier_torpedo] = {
+            name = update_get_loc(e_loc.upp_torpedo),
+            icon16 = atlas_icons.icon_attachment_16_air_torpedo,
+        },
     }
 
     return attachment_data[index] or attachment_data[-1]

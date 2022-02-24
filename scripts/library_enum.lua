@@ -1609,8 +1609,12 @@ e_loc = {
 	needlefish_chassis_desc = 1465,
 	upp_attack_type_main_gun = 1466,
 	upp_attack_type_cruise_missile = 1467,
+	needlefish_chassis_aa_desc = 1468,
+	needlefish_chassis_torpedo_desc = 1469,
+	needlefish_chassis_gun_desc = 1470,
+	needlefish_chassis_missile_desc = 1471,
 
-	count = 1468,
+	count = 1472,
 }
 
 e_barge_destination_type = {

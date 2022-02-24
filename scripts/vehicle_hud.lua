@@ -1101,6 +1101,7 @@ function render_attachment_hud(screen_w, screen_h, map_data, tick_fraction, vehi
         is_render_center = render_attachment_hud_radar(screen_w, screen_h, map_data, vehicle, attachment)
     elseif def == e_game_object_type.attachment_turret_robot_dog_capsule then
         is_render_center = render_attachment_hud_robot_dog(screen_w, screen_h, map_data, vehicle, attachment)
+    elseif def == e_game_object_type.attachment_turret_carrier_torpedo then
     elseif def < e_game_object_type.count then
         update_ui_text(screen_w / 2, 20, update_get_loc(e_loc.unknown_attachment), 200, 0, color8(255, 0, 0, 255), 0)
     end
@@ -2711,6 +2712,7 @@ end
 
 function get_is_vision_target_lock_behaviour(attachment_def)
     return attachment_def == e_game_object_type.attachment_turret_rocket_pod
+        or attachment_def == e_game_object_type.attachment_turret_missile
         or attachment_def == e_game_object_type.attachment_hardpoint_missile_ir
         or attachment_def == e_game_object_type.attachment_hardpoint_missile_laser
         or attachment_def == e_game_object_type.attachment_hardpoint_missile_aa
