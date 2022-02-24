@@ -9,7 +9,6 @@ g_drag_vehicle_id = 0
 g_drag_waypoint_id = 0
 g_selection_vehicle_id = 0
 g_selection_waypoint_id = 0
-g_selection_attack_target_index = -1
 g_selection_attack_target_vehicle_id = 0
 g_selected_child_vehicle_id = 0
 g_is_selection_map = false
@@ -77,7 +76,7 @@ g_tut_selected_vehicle_id = 0
 g_tut_selected_waypoint_id = 0
 
 function get_is_selection()
-    return (g_selection_vehicle_id > 0 or g_selection_waypoint_id > 0 or g_selection_attack_target_index >= 0 or g_is_selection_map)
+    return (g_selection_vehicle_id > 0 or g_selection_waypoint_id > 0 or g_selection_attack_target_vehicle_id > 0 or g_is_selection_map)
 --[[
     if g_selection_vehicle_id > 0 or g_selection_waypoint_id > 0 or g_selection_attack_target_index >= 0 or g_is_selection_map then
         return true
@@ -284,7 +283,6 @@ function undock_by_bay_index(carrier_vehicle, bay_index)
     
     g_selection_vehicle_id = 0
     g_selection_waypoint_id = 0
-    g_selection_attack_target_index = -1
     g_selection_attack_target_vehicle_id = 0
     g_is_selection_map = false
     g_screen_index = 0
@@ -376,22 +374,29 @@ function render_selection_attack_target(screen_w, screen_h)
     local attack_type = -1
 
     local selected_vehicle = update_get_map_vehicle_by_id(g_selection_vehicle_id)
+    local attack_target_vehicle = update_get_map_vehicle_by_id(g_selection_attack_target_vehicle_id)
 
     update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_ud)
 
-    if selected_vehicle:get() then
+    if selected_vehicle:get() and attack_target_vehicle:get() then
         ui:begin_window(update_get_loc(e_loc.upp_attack_target), 64, 64, screen_w - 128, screen_h - 128, atlas_icons.column_laser, true, 2)
         
-        local is_attack_type_any_capable = selected_vehicle:get_is_attack_type_capable(e_attack_type.any)
-        local is_attack_type_bomb_single_capable = selected_vehicle:get_is_attack_type_capable(e_attack_type.bomb_single)
-        local is_attack_type_bomb_double_capable = selected_vehicle:get_is_attack_type_capable(e_attack_type.bomb_double)
-        local is_attack_type_missile_single_capable = selected_vehicle:get_is_attack_type_capable(e_attack_type.missile_single)
-        local is_attack_type_missile_double_capable = selected_vehicle:get_is_attack_type_capable(e_attack_type.missile_double)
-        local is_attack_type_torpedo_single_capable = selected_vehicle:get_is_attack_type_capable(e_attack_type.torpedo_single)
-        local is_attack_type_gun_capable = selected_vehicle:get_is_attack_type_capable(e_attack_type.gun)
-        local is_attack_type_rockets_capable = selected_vehicle:get_is_attack_type_capable(e_attack_type.rockets)
-        local is_attack_type_order_main_gun_capable = selected_vehicle:get_is_attack_type_capable(e_attack_type.order_main_gun)
-        local is_attack_type_order_cruise_missile_capable = selected_vehicle:get_is_attack_type_capable(e_attack_type.order_cruise_missile)
+        local is_air = get_is_vehicle_air(attack_target_vehicle:get_definition_index())
+        local is_land = get_is_vehicle_land(attack_target_vehicle:get_definition_index())
+        local is_sea = get_is_vehicle_sea(attack_target_vehicle:get_definition_index())
+
+        MM_LOG(tostring(is_air) .. ", " .. tostring(is_land) .. ", " .. tostring(is_sea))
+
+        local is_attack_type_any_capable = selected_vehicle:get_is_attack_type_capable(e_attack_type.any, is_air, is_land, is_sea)
+        local is_attack_type_bomb_single_capable = selected_vehicle:get_is_attack_type_capable(e_attack_type.bomb_single, is_air, is_land, is_sea)
+        local is_attack_type_bomb_double_capable = selected_vehicle:get_is_attack_type_capable(e_attack_type.bomb_double, is_air, is_land, is_sea)
+        local is_attack_type_missile_single_capable = selected_vehicle:get_is_attack_type_capable(e_attack_type.missile_single, is_air, is_land, is_sea)
+        local is_attack_type_missile_double_capable = selected_vehicle:get_is_attack_type_capable(e_attack_type.missile_double, is_air, is_land, is_sea)
+        local is_attack_type_torpedo_single_capable = selected_vehicle:get_is_attack_type_capable(e_attack_type.torpedo_single, is_air, is_land, is_sea)
+        local is_attack_type_gun_capable = selected_vehicle:get_is_attack_type_capable(e_attack_type.gun, is_air, is_land, is_sea)
+        local is_attack_type_rockets_capable = selected_vehicle:get_is_attack_type_capable(e_attack_type.rockets, is_air, is_land, is_sea)
+        local is_attack_type_order_main_gun_capable = selected_vehicle:get_is_attack_type_capable(e_attack_type.order_main_gun, is_air, is_land, is_sea)
+        local is_attack_type_order_cruise_missile_capable = selected_vehicle:get_is_attack_type_capable(e_attack_type.order_cruise_missile, is_air, is_land, is_sea)
 
         if is_attack_type_any_capable == false then
             ui:text_basic(update_get_loc(e_loc.no_attack_options_available), color_grey_dark)
@@ -411,28 +416,25 @@ function render_selection_attack_target(screen_w, screen_h)
         ui:end_window()
 
         if attack_type ~= -1 then
-            if g_selection_waypoint_id == 0 and g_selection_attack_target_vehicle_id > 0 then
-                -- no waypoint selected so add one and set its attack target id
+            if g_selection_waypoint_id == 0 then
+                -- no waypoint selected so add one at selected vehicle's current position
 
                 local selected_vehicle_pos_xz = selected_vehicle:get_position_xz()
-
                 selected_vehicle:clear_waypoints()
                 selected_vehicle:clear_attack_target()
                 g_selection_waypoint_id = selected_vehicle:add_waypoint(selected_vehicle_pos_xz:x(), selected_vehicle_pos_xz:y())
-                selected_vehicle:set_waypoint_attack_target_target_id(g_selection_waypoint_id, g_selection_attack_target_vehicle_id)
             end
 
             local selected_waypoint = selected_vehicle:get_waypoint_by_id(g_selection_waypoint_id)
             
             if selected_waypoint:get() then
-                if g_selection_attack_target_index < selected_waypoint:get_attack_target_count() then
-                    selected_vehicle:set_waypoint_attack_target_attack_type(g_selection_waypoint_id, g_selection_attack_target_index, attack_type)
+                local attack_target_index = selected_waypoint:get_attack_target_count()
+                selected_vehicle:set_waypoint_attack_target_target_id(g_selection_waypoint_id, g_selection_attack_target_vehicle_id)
+                selected_vehicle:set_waypoint_attack_target_attack_type(g_selection_waypoint_id, attack_target_index, attack_type)
 
-                    g_selection_vehicle_id = 0
-                    g_selection_waypoint_id = 0
-                    g_selection_attack_target_index = -1
-                    g_selection_attack_target_vehicle_id = 0
-                end
+                g_selection_vehicle_id = 0
+                g_selection_waypoint_id = 0
+                g_selection_attack_target_vehicle_id = 0
             else
                 g_selection_vehicle_id = 0
                 g_selection_waypoint_id = 0
@@ -441,6 +443,7 @@ function render_selection_attack_target(screen_w, screen_h)
     else
         g_selection_vehicle_id = 0
         g_selection_waypoint_id = 0
+        g_selection_attack_target_vehicle_id = 0
     end
 end
 
@@ -521,7 +524,7 @@ function render_selection(screen_w, screen_h)
 
     update_add_ui_interaction(update_get_loc(e_loc.interaction_cancel), e_game_input.back)
 
-    if g_selection_attack_target_index >= 0 then
+    if g_selection_attack_target_vehicle_id > 0 then
         render_selection_attack_target(screen_w, screen_h)
     elseif g_selection_waypoint_id > 0 then
         render_selection_waypoint(screen_w, screen_h)
@@ -548,7 +551,6 @@ function input_selection(event, action)
     if action == e_input_action.press and event == e_input.back then
         g_selection_vehicle_id = 0
         g_selection_waypoint_id = 0
-        g_selection_attack_target_index = -1
         g_selection_attack_target_vehicle_id = 0
         g_is_selection_map = false
     else
@@ -572,7 +574,6 @@ function parse()
     g_drag_waypoint_id = parse_s32("", g_drag_waypoint_id)
     g_selection_vehicle_id = parse_s32("", g_selection_vehicle_id)
     g_selection_waypoint_id = parse_s32("", g_selection_waypoint_id)
-    g_selection_attack_target_index = parse_s32("", g_selection_attack_target_index)
     g_selected_child_vehicle_id = parse_s32("", g_selected_child_vehicle_id)
     g_is_selection_map = parse_bool("", g_is_selection_map)
     g_map_render_mode = parse_s32("mode", g_map_render_mode)
@@ -1887,19 +1888,16 @@ function input_event(event, action)
                             if g_drag_waypoint_id > 0 then
                                 g_selection_vehicle_id = g_drag_vehicle_id
                                 g_selection_waypoint_id = g_drag_waypoint_id
-                                g_selection_attack_target_index = -1
                                 g_selection_attack_target_vehicle_id = 0
                                 g_is_selection_map = false
                             elseif g_drag_vehicle_id > 0 then
                                 g_selection_vehicle_id = g_drag_vehicle_id
                                 g_selection_waypoint_id = 0
-                                g_selection_attack_target_index = -1
                                 g_selection_attack_target_vehicle_id = 0
                                 g_is_selection_map = false
                             elseif g_highlighted_vehicle_id == 0 and g_drag_distance < drag_threshold then
                                 g_selection_vehicle_id = 0
                                 g_selection_waypoint_id = 0
-                                g_selection_attack_target_index = -1
                                 g_selection_attack_target_vehicle_id = 0
                                 g_is_selection_map = true
                             end
@@ -1997,14 +1995,11 @@ function input_event(event, action)
                                                 if is_highlighted_vehicle_found == false then
                                                     local highlighted_vehicle_id = highlighted_vehicle:get_id()
 
-                                                    drag_vehicle:set_waypoint_attack_target_target_id(g_drag_waypoint_id, highlighted_vehicle_id)
-
                                                     -- go to attack type context menu
 
                                                     g_selection_vehicle_id = g_drag_vehicle_id
                                                     g_selection_waypoint_id = g_drag_waypoint_id
-                                                    g_selection_attack_target_index = attack_target_count
-                                                    g_selection_attack_target_vehicle_id = 0
+                                                    g_selection_attack_target_vehicle_id = highlighted_vehicle_id
                                                 end
                                             else
                                                 local highlighted_vehicle_id = highlighted_vehicle:get_id()
@@ -2013,7 +2008,6 @@ function input_event(event, action)
 
                                                 g_selection_vehicle_id = g_drag_vehicle_id
                                                 g_selection_waypoint_id = 0
-                                                g_selection_attack_target_index = 0
                                                 g_selection_attack_target_vehicle_id = highlighted_vehicle_id
                                             end
                                         end
@@ -2036,10 +2030,6 @@ function input_event(event, action)
                             end
                         end
 
-                        if g_selection_attack_target_index == -1 then
-                            g_selection_vehicle_id = 0
-                            g_selection_waypoint_id = 0
-                        end
                         g_is_selection_map = false
                     end
     
