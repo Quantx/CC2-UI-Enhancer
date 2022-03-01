@@ -2104,16 +2104,19 @@ function render_inventory_stats(x, y, w, h, vehicle)
 
     local col = iff(g_focused_screen == g_screens.inventory, color_grey_dark, color_grey_dark)
 
-    local cursor_x = 10
-    update_ui_image(cursor_x, 0, atlas_icons.column_weight, col, 0)
-    cursor_x = cursor_x + 10
-
     local capacity = vehicle:get_inventory_capacity()
     local weight = vehicle:get_inventory_weight()
     local used_space = weight / capacity * 100
+    
+    local text_col = col
+    if weight >= capacity then text_col = color_status_bad end
+    
+    local cursor_x = 10
+    update_ui_image(cursor_x, 0, atlas_icons.column_weight, text_col, 0)
+    cursor_x = cursor_x + 10
 
-    update_ui_text(cursor_x, 0, string.format("%.1f%%", used_space), w - cursor_x, 0, col, 0)
-    update_ui_text(cursor_x, 0, weight .. "/" .. capacity .. update_get_loc(e_loc.upp_kg), w - cursor_x - 10, 2, col, 0)
+    update_ui_text(cursor_x, 0, string.format("%.1f%%", used_space), w - cursor_x, 0, text_col, 0)
+    update_ui_text(cursor_x, 0, weight .. "/" .. capacity .. update_get_loc(e_loc.upp_kg), w - cursor_x - 10, 2, text_col, 0)
 
     update_ui_line(0, h - 1, w, h - 1, col)
 
