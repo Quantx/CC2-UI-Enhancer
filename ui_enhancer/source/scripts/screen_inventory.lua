@@ -2291,18 +2291,21 @@ function render_inventory_stats(x, y, w, h, vehicle)
 
     local col = iff(g_focused_screen == g_screens.inventory, color_grey_dark, color_grey_dark)
 
-    local cursor_y = 0
-    local cursor_x = 10
-    update_ui_image(cursor_x, cursor_y, atlas_icons.column_weight, col, 0)
-    cursor_x = cursor_x + 10
-
     local capacity = vehicle:get_inventory_capacity()
     local weight = vehicle:get_inventory_weight()
     local used_space = weight / capacity * 100
+    
+    local text_col = col
+    if weight >= capacity then text_col = color_status_bad end
+    
+    local cursor_x = 10
+    local cursor_y = 0
+    update_ui_image(cursor_x, 0, atlas_icons.column_weight, text_col, 0)
+    cursor_x = cursor_x + 10
 
-    update_ui_text(cursor_x, cursor_y, string.format("%.1f%%", used_space), w - cursor_x, 0, col, 0)
+    update_ui_text(cursor_x, cursor_y, string.format("%.1f%%", used_space), w - cursor_x, 0, text_col, 0)
     local tooltip_text = render_carrier_load_graph(60, cursor_y + 1, 75, h-2, vehicle)
-    update_ui_text(cursor_x, cursor_y, weight .. "/" .. capacity .. update_get_loc(e_loc.upp_kg), w - cursor_x - 10, 2, col, 0)
+    update_ui_text(cursor_x, cursor_y, weight .. "/" .. capacity .. update_get_loc(e_loc.upp_kg), w - cursor_x - 10, 2, text_col, 0)
 
     update_ui_rectangle(0, h - 1, w, 1, col)
 
