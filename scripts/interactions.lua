@@ -523,6 +523,7 @@ g_server_timeout = {
 		if is_multiplayer and is_host == false and app_state == e_game_state.main_simulation and update_get_is_loading() == false then
 			local network_time_since_recv = update_get_network_time_since_recv() / 1000
 			local fade_duration = 500
+			local timeout = update_get_network_timeout() / 1000
 
 			if network_time_since_recv > 5 then
 				self.factor = math.min(self.factor + delta_time / fade_duration, 1)
@@ -531,7 +532,11 @@ g_server_timeout = {
 				self.factor = math.max(self.factor - delta_time / fade_duration, 0)
 			end
 
-			self.timeout = math.max(math.floor(30 - network_time_since_recv + 0.5), 0)
+			self.timeout = math.max(math.floor(timeout - network_time_since_recv + 0.5), 0)
+
+			if network_time_since_recv > timeout then
+				update_ui_event("quit_to_menu")
+			end
 		else
 			self.timeout = 0
 			self.factor = 0
@@ -545,6 +550,30 @@ g_tooltip = {
 	text = "",
 	is_visible = false,
 	anim_factor = 0,
+}
+
+g_chat = {
+	is_chat_box = false,
+	text_input_mode_cooldown = 0,
+	text = "",
+	text_blink_time = 0,
+	is_backspace = false,
+	repeat_time = 0,
+	open_time = 0,
+	ui = nil,
+	keyboard_state = 0,
+
+	open = function(self)
+		self.is_chat_box = true
+		self.open_time = update_get_time_ms()
+		self.text = ""
+	end,
+
+	close = function(self)
+		self.is_chat_box = false
+		self.text_input_mode_cooldown = 2
+		update_ui_event("chat", self.text)
+	end,
 }
 
 g_is_debug = false
@@ -563,11 +592,14 @@ g_ui_scale = 1
 
 function begin()
 	begin_load()
+
+	g_chat.ui = lib_imgui:create_ui()
 end
 
 function update(screen_w, screen_h, delta_time)
 	g_animation_time = g_animation_time + delta_time
 
+	update_chat(delta_time)
 	g_interactions:update(delta_time)
 	g_subtitles:update(delta_time)
 	g_objectives:update(delta_time)
@@ -602,8 +634,9 @@ function update(screen_w, screen_h, delta_time)
 	if get_is_render_crosshair() then
 		render_crosshair(screen_w, screen_h)
 	end
-	
+
 	update_ui_push_scale(g_ui_scale)
+	render_chat(ui_screen_w, ui_screen_h, delta_time)
 	render_message_box(ui_screen_w, ui_screen_h, delta_time)
 	render_server_timeout(ui_screen_w, ui_screen_h)
 	update_ui_pop_scale()
@@ -676,63 +709,7 @@ end
 
 function on_add_interaction(text, input, special)
 	if get_is_render_interactions() then
-		if get_is_special_interaction_type_multiline(special) then
-			-- split interactions with multiline formatting into separate interactions;
-			-- first split by line breaks, then ensure lines don't exceed max length
-
-			local max_line_length = 160
-			local lines = get_text_lines(text)
-			local lines_clipped = {}
-			
-			for i = 1, #lines do
-				local line = lines[i]
-				local words = get_words_from_string(line)
-				local built_line = ""
-
-				for j = 1, #words do
-					local built_line_temp = built_line
-
-					if built_line_temp == "" then 
-						built_line_temp = words[j]
-					else 
-						built_line_temp = built_line_temp .. " " .. words[j]
-					end
-
-					if update_ui_get_text_size(built_line_temp, 10000, 0) > max_line_length then
-						if #built_line > 0 and update_ui_get_text_size(built_line, 10000, 0) <= max_line_length then
-							table.insert(lines_clipped, built_line)
-						end
-
-						local word = words[j]
-
-						while update_ui_get_text_size(word, 10000, 0) > max_line_length do
-							local word_length = utf8.len(word)
-							local char_offset = utf8.offset(word, 0, math.min(max_line_length, word_length - 1))
-							local clipped_word = string.sub(word, 0, char_offset - 1)
-							table.insert(lines_clipped, clipped_word)
-							word = string.sub(word, utf8.offset(word, 0, char_offset))
-						end
-
-						built_line = word
-					else
-						built_line = built_line_temp
-					end
-				end
-
-				if #built_line > 0 then
-					table.insert(lines_clipped, built_line)
-				end
-			end
-
-			local index = 0
-
-			for i = #lines_clipped, 1, -1 do
-				g_interactions:add_interaction(lines_clipped[i], input, special, index)
-				index = index + 1
-			end
-		else
-			g_interactions:add_interaction(text, input, special)
-		end
+		add_interaction(text, input, special)
 	end
 end
 
@@ -766,6 +743,62 @@ end
 function on_set_is_render_crosshair(is_render, col)
 	g_is_render_crosshair = is_render
 	g_crosshair_color = col
+end
+
+function input_event(event, action)
+	g_chat.ui:input_event(event, action)
+
+	if event == e_input.chat and action == e_input_action.press then
+		g_chat.is_ignore_enter = true
+
+		if g_chat.is_chat_box then
+			g_chat:close()
+		else
+			if get_is_chat_box_available() then
+				g_chat:open()
+			end
+		end
+	elseif event == e_input.text_enter and action == e_input_action.press then
+		if g_chat.is_ignore_enter == false then
+			if g_chat.is_chat_box then
+				g_chat:close()
+			end
+		end
+	elseif event == e_input.back and action == e_input_action.press then
+		if update_get_active_input_type() == e_active_input.gamepad then
+			if g_chat.is_chat_box then
+				g_chat:close()
+			end
+		end
+	elseif event == e_input.text_backspace and update_get_active_input_type() == e_active_input.keyboard then
+		g_chat.is_backspace = action == e_input_action.press
+
+		if action == e_input_action.press and g_chat.is_chat_box then
+			if #g_chat.text > 0 then
+				g_chat.text = g_chat.text:sub(0, #g_chat.text - 1)
+			end
+
+			g_chat.repeat_time = 400
+			g_chat.text_blink_time = 0
+		end
+	end
+end
+
+function input_pointer(is_hovered, x, y)
+end
+
+function input_scroll(dy)
+end
+
+function input_axis(x, y, z, w)
+end
+
+function input_text(text)
+	if g_chat.is_chat_box then
+		g_chat.text = g_chat.text .. text
+		g_chat.text = clamp_str(g_chat.text, 128)
+		g_chat.text_blink_time = 0
+	end
 end
 
 
@@ -1004,6 +1037,8 @@ function get_display_inputs(game_input, special_input)
 			return { { special = e_ui_interaction_special.map_drag }, { input = e_game_input.interact_a} }
 		elseif special_input == e_ui_interaction_special.interact_a_no_alt then
 			return { { input = e_game_input.interact_a } }
+		elseif special_input == e_ui_interaction_special.chat then
+			return { { input = e_game_input.chat }, { input = e_game_input.back } }
 		end
 	else
 		local mouse_flight_mode = update_get_mouse_flight_mode()
@@ -1060,6 +1095,8 @@ function get_display_inputs(game_input, special_input)
 			return iff(update_get_keyboard_back_opens_pause(), { { input = e_game_input.pause}, { input = e_game_input.back } }, { { input = e_game_input.pause } })
 		elseif special_input == e_ui_interaction_special.interact_a_no_alt then
 			return { { input = e_game_input.interact_a } }
+		elseif special_input == e_ui_interaction_special.chat then
+			return { { input = e_game_input.text_enter } }
 		end
 	end
 
@@ -1143,6 +1180,159 @@ function render_voice_chat(screen_w, screen_h, delta_time)
 		update_ui_pop_offset()
 	end
 end
+
+--------------------------------------------------------------------------------
+--
+-- CROSSHAIR
+--
+--------------------------------------------------------------------------------
+
+function update_chat(delta_time)
+	if g_chat.text_input_mode_cooldown > 0 then
+		g_chat.text_input_mode_cooldown = g_chat.text_input_mode_cooldown - 1
+	end
+
+	g_chat.text_blink_time = g_chat.text_blink_time + delta_time
+	g_chat.repeat_time = g_chat.repeat_time - delta_time
+
+	if get_is_chat_box_available() == false then
+		g_chat.is_chat_box = false
+	end
+
+	if g_chat.is_chat_box then
+		update_add_ui_interaction_special(update_get_loc(e_loc.interaction_confirm), e_ui_interaction_special.chat)
+
+		if update_get_active_input_type() == e_active_input.gamepad then
+			update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_all)
+			update_add_ui_interaction(update_get_loc(e_loc.input_text_shift), e_game_input.text_shift)
+			update_add_ui_interaction(update_get_loc(e_loc.input_backspace), e_game_input.text_backspace)
+			update_add_ui_interaction(update_get_loc(e_loc.input_text_space), e_game_input.text_space)
+			update_add_ui_interaction(update_get_loc(e_loc.interaction_select), e_game_input.interact_a)
+		end
+
+		if g_chat.is_backspace then
+			if #g_chat.text > 0 and g_chat.repeat_time <= 0 then
+				g_chat.text = g_chat.text:sub(0, #g_chat.text - 1)
+				g_chat.repeat_time = 50
+			end
+
+			g_chat.text_blink_time = 0
+		end
+	else
+		g_chat.is_backspace = false
+	end
+
+	update_set_is_text_input_mode(g_chat.is_chat_box or g_chat.text_input_mode_cooldown > 0)
+
+	g_chat.is_ignore_enter = false
+end
+
+function render_chat(screen_w, screen_h, delta_time)
+	local is_multiplayer = update_get_is_multiplayer()
+
+	if is_multiplayer == false then
+		return
+	end
+
+	local ui = g_chat.ui
+	ui:begin_ui(delta_time)
+
+	local chat_h = math.min(100, screen_h - 80)
+	local chat_w = math.max(200, math.floor(screen_w / 4.5))
+	local chat_y = 5
+	local chat_x = 5
+	local border = 5
+	local sender_w = 56
+	local msg_w = chat_w - border * 3 - sender_w
+	local msg_spacing = 2
+
+	local factor = 0
+	local messages = update_get_chat_messages()
+
+	if g_chat.is_chat_box then
+		factor = 1
+	elseif #messages > 0 then
+		local time_since_last_message = update_get_time_ms() - messages[1].timestamp
+		factor = invlerp_clamp(time_since_last_message, 5500, 5000) ^ 2
+	end
+
+	update_ui_push_alpha(math.floor(factor * 255))
+	update_ui_push_offset(chat_x, chat_y)
+	update_ui_push_clip(border, border, chat_w - border, chat_h - 2 * border)
+
+	local cy = chat_h - border
+
+	if #messages > 0 then
+		for i = 1, #messages do
+			local msg = messages[i]
+			local _, text_h = update_ui_get_text_size(msg.message, msg_w, 0)
+			text_h = math.max(text_h, 10)
+
+			cy = cy - text_h
+			if cy + text_h < border then break end
+	
+			local text_col = color_white
+
+			if msg.type == e_chat_message_type.server_notification then
+				text_col = color_grey_mid
+			end
+
+			update_ui_push_clip(border, cy, sender_w, 10)
+			update_ui_text(border + 1, cy + 1, msg.sender, 1000, 0, color_black, 0)
+			update_ui_text(border, cy, msg.sender, 1000, 0, color_grey_mid, 0)
+			update_ui_pop_clip()
+	
+			update_ui_text(border * 2 + sender_w + 1, cy + 1, msg.message, msg_w, 0, color_black, 0)
+			update_ui_text(border * 2 + sender_w, cy, msg.message, msg_w, 0, text_col, 0)
+			cy = cy - msg_spacing
+		end
+	end
+
+	update_ui_pop_clip()
+
+	if g_chat.is_chat_box then
+		local text_w = chat_w - 2 * border
+		local _, text_h = update_ui_get_text_size(g_chat.text .. "|", text_w, 0)
+		local text_factor = clamp((update_get_time_ms() - g_chat.open_time) / 100, 0, 1)
+	
+		update_ui_push_offset(0, chat_h)
+		update_ui_push_clip(0, 0, math.floor(chat_w * text_factor), 1000)
+
+		update_ui_rectangle(0, 0, chat_w, text_h + 4, color_black)
+
+		if math.floor(g_chat.text_blink_time) % 500 < 250 then
+			update_ui_set_text_color(1, iff(#g_chat.text >= 128, color_status_bad, color_white))
+		else
+			update_ui_set_text_color(1, color_empty)
+		end
+		
+		local render_text = g_chat.text .. "$[1]|"
+		update_ui_text(border, 2, render_text, text_w, 0, color_white, 0)
+
+		if update_get_active_input_type() == e_active_input.gamepad then
+			ui:begin_window("##chat", 0, text_h + 6, chat_w, 80, nil, true, 1, true, true)
+
+			local is_done = false
+			g_chat.keyboard_state, g_chat.text, is_done = ui:keyboard(g_chat.keyboard_state, g_chat.text, 128)
+			
+			ui:end_window()
+
+			if is_done then
+				g_chat.is_chat_box = false
+				update_ui_event("chat", g_chat.text)
+			end
+		end
+
+		update_ui_pop_clip()
+		update_ui_pop_offset()
+	end
+
+	update_ui_pop_offset()
+	update_ui_pop_alpha()
+
+	ui:end_ui()
+end
+
 
 --------------------------------------------------------------------------------
 --
@@ -1557,7 +1747,7 @@ function get_is_render_crosshair()
 end
 
 function get_is_render_interactions()
-	return update_get_message_box_type() == e_message_box_type.none and g_server_timeout.factor <= 0
+	return update_get_message_box_type() == e_message_box_type.none and g_server_timeout.factor <= 0 and g_chat.is_chat_box == false
 end
 
 function clip_string(str, factor, is_randomise_last_char)
@@ -1600,4 +1790,80 @@ end
 function get_is_special_interaction_type_multiline(special)
 	return special == e_ui_interaction_special.info
 		or special == e_ui_interaction_special.info_desc
+end
+
+function update_add_ui_interaction(text, input)
+	add_interaction(text, input, nil)
+end
+
+function update_add_ui_interaction(text, input)
+	add_interaction(text, input, e_ui_interaction_special.count)
+end
+
+function update_add_ui_interaction_special(text, special)
+	add_interaction(text, e_game_input.count, special)
+end
+
+function add_interaction(text, input, special)
+	if get_is_special_interaction_type_multiline(special) then
+		-- split interactions with multiline formatting into separate interactions;
+		-- first split by line breaks, then ensure lines don't exceed max length
+
+		local max_line_length = 160
+		local lines = get_text_lines(text)
+		local lines_clipped = {}
+		
+		for i = 1, #lines do
+			local line = lines[i]
+			local words = get_words_from_string(line)
+			local built_line = ""
+
+			for j = 1, #words do
+				local built_line_temp = built_line
+
+				if built_line_temp == "" then 
+					built_line_temp = words[j]
+				else 
+					built_line_temp = built_line_temp .. " " .. words[j]
+				end
+
+				if update_ui_get_text_size(built_line_temp, 10000, 0) > max_line_length then
+					if #built_line > 0 and update_ui_get_text_size(built_line, 10000, 0) <= max_line_length then
+						table.insert(lines_clipped, built_line)
+					end
+
+					local word = words[j]
+
+					while update_ui_get_text_size(word, 10000, 0) > max_line_length do
+						local word_length = utf8.len(word)
+						local char_offset = utf8.offset(word, 0, math.min(max_line_length, word_length - 1))
+						local clipped_word = string.sub(word, 0, char_offset - 1)
+						table.insert(lines_clipped, clipped_word)
+						word = string.sub(word, utf8.offset(word, 0, char_offset))
+					end
+
+					built_line = word
+				else
+					built_line = built_line_temp
+				end
+			end
+
+			if #built_line > 0 then
+				table.insert(lines_clipped, built_line)
+			end
+		end
+
+		local index = 0
+
+		for i = #lines_clipped, 1, -1 do
+			g_interactions:add_interaction(lines_clipped[i], input, special, index)
+			index = index + 1
+		end
+	else
+		g_interactions:add_interaction(text, input, special)
+	end
+end
+
+function get_is_chat_box_available()
+	return update_get_is_multiplayer() and update_get_is_loading() == false
 end

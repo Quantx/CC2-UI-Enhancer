@@ -1613,8 +1613,18 @@ e_loc = {
 	needlefish_chassis_torpedo_desc = 1469,
 	needlefish_chassis_gun_desc = 1470,
 	needlefish_chassis_missile_desc = 1471,
+	input_text_space = 1472,
+	input_chat = 1473,
+	input_text_shift = 1474,
+	upp_ban_player = 1475,
+	confirm_ban_player = 1476,
+	upp_public_servers = 1477,
+	upp_join_public_server = 1478,
+	upp_no_public_servers_found = 1479,
+	acronym_milliseconds = 1480,
+	chat_message_server = 1481,
 
-	count = 1472,
+	count = 1482,
 }
 
 e_barge_destination_type = {
@@ -1643,6 +1653,9 @@ e_input = {
     pointer_1 = 7,
 	text_backspace = 8,
 	text_enter = 9,
+	text_space = 10,
+	chat = 11,
+	text_shift = 12,
 }
 
 e_input_action = {
@@ -1720,8 +1733,12 @@ e_game_input = {
 	pause = 45,
 	text_backspace = 46,
 	text_enter = 47,
+	text_enter_alt = 48,
+	text_space = 49,
+	chat = 50,
+	text_shift = 51,
 	
-	count = 48,
+	count = 52,
 }
 
 e_ui_interaction_special = {
@@ -1747,7 +1764,8 @@ e_ui_interaction_special = {
 	mouse_lr = 19,
 	mouse_ud = 20,
 	interact_a_no_alt = 21,
-	count = 22,
+	chat = 22,
+	count = 23,
 }
 
 e_message_box_type = {
@@ -1899,4 +1917,9 @@ e_mod_visibility = {
 	public = 0,
 	friends = 1,
 	private = 2,
+}
+
+e_chat_message_type = {
+	player = 0,
+	server_notification = 1,
 }

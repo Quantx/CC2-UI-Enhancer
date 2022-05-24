@@ -23,6 +23,8 @@ lib_imgui = {
         o.input_pointer_1 = false
         o.input_text_enter = false
         o.input_text_backspace = false
+        o.input_text_space = false
+        o.input_text_shift = false
         
         o.is_select_next_held = false
         o.is_select_prev_held = false
@@ -32,6 +34,8 @@ lib_imgui = {
         o.input_pointer_1_held = false
         o.input_text_enter_held = false
         o.input_text_backspace_held = false
+        o.input_text_space_held = false
+        o.input_text_shift_held = false
         
         o.is_select_next_repeat = false
         o.is_select_next_repeat_time = 0
@@ -49,6 +53,8 @@ lib_imgui = {
         o.input_text_enter_repeat_time = 0
         o.input_text_backspace_repeat = false
         o.input_text_backspace_repeat_time = 0
+        o.input_text_space_repeat = false
+        o.input_text_space_repeat_time = 0
 
         o.input_scroll_dy = 0
         o.input_scroll_gamepad_dy = 0
@@ -81,6 +87,8 @@ lib_imgui = {
         self.input_pointer_1_held = clear_released_input(self.input_pointer_1_held, e_input.pointer_1)
         self.input_text_enter_held = clear_released_input(self.input_text_enter_held, e_input.text_enter)
         self.input_text_backspace_held = clear_released_input(self.input_text_backspace_held, e_input.text_backspace)
+        self.input_text_space_held = clear_released_input(self.input_text_space_held, e_input.text_space)
+        self.input_text_shift_held = clear_released_input(self.input_text_shift_held, e_input.text_shift)
 
         local function update_repeat(is_held, is_repeat, repeat_time)
             local repeat_delay = 10
@@ -129,6 +137,7 @@ lib_imgui = {
         self.input_pointer_1_repeat, self.input_pointer_1_repeat_time = update_repeat(self.input_pointer_1_held, self.input_pointer_1_repeat, self.input_pointer_1_repeat_time)
         self.input_text_enter_repeat, self.input_text_enter_repeat_time = update_repeat(self.input_text_enter_held, self.input_text_enter_repeat, self.input_text_enter_repeat_time)
         self.input_text_backspace_repeat, self.input_text_backspace_repeat_time = update_repeat(self.input_text_backspace_held, self.input_text_backspace_repeat, self.input_text_backspace_repeat_time)
+        self.input_text_space_repeat, self.input_text_space_repeat_time = update_repeat(self.input_text_space_held, self.input_text_space_repeat, self.input_text_space_repeat_time)
     end,
 
     end_ui = function(self)
@@ -138,6 +147,10 @@ lib_imgui = {
         self.input_right = false
         self.input_action = false
         self.input_pointer_1 = false
+        self.input_text_enter = false
+        self.input_text_backspace = false
+        self.input_text_space = false
+        self.input_text_shift = false
         
         self.is_select_next_repeat = false
         self.is_select_prev_repeat = false
@@ -145,6 +158,9 @@ lib_imgui = {
         self.input_right_repeat = false
         self.input_action_repeat = false
         self.input_pointer_1_repeat = false
+        self.input_text_enter_repeat = false
+        self.input_text_backspace_repeat = false
+        self.input_text_space_repeat = false
 
         self.input_scroll_dy = 0
         self.input_scroll_gamepad_dy = 0        
@@ -176,6 +192,12 @@ lib_imgui = {
             elseif event == e_input.text_backspace then
                 self.input_text_backspace = true
                 self.input_text_backspace_held = true
+            elseif event == e_input.text_space then
+                self.input_text_space = true
+                self.input_text_space_held = true
+            elseif event == e_input.text_shift then
+                self.input_text_shift = true
+                self.input_text_shift_held = true
             end
         elseif action == e_input_action.release then
             if event == e_input.down then
@@ -194,6 +216,10 @@ lib_imgui = {
                 self.input_text_enter_held = false
             elseif event == e_input.text_backspace then
                 self.input_text_backspace_held = false
+            elseif event == e_input.text_space then
+                self.input_text_space_held = false
+            elseif event == e_input.text_shift then
+                self.input_text_shift_held = false
             end
         end
     end,
@@ -1521,7 +1547,7 @@ lib_imgui = {
         x = x + w / 2 - keyboard_w / 2
         local sx = x
         local sy = y
-        local keyboard_h = #rows * 10 + 2
+        local keyboard_h = (#rows + 1) * 10 + 2
 
         update_ui_rectangle(sx - 1, sy, keyboard_w + 3, keyboard_h, color_black)
 
@@ -1558,22 +1584,33 @@ lib_imgui = {
 
             for j = 1, #rows[i] do
                 local is_key_selected = is_row_selected and j == (selected_key_index + 1)
-                local text_col = iff(is_active, iff(is_key_selected, iff(self.input_action_held or self.input_pointer_1_held, color_highlight, color_white), color_grey_dark), color_grey_dark)
+                local is_render_selected = is_key_selected
+                local is_render_pressed = self.input_action_held or self.input_pointer_1_held
                 local key = rows[i][j]
 
+                if key == "space" and self.input_text_space_held then
+                    is_render_selected = true
+                    is_render_pressed = true
+                elseif key == "del" and self.input_text_backspace_held then
+                    is_render_selected = true
+                    is_render_pressed = true
+                end
+
+                local text_col = iff(is_active, iff(is_render_selected, iff(is_render_pressed, color_highlight, color_white), color_grey_dark), color_grey_dark)
+                
                 if is_key_selected then
                     key_value = key
                     is_selected = true
                 end
 
-                update_ui_push_offset(x + 3 + (j - 1) * key_w, y)
-                local col_bg = iff(is_key_selected, color_button_bg, color_empty)
+                update_ui_push_offset(x + 3 + (j - 1) * key_w, iff(is_render_selected and is_render_pressed, y + 1, y))
+                local col_bg = iff(is_render_selected, color_button_bg, color_empty)
 
                 if key == "shift" then
                     render_button_bg(-2, 0, key_w - 1, key_h - 1, col_bg, 1)
                     update_ui_image(0, 0, atlas_icons.text_shift, text_col, 0)
                 elseif key == "done" then
-                    local confirm_col = iff(is_active, iff(is_key_selected, iff(self.input_action_held or self.input_pointer_1_held, color_highlight, color_white), color_status_ok), color_grey_dark)
+                    local confirm_col = iff(is_active, iff(is_render_selected, iff(is_render_pressed, color_highlight, color_white), color_status_ok), color_grey_dark)
                     render_button_bg(-2, 0, key_w - 1, key_h - 1, col_bg, 1)
                     update_ui_image(0, 0, atlas_icons.text_confirm, confirm_col, 0)
                 elseif key == "space" then
@@ -1606,6 +1643,11 @@ lib_imgui = {
         if is_active and key_value ~= "" then
             local is_clicked = self:is_hovered(sx - 1, sy, keyboard_w + 3, y - sy) and (self.input_pointer_1 or self.input_pointer_1_repeat)
 
+            if self.input_text_shift then
+                selected_key = selected_key ~ 256
+                self.input_text_shift = false
+            end
+
             if self.input_action or self.input_action_repeat or is_clicked then
                 if key_value == "shift" then
                     selected_key = selected_key ~ 256
@@ -1634,6 +1676,13 @@ lib_imgui = {
         end
 
         if is_active then
+            if self.input_text_space or self.input_text_space_repeat then
+                edit_text = edit_text .. " "
+                g_text_blink_time = 0
+                self.input_text_space = false
+                self.input_text_space_repeat = false
+            end
+
             if self.input_text_backspace or self.input_text_backspace_repeat then
                 if #edit_text > 0 then
                     edit_text = edit_text:sub(1, utf8.offset(edit_text, -1) - 1)
@@ -1757,6 +1806,83 @@ lib_imgui = {
         local is_action = false
 
         if is_selected and is_active then
+            local is_clicked = is_hovered and self.input_pointer_1
+
+            if is_hovered or update_get_active_input_type() == e_active_input.gamepad then
+                update_add_ui_interaction(update_get_loc(e_loc.interaction_select), e_game_input.interact_a)
+            end
+
+            if self.input_action or is_clicked then
+                is_action = true
+                self.input_action = false
+                self.input_pointer_1 = false
+            end
+        end
+
+        return is_action
+    end,
+
+    server_details = function(self, name, player_count, max_players, is_password, status, version, latency, is_modded)
+        local window = self:get_window()
+        local x = window.cx
+        local y = window.cy
+        local w, h = self:get_region()
+        local is_active = window.is_active
+        local is_selected = window.selected_index_y == window.index_y and window.is_selection_enabled
+
+        local text_name = name
+        local text_col = iff(is_active, iff(is_selected, color_white, color_grey_dark), color_grey_dark)
+        local icon_col = iff(status == 0, color_status_ok, color_status_bad)
+        local back_col = iff(is_active, iff(is_selected, color_highlight, color_button_bg), color_button_bg_inactive)
+        local detail_col = iff(is_active, iff(is_selected, color_grey_mid, color_grey_dark), color_grey_dark)
+        local version_col = iff(version == update_get_version(), detail_col, color_status_bad)
+
+        if version ~= update_get_version() then
+            back_col = iff(is_selected, color_grey_dark, color_button_bg_inactive)
+        end
+
+        local left_w = w - 2
+        update_ui_image(x + 5, y + 3, atlas_icons.column_controlling_peer, icon_col, 0)
+        
+        local _, text_name_height = update_ui_get_text_size(text_name, left_w - 25, 0)
+        render_button_bg_outline(x + 2, y, w - 4, text_name_height + 15, back_col)
+        
+        update_ui_text(x + 15, y + 3, text_name, left_w - 25, 0, text_col, 0)
+        y = y + text_name_height + 3
+        
+        local cx = x + 5
+        local column_w = 70
+        update_ui_image(cx, y, atlas_icons.column_pending, color_grey_dark, 0)
+        update_ui_text(cx + 10, y, version, left_w - 25, 0, version_col, 0)
+        cx = cx + column_w
+
+        update_ui_image(cx, y, atlas_icons.column_profile, color_grey_dark, 0)
+        update_ui_text(cx + 10, y, player_count .. "/" .. max_players, left_w - 25, 0, iff(player_count > 0, color_status_ok, color_grey_dark), 0)
+        cx = cx + column_w
+
+        update_ui_image(cx, y, atlas_icons.column_propulsion, color_grey_dark, 0)
+        update_ui_text(cx + 10, y, math.min(latency, 9999) .. update_get_loc(e_loc.acronym_milliseconds), left_w - 25, 0, iff(latency < 100, color_status_ok, color_status_bad), 0)
+        
+        cx = w - 12
+        if is_password then
+            update_ui_image(cx, y, atlas_icons.column_locked, color_status_bad, 0)
+            cx = cx - 10
+        end
+
+        if is_modded then
+            update_ui_image(cx, y, atlas_icons.column_repair, color_status_warning, 0)
+            cx = cx - 10
+        end
+
+        y = y + 10 + 2
+
+        local is_hovered = self:hoverable(x, window.cy, w, y - window.cy, true)
+
+        window.cy = y + 2
+
+        local is_action = false
+
+        if is_selected and is_active and version == update_get_version() then
             local is_clicked = is_hovered and self.input_pointer_1
 
             if is_hovered or update_get_active_input_type() == e_active_input.gamepad then

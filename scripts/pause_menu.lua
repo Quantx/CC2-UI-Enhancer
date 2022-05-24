@@ -56,6 +56,7 @@ g_tab_multiplayer = {
     toast_text = "",
     toast_col = color_status_ok,
     selected_peer_id = 0,
+    confirm_ban_peer = false,
     
     screen_index = 0,
     ui_container = nil    
@@ -262,6 +263,9 @@ function update_interaction_ui()
 		else
 			update_add_ui_interaction(update_get_loc(e_loc.interaction_back), e_game_input.back)
 			update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_all)
+            update_add_ui_interaction(update_get_loc(e_loc.input_text_shift), e_game_input.text_shift)
+            update_add_ui_interaction(update_get_loc(e_loc.input_backspace), e_game_input.text_backspace)
+            update_add_ui_interaction(update_get_loc(e_loc.input_text_space), e_game_input.text_space)
 			update_add_ui_interaction(update_get_loc(e_loc.interaction_select), e_game_input.interact_a)
 		end
 	elseif update_get_active_input_type() == e_active_input.gamepad then
@@ -327,7 +331,7 @@ end
 
 function input_event(event, action)
     if event == e_input.pointer_1 then
-        g_is_pointer_pressed = action == e_input_action.press
+        g_is_pointer_pressed = ((action == e_input_action.press) and (g_is_pointer_hovered == true))
     end
 
     if event == e_input.pointer_1 then
@@ -887,6 +891,7 @@ end
 function tab_multiplayer_begin()
     g_tab_multiplayer.screen_index = 0
     g_tab_multiplayer.selected_peer_id = 0
+    g_tab_multiplayer.confirm_ban_peer = false
 end
 
 function tab_multiplayer_render(screen_w, screen_h, x, y, w, h, delta_time, is_active)
@@ -903,17 +908,20 @@ function tab_multiplayer_render(screen_w, screen_h, x, y, w, h, delta_time, is_a
         local is_window_active = (is_active or is_mouse_active) and g_tab_multiplayer.selected_peer_id == 0
         local win_main = ui:begin_window("##main",  10, 5, w - 20, h - 15, atlas_icons.column_pending, is_window_active, 0, true, is_active and g_tab_multiplayer.selected_peer_id == 0)
 
-        if ui:list_item(update_get_loc(e_loc.upp_public_invite), true) then
-            g_tab_multiplayer.screen_index = 1            
+        if update_get_is_hosting_game() then
+            if ui:list_item(update_get_loc(e_loc.upp_public_invite), true) then
+                g_tab_multiplayer.screen_index = 1            
+            end
         end
 
-        local column_widths = { 25, 175, 33 }
-        local column_margins = { 5, 5, 5 }
+        local column_widths = { 25, 160, 15, 33 }
+        local column_margins = { 5, 5, 5, 5 }
     
         local header_columns = {
             { w=column_widths[1], margin=column_margins[1], value=atlas_icons.column_controlling_peer },
             { w=column_widths[2], margin=column_margins[2], value=atlas_icons.column_profile },
-            { w=column_widths[3], margin=column_margins[3], value=atlas_icons.column_team_control },
+            { w=column_widths[3], margin=column_margins[3], value="" },
+            { w=column_widths[4], margin=column_margins[4], value=atlas_icons.column_team_control },
         }
         imgui_table_header(ui, header_columns)
     
@@ -927,14 +935,15 @@ function tab_multiplayer_render(screen_w, screen_h, x, y, w, h, delta_time, is_a
     
             local columns = { 
                 { w=column_widths[1], margin=column_margins[1], value=tostring(id) },
-                { w=column_widths[2], margin=column_margins[2], value=name },
-                { w=column_widths[3], margin=column_margins[3], value=function(w, h) 
+                { w=column_widths[2], margin=column_margins[2], value=name, is_border=false },
+                { w=column_widths[3], margin=column_margins[3], value=atlas_icons.column_difficulty, col=color_status_warning },
+                { w=column_widths[4], margin=column_margins[4], value=function(w, h) 
                     update_ui_image(0, 3, atlas_icons.column_team_control, iff(is_window_active, team_col, color_grey_dark), 0)  
                     update_ui_text(8, 3, tostring(team), w, 0, iff(is_window_active, team_col, color_grey_dark), 0)
                 end },
             }
     
-            if imgui_table_entry(ui, columns, update_get_is_hosting_game()) then
+            if imgui_table_entry(ui, columns, update_get_peer_is_admin(0)) then
                 g_tab_multiplayer.selected_peer_id = id
             end
         end
@@ -947,17 +956,41 @@ function tab_multiplayer_render(screen_w, screen_h, x, y, w, h, delta_time, is_a
             local peer_index = get_peer_index_by_id(g_tab_multiplayer.selected_peer_id)
 
             if peer_index ~= -1 then
+                local is_self = g_tab_multiplayer.selected_peer_id == update_get_local_peer_id()
                 local name = update_get_peer_name(peer_index)
+                local win_w = w - 80
+                local win_h = h - 80
 
-                local win_peer = ui:begin_window(name .. "##peer",  40, 40, w - 80, h - 80, atlas_icons.column_pending, is_active or is_mouse_active, 2, true, is_active)
+                local win_peer = ui:begin_window(name .. "##peer",  40, 40, win_w, { max_h=win_h }, atlas_icons.column_pending, (is_active or is_mouse_active) and g_tab_multiplayer.confirm_ban_peer == false, 2, true, is_active and g_tab_multiplayer.confirm_ban_peer == false)
 
                 ui:header(update_get_loc(e_loc.upp_actions))
 
-                if ui:list_item(update_get_loc(e_loc.upp_kick_player)) then
-                    update_ui_event("host_kick_player", g_tab_multiplayer.selected_peer_id)
+                if ui:list_item(update_get_loc(e_loc.upp_kick_player), true, is_self == false) then
+                    update_ui_event("host_kick_peer", g_tab_multiplayer.selected_peer_id)
+                end
+                
+                if ui:list_item(update_get_loc(e_loc.upp_ban_player), true, is_self == false) then
+                    g_tab_multiplayer.confirm_ban_peer = true
                 end
 
                 ui:end_window()
+
+                if g_tab_multiplayer.confirm_ban_peer then
+                    ui.window_col_active = color_status_bad
+                    ui:begin_window_dialog(update_get_loc(e_loc.upp_sure), screen_w / 2, screen_h / 2, win_w - 20, win_h, atlas_icons.hud_warning, (is_active or is_mouse_active))
+                    
+                    ui:text_basic(update_get_loc(e_loc.confirm_ban_player), color_grey_dark)
+                    ui:spacer(5)
+
+                    local action_index = ui:end_window_dialog(update_get_loc(e_loc.upp_no), update_get_loc(e_loc.upp_yes))
+
+                    if action_index == 0 then
+                        g_tab_multiplayer.confirm_ban_peer = false
+                    elseif action_index == 1 then
+                        update_ui_event("host_ban_peer", g_tab_multiplayer.selected_peer_id)
+                        g_tab_multiplayer.confirm_ban_peer = false
+                    end
+                end
             else
                 g_tab_multiplayer.selected_peer_id = 0
             end
@@ -1025,6 +1058,8 @@ function tab_multiplayer_input_event(event, action)
         if event == e_input.back then
             if g_tab_multiplayer.screen_index == 1 then
                 g_tab_multiplayer.screen_index = 0
+            elseif g_tab_multiplayer.confirm_ban_peer then
+                g_tab_multiplayer.confirm_ban_peer = false
             elseif g_tab_multiplayer.selected_peer_id ~= 0 then
                 g_tab_multiplayer.selected_peer_id = 0
             else

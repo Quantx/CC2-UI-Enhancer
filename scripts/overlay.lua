@@ -23,7 +23,12 @@ end
 
 function render_loading_text(screen_w, screen_h)
     local connecting_text = g_loading_text
-    update_ui_text(screen_w / 2 - 100, screen_h / 2 - 10, connecting_text, 200, 1, color_white, 0)
+
+    local text_w = screen_w - 100
+    local _, text_h = update_ui_get_text_size(connecting_text, text_w, 1)
+
+    update_ui_set_text_color(1, color_grey_mid)
+    update_ui_text(screen_w / 2 - text_w / 2, screen_h / 2 - text_h, connecting_text, text_w, 1, color_white, 0)
 
     local anim = g_animation_time * 0.001
     local bound_left = screen_w / 2 - 32

@@ -21,6 +21,7 @@ g_screens = {
 	mod_upload_error = 19,
 	mod_upload_complete = 20,
 	mod_upload_select_existing = 21,
+	join_public = 22,
 }
 
 g_region_icon = 0
@@ -187,6 +188,11 @@ function update(screen_w, screen_h, ticks)
 			local window = ui:begin_window(update_get_loc(e_loc.upp_join), win_x, win_y, win_w, win_h, atlas_icons.column_controlling_peer, is_active)
 			ui:header(update_get_loc(e_loc.upp_connect_to).."...")
 
+			if ui:list_item(update_get_loc(e_loc.upp_public_servers), true) then
+				update_ui_event("refresh_server_list")
+				nav_set_screen(g_screens.join_public)
+			end
+			
 			if ui:list_item(update_get_loc(e_loc.upp_steam_friends), true) then
 				nav_set_screen(g_screens.join_steam)
 			end
@@ -229,6 +235,31 @@ function update(screen_w, screen_h, ticks)
 
 			if ui:list_item(update_get_loc(e_loc.upp_connect), true) then
 				request_join_game(g_text["invite_code"], e_network_connect_type.token, g_text["invite_code"])
+			end
+
+			ui:end_window()
+		elseif g_screen_index == g_screens.join_public then
+			local window_title = update_get_loc(e_loc.upp_join_public_server)
+			local server_list = update_get_server_list()
+			
+			if server_list.is_loading then
+				local char_index = math.floor(g_animation_time / 4) % 4
+				window_title = window_title .. " " .. string.sub("/-\\|", char_index + 1, char_index + 1)
+			end
+			
+			local window = ui:begin_window(window_title .. "##join_public", win_x, win_y, win_w, win_h, atlas_icons.column_controlling_peer, is_active)
+
+			ui:spacer(5)
+			ui:header(update_get_loc(e_loc.upp_public_servers))
+
+			if #server_list.servers > 0 then
+				for _, v in ipairs(server_list.servers) do
+					if ui:server_details(v.name, v.player_count, v.max_players, v.is_password, v.status, v.version, v.latency, v.is_modded) then
+						request_join_game(v.connect_address, e_network_connect_type.steam_id, v.name)
+					end
+				end
+			else
+				ui:text_basic(update_get_loc(e_loc.upp_no_public_servers_found), color_grey_dark)
 			end
 
 			ui:end_window()
@@ -461,15 +492,6 @@ function update(screen_w, screen_h, ticks)
 				g_selected_mod_id = 0
 				g_selected_mod_confirm = false
 			end
-
-			local is_restart_warning = update_get_is_mod_restart_required()
-			local text_restart_warning = update_get_loc(e_loc.restart_to_apply_changes)
-			local _, text_warning_h = update_ui_get_text_size(text_restart_warning, win_w - 4, 0)
-
-			text_warning_h = text_warning_h + 4
-			win_h = win_h - text_warning_h - 2
-			update_ui_rectangle_outline(win_x, win_y + win_h + 2, win_w, text_warning_h, iff(is_restart_warning, color_status_bad, color_grey_dark))
-			update_ui_text(win_x + 2, win_y + win_h + 4, text_restart_warning, win_w - 4, 0, iff(is_restart_warning, color_status_bad, color_grey_dark), 0)
 
 			ui:begin_window(update_get_loc(e_loc.upp_mods), win_x, win_y, win_w, win_h, atlas_icons.column_repair, is_active and selected_mod == nil and g_disable_mods_confirm == false)
 			local region_w, region_h = ui:get_region()
