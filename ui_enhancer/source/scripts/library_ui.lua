@@ -1610,7 +1610,7 @@ lib_imgui = {
                     render_button_bg(-2, 0, key_w - 1, key_h - 1, col_bg, 1)
                     update_ui_image(0, 0, atlas_icons.text_shift, text_col, 0)
                 elseif key == "done" then
-                    llocal confirm_col = iff(is_active, iff(is_render_selected, iff(is_render_pressed, color_highlight, color_white), color_status_ok), color_grey_dark)
+                    local confirm_col = iff(is_active, iff(is_render_selected, iff(is_render_pressed, color_highlight, color_white), color_status_ok), color_grey_dark)
                     render_button_bg(-2, 0, key_w - 1, key_h - 1, col_bg, 1)
                     update_ui_image(0, 0, atlas_icons.text_confirm, confirm_col, 0)
                 elseif key == "space" then
