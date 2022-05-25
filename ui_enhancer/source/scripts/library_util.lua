@@ -37,11 +37,6 @@ vessel_names = {
     "Kappa"
 }
 
-uimod_version = {
-    game = "v1.1.3",
-    mod = "v10.0"
-}
-
 atlas_icons = {
     bay_marker = 0,
     icon_chassis_16_wheel_small = 0,
