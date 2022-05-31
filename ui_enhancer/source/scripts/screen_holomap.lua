@@ -1527,7 +1527,7 @@ function holomap_override( screen_w, screen_h, ticks )
     elseif update_access_denied(screen_w, screen_h, ticks) then
         g_is_render_holomap = false
         g_override = true
-    elseif holomap_override_startup ( screen_w, screen_h, ticks ) then
+    elseif holomap_override_startup( screen_w, screen_h, ticks ) then
         g_override = true
     elseif render_selection(screen_w, screen_h) then
         g_override = true
@@ -1902,7 +1902,7 @@ end
 function render_selection(screen_w, screen_h)
     update_add_ui_interaction(update_get_loc(e_loc.interaction_cancel), e_game_input.back)
 
-    if g_selection_vehicle_id > 0 then
+    if g_selection_vehicle_id > 0 and update_get_is_notification_holomap_set() == false then
         local selected_vehicle = update_get_map_vehicle_by_id(g_selection_vehicle_id)
 
         if selected_vehicle:get() and selected_vehicle:get_team() == update_get_screen_team_id() then
