@@ -1623,8 +1623,14 @@ e_loc = {
 	upp_no_public_servers_found = 1479,
 	acronym_milliseconds = 1480,
 	chat_message_server = 1481,
+	loading_game_data = 1482,
+	loading_mods = 1483,
+	building_assets = 1484,
+	disconnect_reason_banned = 1485,
+	upp_mute_voice = 1486,
+	upp_unmute_voice = 1487,
 
-	count = 1482,
+	count = 1488,
 }
 
 e_barge_destination_type = {

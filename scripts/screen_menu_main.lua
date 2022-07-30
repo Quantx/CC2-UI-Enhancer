@@ -349,10 +349,12 @@ function update(screen_w, screen_h, ticks)
 					end
 
 					local player_name = "-"
+					local player_peer_id = 0
 					local players_col = color_grey_dark
 
 					if #players_on_team > 0 then
 						player_name = players_on_team[1].name
+						player_peer_id = players_on_team[1].peer_id
 						players_col = color_grey_mid
 					end
 
@@ -360,7 +362,7 @@ function update(screen_w, screen_h, ticks)
 						{ w=column_widths[1], margin=column_margins[1], value=atlas_icons.column_team_control, col=team_col, is_highlight = false, is_border = false },
 						{ w=column_widths[2], margin=column_margins[2], value=id, col=team_col, is_highlight = false },
 						{ w=column_widths[3], margin=column_margins[3], value=players, col=iff(v.players > 0, color_grey_mid, color_grey_dark) },
-						{ w=column_widths[4], margin=column_margins[4], value=player_name, col=players_col },
+						{ w=column_widths[4], margin=column_margins[4], value=update_ui_format_peer_display_name(player_name, player_peer_id), col=players_col },
 						{ w=column_widths[5], margin=column_margins[5], value=is_ai },
 						{ w=column_widths[6], margin=column_margins[6], value=is_destroyed, col=iff(v.is_destroyed, color_status_bad, color_grey_dark) },
 					}
@@ -372,7 +374,7 @@ function update(screen_w, screen_h, ticks)
 							{ w=column_widths[1], margin=column_margins[1], value="", is_border = false },
 							{ w=column_widths[2], margin=column_margins[2], value="" },
 							{ w=column_widths[3], margin=column_margins[3], value="" },
-							{ w=column_widths[4], margin=column_margins[4], value=players_on_team[i].name, col=players_col },
+							{ w=column_widths[4], margin=column_margins[4], value=update_ui_format_peer_display_name(players_on_team[i].name, players_on_team[i].peer_id), col=players_col },
 							{ w=column_widths[5], margin=column_margins[5], value="" },
 							{ w=column_widths[6], margin=column_margins[6], value="" },
 						}
@@ -1010,10 +1012,11 @@ function input_text(text)
 	end
 end
 
-function on_steam_connect_request(server_name, server_address)
+function on_steam_connect_request(server_name, server_address, password)
 	unwind_nav_stack()
 
 	set_persistent_connect_data(server_address, e_network_connect_type.steam_id, server_name)
+	g_text["join_password"] = password
 
 	g_selected_team_index = 0
 	g_boot_counter = 0

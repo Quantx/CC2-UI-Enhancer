@@ -906,7 +906,7 @@ function tab_multiplayer_render(screen_w, screen_h, x, y, w, h, delta_time, is_a
 
     if g_tab_multiplayer.screen_index == 0 then
         local is_window_active = (is_active or is_mouse_active) and g_tab_multiplayer.selected_peer_id == 0
-        local win_main = ui:begin_window("##main",  10, 5, w - 20, h - 15, atlas_icons.column_pending, is_window_active, 0, true, is_active and g_tab_multiplayer.selected_peer_id == 0)
+        local win_main = ui:begin_window("##main",  5, 5, w - 10, h - 15, atlas_icons.column_pending, is_window_active, 0, true, is_active and g_tab_multiplayer.selected_peer_id == 0)
 
         if update_get_is_hosting_game() then
             if ui:list_item(update_get_loc(e_loc.upp_public_invite), true) then
@@ -914,14 +914,15 @@ function tab_multiplayer_render(screen_w, screen_h, x, y, w, h, delta_time, is_a
             end
         end
 
-        local column_widths = { 25, 160, 15, 33 }
-        local column_margins = { 5, 5, 5, 5 }
+        local column_widths = { 25, 160, 15, 18, 33 }
+        local column_margins = { 5, 5, 5, 5, 5 }
     
         local header_columns = {
             { w=column_widths[1], margin=column_margins[1], value=atlas_icons.column_controlling_peer },
             { w=column_widths[2], margin=column_margins[2], value=atlas_icons.column_profile },
             { w=column_widths[3], margin=column_margins[3], value="" },
-            { w=column_widths[4], margin=column_margins[4], value=atlas_icons.column_team_control },
+            { w=column_widths[4], margin=column_margins[4], value=atlas_icons.hud_audio_small },
+            { w=column_widths[5], margin=column_margins[5], value=atlas_icons.column_team_control },
         }
         imgui_table_header(ui, header_columns)
     
@@ -932,18 +933,30 @@ function tab_multiplayer_render(screen_w, screen_h, x, y, w, h, delta_time, is_a
             local team = update_get_peer_team(i)
             local id = update_get_peer_id(i)
             local team_col = update_get_team_color(team)
-    
+            local is_admin = update_get_peer_is_admin(i)
+
             local columns = { 
                 { w=column_widths[1], margin=column_margins[1], value=tostring(id) },
                 { w=column_widths[2], margin=column_margins[2], value=name, is_border=false },
-                { w=column_widths[3], margin=column_margins[3], value=atlas_icons.column_difficulty, col=color_status_warning },
+                { w=column_widths[3], margin=column_margins[3], value=iff(is_admin, atlas_icons.column_difficulty, ""), col=color_status_warning },
                 { w=column_widths[4], margin=column_margins[4], value=function(w, h) 
+                    if update_get_peer_is_voice_muted(i) then
+                        if update_get_peer_is_voice_transmit(i) then
+                            update_ui_image(0, 2, atlas_icons.hud_audio_small, color_grey_dark, 0)
+                        end
+
+                        update_ui_image(0, 3, atlas_icons.map_icon_waypoint, iff(is_window_active, color_status_bad, color_grey_dark), 0)
+                    elseif update_get_peer_is_voice_transmit(i) then
+                        update_ui_image(0, 2, atlas_icons.hud_audio_small, iff(is_window_active, color_status_ok, color_grey_dark), 0)
+                    end
+                end },
+                { w=column_widths[5], margin=column_margins[5], value=function(w, h) 
                     update_ui_image(0, 3, atlas_icons.column_team_control, iff(is_window_active, team_col, color_grey_dark), 0)  
                     update_ui_text(8, 3, tostring(team), w, 0, iff(is_window_active, team_col, color_grey_dark), 0)
                 end },
             }
     
-            if imgui_table_entry(ui, columns, update_get_peer_is_admin(0)) then
+            if imgui_table_entry(ui, columns, true) then
                 g_tab_multiplayer.selected_peer_id = id
             end
         end
@@ -957,6 +970,7 @@ function tab_multiplayer_render(screen_w, screen_h, x, y, w, h, delta_time, is_a
 
             if peer_index ~= -1 then
                 local is_self = g_tab_multiplayer.selected_peer_id == update_get_local_peer_id()
+                local is_admin = update_get_peer_is_admin(peer_index)
                 local name = update_get_peer_name(peer_index)
                 local win_w = w - 80
                 local win_h = h - 80
@@ -965,11 +979,21 @@ function tab_multiplayer_render(screen_w, screen_h, x, y, w, h, delta_time, is_a
 
                 ui:header(update_get_loc(e_loc.upp_actions))
 
-                if ui:list_item(update_get_loc(e_loc.upp_kick_player), true, is_self == false) then
+                if update_get_peer_is_voice_muted(peer_index) then
+                    if ui:list_item(update_get_loc(e_loc.upp_unmute_voice), true, is_self == false) then
+                        update_ui_event("set_peer_muted", g_tab_multiplayer.selected_peer_id, false)
+                    end
+                else
+                    if ui:list_item(update_get_loc(e_loc.upp_mute_voice), true, is_self == false) then
+                        update_ui_event("set_peer_muted", g_tab_multiplayer.selected_peer_id, true)
+                    end
+                end
+
+                if ui:list_item(update_get_loc(e_loc.upp_kick_player), true, is_self == false and is_admin == false) then
                     update_ui_event("host_kick_peer", g_tab_multiplayer.selected_peer_id)
                 end
                 
-                if ui:list_item(update_get_loc(e_loc.upp_ban_player), true, is_self == false) then
+                if ui:list_item(update_get_loc(e_loc.upp_ban_player), true, is_self == false and is_admin == false) then
                     g_tab_multiplayer.confirm_ban_peer = true
                 end
 
@@ -996,7 +1020,7 @@ function tab_multiplayer_render(screen_w, screen_h, x, y, w, h, delta_time, is_a
             end
         end
     elseif g_tab_multiplayer.screen_index == 1 then
-        local win_main = ui:begin_window(update_get_loc(e_loc.upp_public_invite).."##main",  10, 5, w - 20, h - 15, atlas_icons.column_pending, is_active or is_mouse_active, 0, true, is_active)
+        local win_main = ui:begin_window(update_get_loc(e_loc.upp_public_invite).."##main", 5, 5, w - 10, h - 15, atlas_icons.column_pending, is_active or is_mouse_active, 0, true, is_active)
         
         if update_get_is_hosting_game() then
             ui:header(update_get_loc(e_loc.upp_invite_code))

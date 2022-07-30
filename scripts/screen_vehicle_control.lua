@@ -11,6 +11,7 @@ g_selection_vehicle_id = 0
 g_selection_waypoint_id = 0
 g_selection_attack_target_vehicle_id = 0
 g_selected_child_vehicle_id = 0
+g_is_ignore_tap = false
 g_is_selection_map = false
 g_map_render_mode = 1
 g_is_drag_pan_map = false
@@ -573,7 +574,7 @@ function update(screen_w, screen_h, ticks)
         g_camera_size = lerp(g_prev_size, g_next_size, blend_factor)
     end
 
-    -- if update_screen_overrides(screen_w, screen_h, ticks)  then return end
+    if update_screen_overrides(screen_w, screen_h, ticks)  then return end
 
     g_tut_is_carrier_selected = false
     g_tut_is_context_menu_open = get_is_selection()
@@ -1404,7 +1405,7 @@ function update(screen_w, screen_h, ticks)
                 local vehicle_pos_xz = drag_vehicle:get_position_xz()
                 local screen_pos_x, screen_pos_y = get_screen_from_world(vehicle_pos_xz:x(), vehicle_pos_xz:y(), g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
 
-                drag_line_color = iff(get_is_vehicle_type_waypoint_capable(drag_vehicle:get_definition_index()), color_white, color_grey_dark)
+                local drag_line_color = iff(get_is_vehicle_type_waypoint_capable(drag_vehicle:get_definition_index()) and get_is_vehicle_waypoint_available(drag_vehicle), color_white, color_grey_dark)
 
                 update_ui_line(screen_pos_x, screen_pos_y, g_cursor_pos_x, g_cursor_pos_y, drag_line_color)
 
@@ -1432,7 +1433,9 @@ function update(screen_w, screen_h, ticks)
                     end
                 end
 
-                update_ui_line(screen_pos_x, screen_pos_y, g_cursor_pos_x, g_cursor_pos_y, color8(255, 255, 255, 255))
+                local drag_line_color = iff(get_is_vehicle_waypoint_available(drag_vehicle), color_white, color_grey_dark)
+                update_ui_line(screen_pos_x, screen_pos_y, g_cursor_pos_x, g_cursor_pos_y, drag_line_color)
+
                 drag_start_pos = vehicle_pos_xz
             end
         elseif g_highlighted_vehicle_id > 0 and g_highlighted_waypoint_id == 0 then
@@ -1611,7 +1614,13 @@ function update_interaction_ui()
     elseif get_is_selection() == false then
         if g_selected_child_vehicle_id ~= 0 then
             update_add_ui_interaction(update_get_loc(e_loc.interaction_cancel), e_game_input.back)
-            update_add_ui_interaction(update_get_loc(e_loc.interaction_set_waypoint), e_game_input.interact_a)
+
+            local child_vehicle = update_get_map_vehicle_by_id(g_selected_child_vehicle_id)
+                        
+            if child_vehicle:get() and get_is_vehicle_waypoint_available(child_vehicle) then
+                update_add_ui_interaction(update_get_loc(e_loc.interaction_set_waypoint), e_game_input.interact_a)
+            end
+
             update_add_ui_interaction_special(update_get_loc(e_loc.interaction_pan), e_ui_interaction_special.map_pan)
             update_add_ui_interaction_special(update_get_loc(e_loc.interaction_zoom), e_ui_interaction_special.map_zoom)
         elseif g_drag_vehicle_id > 0 then
@@ -1692,13 +1701,14 @@ function input_event(event, action)
                         local world_x, world_y = get_world_from_screen(g_cursor_pos_x, g_cursor_pos_y, g_camera_pos_x, g_camera_pos_y, g_camera_size, 256, 256)
                         local child_vehicle = update_get_map_vehicle_by_id(g_selected_child_vehicle_id)
                         
-                        if child_vehicle:get() then
+                        if child_vehicle:get() and get_is_vehicle_waypoint_available(child_vehicle) then
                             child_vehicle:clear_waypoints()
                             child_vehicle:clear_attack_target()
                             child_vehicle:add_waypoint(world_x, world_y)
                         end
 
                         g_selected_child_vehicle_id = 0
+                        g_is_ignore_tap = true
                     elseif g_highlighted_vehicle_id > 0 and g_highlighted_waypoint_id == 0 then
                         local highlighted_vehicle = update_get_map_vehicle_by_id(g_highlighted_vehicle_id)
 
@@ -1743,162 +1753,171 @@ function input_event(event, action)
                         g_is_drag_pan_map = false
                     end
 
-                    if g_drag_vehicle_id == g_highlighted_vehicle_id and g_drag_waypoint_id == g_highlighted_waypoint_id and g_selected_child_vehicle_id == 0 then
-                        -- tap
-
-                        local drag_threshold = 3
-
-                        if update_get_is_vr() then
-                            drag_threshold = 20
-                        end
-
-                        if event == e_input.action_a or g_is_pointer_hovered then
-                            if g_drag_waypoint_id > 0 then
-                                g_selection_vehicle_id = g_drag_vehicle_id
-                                g_selection_waypoint_id = g_drag_waypoint_id
-                                g_selection_attack_target_vehicle_id = 0
-                                g_is_selection_map = false
-                            elseif g_drag_vehicle_id > 0 then
-                                g_selection_vehicle_id = g_drag_vehicle_id
-                                g_selection_waypoint_id = 0
-                                g_selection_attack_target_vehicle_id = 0
-                                g_is_selection_map = false
-                            elseif g_highlighted_vehicle_id == 0 and g_drag_distance < drag_threshold then
-                                g_selection_vehicle_id = 0
-                                g_selection_waypoint_id = 0
-                                g_selection_attack_target_vehicle_id = 0
-                                g_is_selection_map = true
-                            end
-                        end
+                    if g_is_ignore_tap then
+                        g_is_ignore_tap = false
                     else
-                        local drag_vehicle = update_get_map_vehicle_by_id(g_drag_vehicle_id)
-
-                        if drag_vehicle:get() then
-                            local vehicle_definition_index = drag_vehicle:get_definition_index()
-
-                            if get_is_vehicle_type_waypoint_capable(vehicle_definition_index) then
-                                -- drag
-
-                                if g_highlighted_vehicle_id == g_drag_vehicle_id and g_highlighted_waypoint_id > 0 and g_highlighted_waypoint_id ~= g_drag_waypoint_id then
-                                    drag_vehicle:set_waypoint_repeat(g_drag_waypoint_id, g_highlighted_waypoint_id)                 
-                                elseif g_highlighted_vehicle_id > 0 then
-                                    local highlighted_vehicle = update_get_map_vehicle_by_id(g_highlighted_vehicle_id)
-
-                                    if highlighted_vehicle:get() then
-                                        local highlighted_vehicle_team = highlighted_vehicle:get_team()
-                                        local highlighted_vehicle_definition = highlighted_vehicle:get_definition_index()
-
-                                        if highlighted_vehicle_team == update_get_screen_team_id() then
-                                            if g_drag_waypoint_id > 0 and vehicle_definition_index == e_game_object_type.chassis_air_rotor_heavy and get_is_vehicle_airliftable(highlighted_vehicle_definition) then
-                                                -- toggle an "attack" target to perform airlift operation on friendly vehicle
-
-                                                local is_highlighted_vehicle_found = false
-                                                local drag_waypoint = drag_vehicle:get_waypoint_by_id(g_drag_waypoint_id)
-                                                local attack_target_count = drag_waypoint:get_attack_target_count()
-
-                                                for i = 0, attack_target_count - 1, 1 do
-                                                    local attack_target_vehicle_id = drag_waypoint:get_attack_target_target_id(i)
-
-                                                    if attack_target_vehicle_id == g_highlighted_vehicle_id then
-                                                        is_highlighted_vehicle_found = true
-                                                        drag_vehicle:remove_waypoint_attack_target(g_drag_waypoint_id, i)
-                                                        break
+                        if g_drag_vehicle_id == g_highlighted_vehicle_id and g_drag_waypoint_id == g_highlighted_waypoint_id and g_selected_child_vehicle_id == 0 then
+                            -- tap
+    
+                            local drag_threshold = 3
+    
+                            if update_get_is_vr() then
+                                drag_threshold = 20
+                            end
+    
+                            if event == e_input.action_a or g_is_pointer_hovered then
+                                if g_drag_waypoint_id > 0 then
+                                    g_selection_vehicle_id = g_drag_vehicle_id
+                                    g_selection_waypoint_id = g_drag_waypoint_id
+                                    g_selection_attack_target_vehicle_id = 0
+                                    g_is_selection_map = false
+                                elseif g_drag_vehicle_id > 0 then
+                                    g_selection_vehicle_id = g_drag_vehicle_id
+                                    g_selection_waypoint_id = 0
+                                    g_selection_attack_target_vehicle_id = 0
+                                    g_is_selection_map = false
+                                elseif g_highlighted_vehicle_id == 0 and g_drag_distance < drag_threshold then
+                                    g_selection_vehicle_id = 0
+                                    g_selection_waypoint_id = 0
+                                    g_selection_attack_target_vehicle_id = 0
+                                    g_is_selection_map = true
+                                end
+                            end
+                        else
+                            local drag_vehicle = update_get_map_vehicle_by_id(g_drag_vehicle_id)
+    
+                            if drag_vehicle:get() then
+                                local vehicle_definition_index = drag_vehicle:get_definition_index()
+    
+                                if get_is_vehicle_type_waypoint_capable(vehicle_definition_index) then
+                                    -- drag
+    
+                                    if g_highlighted_vehicle_id == g_drag_vehicle_id and g_highlighted_waypoint_id > 0 and g_highlighted_waypoint_id ~= g_drag_waypoint_id then
+                                        drag_vehicle:set_waypoint_repeat(g_drag_waypoint_id, g_highlighted_waypoint_id)                 
+                                    elseif g_highlighted_vehicle_id > 0 then
+                                        local highlighted_vehicle = update_get_map_vehicle_by_id(g_highlighted_vehicle_id)
+    
+                                        if highlighted_vehicle:get() then
+                                            local highlighted_vehicle_team = highlighted_vehicle:get_team()
+                                            local highlighted_vehicle_definition = highlighted_vehicle:get_definition_index()
+    
+                                            if highlighted_vehicle_team == update_get_screen_team_id() then
+                                                if g_drag_waypoint_id > 0 and vehicle_definition_index == e_game_object_type.chassis_air_rotor_heavy and get_is_vehicle_airliftable(highlighted_vehicle_definition) then
+                                                    -- toggle an "attack" target to perform airlift operation on friendly vehicle
+                                                    
+                                                    local is_highlighted_vehicle_found = false
+                                                    local drag_waypoint = drag_vehicle:get_waypoint_by_id(g_drag_waypoint_id)
+                                                    local attack_target_count = drag_waypoint:get_attack_target_count()
+    
+                                                    for i = 0, attack_target_count - 1, 1 do
+                                                        local attack_target_vehicle_id = drag_waypoint:get_attack_target_target_id(i)
+    
+                                                        if attack_target_vehicle_id == g_highlighted_vehicle_id then
+                                                            is_highlighted_vehicle_found = true
+                                                            drag_vehicle:remove_waypoint_attack_target(g_drag_waypoint_id, i)
+                                                            break
+                                                        end
                                                     end
-                                                end
-
-                                                if is_highlighted_vehicle_found == false then
-                                                    local highlighted_vehicle_id = highlighted_vehicle:get_id()
-
-                                                    drag_vehicle:set_waypoint_attack_target_target_id(g_drag_waypoint_id, highlighted_vehicle_id)
-                                                    drag_vehicle:set_waypoint_attack_target_attack_type(g_drag_waypoint_id, attack_target_count, e_attack_type.airlift)
-                                                end
-                                            else
-                                                if g_drag_vehicle_id == g_highlighted_vehicle_id then
-                                                    if g_drag_waypoint_id > 0 then
-                                                        local world_x, world_y = get_world_from_screen(g_cursor_pos_x, g_cursor_pos_y, g_camera_pos_x, g_camera_pos_y, g_camera_size, 256, 256)
-                            
-                                                        drag_vehicle:clear_waypoints_from(g_drag_waypoint_id)
-                                                        drag_vehicle:add_waypoint(world_x, world_y)
-                                                    elseif g_drag_vehicle_id > 0 then
-                                                        -- add waypoint to vehicle
-                            
-                                                        local world_x, world_y = get_world_from_screen(g_cursor_pos_x, g_cursor_pos_y, g_camera_pos_x, g_camera_pos_y, g_camera_size, 256, 256)
-                                                        drag_vehicle:clear_waypoints()
-                                                        drag_vehicle:clear_attack_target()
-                                                        drag_vehicle:add_waypoint(world_x, world_y)
+    
+                                                    if is_highlighted_vehicle_found == false then
+                                                        local highlighted_vehicle_id = highlighted_vehicle:get_id()
+    
+                                                        drag_vehicle:set_waypoint_attack_target_target_id(g_drag_waypoint_id, highlighted_vehicle_id)
+                                                        drag_vehicle:set_waypoint_attack_target_attack_type(g_drag_waypoint_id, attack_target_count, e_attack_type.airlift)
                                                     end
                                                 else
-                                                    -- add a support waypoint to friendly vehicle
-
-                                                    if g_drag_waypoint_id > 0 then
-                                                        drag_vehicle:clear_waypoints_from(g_drag_waypoint_id)
-                                                        local support_waypoint_id = drag_vehicle:add_waypoint(highlighted_vehicle:get_position_xz():x(), highlighted_vehicle:get_position_xz():y())
-                                                        drag_vehicle:set_target_vehicle(support_waypoint_id, g_highlighted_vehicle_id)
-                                                    else
-                                                        drag_vehicle:clear_waypoints()
-                                                        drag_vehicle:clear_attack_target()
-                                                        local support_waypoint_id = drag_vehicle:add_waypoint(highlighted_vehicle:get_position_xz():x(), highlighted_vehicle:get_position_xz():y())
-                                                        drag_vehicle:set_target_vehicle(support_waypoint_id, g_highlighted_vehicle_id)
+                                                    if get_is_vehicle_waypoint_available(drag_vehicle) then
+                                                        if g_drag_vehicle_id == g_highlighted_vehicle_id then
+                                                            if g_drag_waypoint_id > 0 then
+                                                                local world_x, world_y = get_world_from_screen(g_cursor_pos_x, g_cursor_pos_y, g_camera_pos_x, g_camera_pos_y, g_camera_size, 256, 256)
+                                    
+                                                                drag_vehicle:clear_waypoints_from(g_drag_waypoint_id)
+                                                                drag_vehicle:add_waypoint(world_x, world_y)
+                                                            elseif g_drag_vehicle_id > 0 then
+                                                                -- add waypoint to vehicle
+                                                                
+                                                                local world_x, world_y = get_world_from_screen(g_cursor_pos_x, g_cursor_pos_y, g_camera_pos_x, g_camera_pos_y, g_camera_size, 256, 256)
+                                                                drag_vehicle:clear_waypoints()
+                                                                drag_vehicle:clear_attack_target()
+                                                                drag_vehicle:add_waypoint(world_x, world_y)
+                                                            end
+                                                        else
+                                                            -- add a support waypoint to friendly vehicle
+    
+                                                            if g_drag_waypoint_id > 0 then
+                                                                drag_vehicle:clear_waypoints_from(g_drag_waypoint_id)
+                                                                local support_waypoint_id = drag_vehicle:add_waypoint(highlighted_vehicle:get_position_xz():x(), highlighted_vehicle:get_position_xz():y())
+                                                                drag_vehicle:set_target_vehicle(support_waypoint_id, g_highlighted_vehicle_id)
+                                                            else
+                                                                drag_vehicle:clear_waypoints()
+                                                                drag_vehicle:clear_attack_target()
+                                                                local support_waypoint_id = drag_vehicle:add_waypoint(highlighted_vehicle:get_position_xz():x(), highlighted_vehicle:get_position_xz():y())
+                                                                drag_vehicle:set_target_vehicle(support_waypoint_id, g_highlighted_vehicle_id)
+                                                            end
+                                                        end
                                                     end
-                                                end
-                                            end
-                                        else
-                                            -- toggle attack target on enemy vehicle
-
-                                            if g_drag_waypoint_id > 0 then 
-                                                local is_highlighted_vehicle_found = false
-                                                local drag_waypoint = drag_vehicle:get_waypoint_by_id(g_drag_waypoint_id)
-                                                local attack_target_count = drag_waypoint:get_attack_target_count()
-
-                                                for i = 0, attack_target_count - 1, 1 do
-                                                    local attack_target_vehicle_id = drag_waypoint:get_attack_target_target_id(i)
-
-                                                    if attack_target_vehicle_id == g_highlighted_vehicle_id then
-                                                        is_highlighted_vehicle_found = true
-                                                        drag_vehicle:remove_waypoint_attack_target(g_drag_waypoint_id, i)
-                                                        break
-                                                    end
-                                                end
-
-                                                if is_highlighted_vehicle_found == false then
-                                                    local highlighted_vehicle_id = highlighted_vehicle:get_id()
-
-                                                    -- go to attack type context menu
-
-                                                    g_selection_vehicle_id = g_drag_vehicle_id
-                                                    g_selection_waypoint_id = g_drag_waypoint_id
-                                                    g_selection_attack_target_vehicle_id = highlighted_vehicle_id
                                                 end
                                             else
-                                                local highlighted_vehicle_id = highlighted_vehicle:get_id()
-
-                                                -- go to attack type context menu
-
-                                                g_selection_vehicle_id = g_drag_vehicle_id
-                                                g_selection_waypoint_id = 0
-                                                g_selection_attack_target_vehicle_id = highlighted_vehicle_id
+                                                -- toggle attack target on enemy vehicle
+    
+                                                if g_drag_waypoint_id > 0 then 
+                                                    local is_highlighted_vehicle_found = false
+                                                    local drag_waypoint = drag_vehicle:get_waypoint_by_id(g_drag_waypoint_id)
+                                                    local attack_target_count = drag_waypoint:get_attack_target_count()
+    
+                                                    for i = 0, attack_target_count - 1, 1 do
+                                                        local attack_target_vehicle_id = drag_waypoint:get_attack_target_target_id(i)
+    
+                                                        if attack_target_vehicle_id == g_highlighted_vehicle_id then
+                                                            is_highlighted_vehicle_found = true
+                                                            drag_vehicle:remove_waypoint_attack_target(g_drag_waypoint_id, i)
+                                                            break
+                                                        end
+                                                    end
+    
+                                                    if is_highlighted_vehicle_found == false then
+                                                        local highlighted_vehicle_id = highlighted_vehicle:get_id()
+    
+                                                        -- go to attack type context menu
+    
+                                                        g_selection_vehicle_id = g_drag_vehicle_id
+                                                        g_selection_waypoint_id = g_drag_waypoint_id
+                                                        g_selection_attack_target_vehicle_id = highlighted_vehicle_id
+                                                    end
+                                                else
+                                                    local highlighted_vehicle_id = highlighted_vehicle:get_id()
+    
+                                                    -- go to attack type context menu
+    
+                                                    g_selection_vehicle_id = g_drag_vehicle_id
+                                                    g_selection_waypoint_id = 0
+                                                    g_selection_attack_target_vehicle_id = highlighted_vehicle_id
+                                                end
+                                            end
+                                        end
+                                    else
+                                        if g_drag_waypoint_id > 0 then
+                                            local world_x, world_y = get_world_from_screen(g_cursor_pos_x, g_cursor_pos_y, g_camera_pos_x, g_camera_pos_y, g_camera_size, 256, 256)
+                
+                                            drag_vehicle:clear_waypoints_from(g_drag_waypoint_id)
+                                            drag_vehicle:add_waypoint(world_x, world_y)
+                                        elseif g_drag_vehicle_id > 0 then
+                                            -- add waypoint to vehicle
+                                            
+                                            if get_is_vehicle_waypoint_available(drag_vehicle) then
+                                                local world_x, world_y = get_world_from_screen(g_cursor_pos_x, g_cursor_pos_y, g_camera_pos_x, g_camera_pos_y, g_camera_size, 256, 256)
+                                                
+                                                drag_vehicle:clear_waypoints()
+                                                drag_vehicle:clear_attack_target()
+                                                drag_vehicle:add_waypoint(world_x, world_y)
                                             end
                                         end
                                     end
-                                else
-                                    if g_drag_waypoint_id > 0 then
-                                        local world_x, world_y = get_world_from_screen(g_cursor_pos_x, g_cursor_pos_y, g_camera_pos_x, g_camera_pos_y, g_camera_size, 256, 256)
-            
-                                        drag_vehicle:clear_waypoints_from(g_drag_waypoint_id)
-                                        drag_vehicle:add_waypoint(world_x, world_y)
-                                    elseif g_drag_vehicle_id > 0 then
-                                        -- add waypoint to vehicle
-            
-                                        local world_x, world_y = get_world_from_screen(g_cursor_pos_x, g_cursor_pos_y, g_camera_pos_x, g_camera_pos_y, g_camera_size, 256, 256)
-                                        drag_vehicle:clear_waypoints()
-                                        drag_vehicle:clear_attack_target()
-                                        drag_vehicle:add_waypoint(world_x, world_y)
-                                    end
                                 end
                             end
+    
+                            g_is_selection_map = false
                         end
-
-                        g_is_selection_map = false
                     end
     
                     g_drag_vehicle_id = 0
@@ -2245,4 +2264,12 @@ function get_grid_spacing()
     end
 
     return grid_spacing
+end
+
+function get_is_vehicle_waypoint_available(vehicle)
+    if (vehicle:get_dock_state() == e_vehicle_dock_state.docking and vehicle:get_attached_parent_id() ~= 0) or vehicle:get_dock_state() == e_vehicle_dock_state.docking_taxi then
+        return false
+    end
+
+    return true
 end
