@@ -719,6 +719,10 @@ function update(screen_w, screen_h, ticks)
             local bearing = 90 + angle / math.pi * 180
             if bearing < 0 then bearing = bearing + 360 end
 
+            local angle_world = math.atan(world_y - g_ruler_y, world_x - g_ruler_x)
+            local bearing_world = 90 - angle_world / math.pi * 180
+            if bearing_world < 0 then bearing_world = bearing_world + 360 end
+
             if dist_screen > 5 then
                 local function rotate(x, y, a)
                     local s = math.sin(a)
@@ -755,7 +759,7 @@ function update(screen_w, screen_h, ticks)
             end
 
             update_ui_image(cx, cy, atlas_icons.column_angle, icon_col, 0)
-            update_ui_text(cx + 15, cy, string.format("%.0f deg", bearing), 100, 0, text_col, 0)
+            update_ui_text(cx + 15, cy, string.format("%.0f deg", bearing_world), 100, 0, text_col, 0)
             cy = cy - 10
 
             local dist = vec2_dist(vec2(g_ruler_x, g_ruler_y), vec2(world_x, world_y))
