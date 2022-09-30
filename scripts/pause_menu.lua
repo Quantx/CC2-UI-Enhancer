@@ -1364,6 +1364,7 @@ function tab_manual_render(screen_w, screen_h, x, y, w, h, delta_time, is_active
                 { "ic16", atlas_icons.map_icon_barge, color_friendly, update_get_loc(e_loc.barge) },
                 { "ic16", atlas_icons.map_icon_turret, color_friendly, update_get_loc(e_loc.turret) },
                 { "ic16", atlas_icons.map_icon_robot_dog, color_friendly, update_get_loc(e_loc.virus_bot) },
+                { "ic16", atlas_icons.map_icon_droid, color_friendly, update_get_loc(e_loc.deployable_droid) },
                 { "d" },
                 { "ic16", atlas_icons.map_icon_missile_outline, color8(0, 255, 0, 255), update_get_loc(e_loc.missile) },
                 { "ic16", atlas_icons.map_icon_torpedo, color8(64, 64, 255, 255), update_get_loc(e_loc.torpedo) },

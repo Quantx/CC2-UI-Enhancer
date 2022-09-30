@@ -243,6 +243,8 @@ function update(screen_w, screen_h, tick_fraction, delta_time, local_peer_id, ve
                 if def == e_game_object_type.chassis_land_wheel_light
                 or def == e_game_object_type.chassis_land_wheel_medium
                 or def == e_game_object_type.chassis_land_wheel_heavy 
+                or def == e_game_object_type.chassis_land_wheel_mule 
+                or def == e_game_object_type.chassis_deployable_droid
                 then
                     render_ground_hud(screen_w, screen_h, vehicle)
                 end
@@ -655,7 +657,7 @@ function render_attachment_info(info_pos, map_data, vehicle, attachment, alpha, 
             pos:y(pos:y() + 10)
 
             if attachment:get_type() == "camera" or attachment:get_type() == "turret" then
-                if attachment_def ~= e_game_object_type.attachment_turret_robot_dog_capsule and attachment_def ~= e_game_object_type.attachment_turret_plane_chaingun and attachment_def ~= e_game_object_type.attachment_turret_rocket_pod then
+                if attachment_def ~= e_game_object_type.attachment_turret_robot_dog_capsule and attachment_def ~= e_game_object_type.attachment_turret_plane_chaingun and attachment_def ~= e_game_object_type.attachment_turret_rocket_pod and attachment_def ~= e_game_object_type.attachment_deployable_droid then
                     if attachment:get_type() == "turret" then
                         update_add_ui_interaction(update_get_loc(e_loc.interaction_zoom), e_game_input.attachment_primary)
                     end
@@ -705,8 +707,8 @@ function render_attachment_info(info_pos, map_data, vehicle, attachment, alpha, 
     
     -- Render ammo
 
-    if ammo_capacity > 0 then   
-        if attachment_def ~= e_game_object_type.attachment_turret_robot_dog_capsule then 
+    if ammo_capacity > 0 and vehicle:get_definition_index() ~= e_game_object_type.chassis_land_turret then   
+        if attachment_def ~= e_game_object_type.attachment_turret_robot_dog_capsule and attachment_def ~= e_game_object_type.attachment_deployable_droid then 
             local ammo_col = iff(ammo_count > 0, colors.green, colors.red)
 
             update_ui_image(pos:x(), pos:y(), atlas_icons.column_ammo, ammo_col, 0)
@@ -1049,6 +1051,7 @@ function render_attachment_hud(screen_w, screen_h, map_data, tick_fraction, vehi
     or def == e_game_object_type.attachment_turret_heavy_cannon
     or def == e_game_object_type.attachment_turret_battle_cannon
     or def == e_game_object_type.attachment_turret_carrier_main_gun
+    or def == e_game_object_type.attachment_turret_droid
     then
         is_render_center = render_attachment_hud_cannon(screen_w, screen_h, map_data, vehicle, attachment, def)
     elseif def == e_game_object_type.attachment_turret_artillery
@@ -1099,9 +1102,20 @@ function render_attachment_hud(screen_w, screen_h, map_data, tick_fraction, vehi
         is_render_center = render_attachment_hud_flare(screen_w, screen_h, attachment)
     elseif def == e_game_object_type.attachment_radar_awacs then
         is_render_center = render_attachment_hud_radar(screen_w, screen_h, map_data, vehicle, attachment)
-    elseif def == e_game_object_type.attachment_turret_robot_dog_capsule then
+    elseif def == e_game_object_type.attachment_turret_robot_dog_capsule
+    then
         is_render_center = render_attachment_hud_robot_dog(screen_w, screen_h, map_data, vehicle, attachment)
+    elseif def == e_game_object_type.attachment_deployable_droid
+    then
+        is_render_center = render_attachment_hud_deployable_droid(screen_w, screen_h, map_data, vehicle, attachment)
     elseif def == e_game_object_type.attachment_turret_carrier_torpedo then
+    elseif def == e_game_object_type.attachment_logistics_container_20mm then
+    elseif def == e_game_object_type.attachment_logistics_container_30mm then
+    elseif def == e_game_object_type.attachment_logistics_container_40mm then
+    elseif def == e_game_object_type.attachment_logistics_container_100mm then
+    elseif def == e_game_object_type.attachment_logistics_container_120mm then
+    elseif def == e_game_object_type.attachment_logistics_container_fuel then
+    elseif def == e_game_object_type.attachment_logistics_container_ir_missile then
     elseif def < e_game_object_type.count then
         update_ui_text(screen_w / 2, 20, update_get_loc(e_loc.unknown_attachment), 200, 0, color8(255, 0, 0, 255), 0)
     end
@@ -1635,6 +1649,50 @@ function render_attachment_hud_robot_dog(screen_w, screen_h, map_data, vehicle, 
     
     render_capsule(hud_min:x() + 15, hud_max:y() - 30, ammo < 1)
     render_capsule(hud_max:x() - 30, hud_max:y() - 30, ammo < 1)
+
+    return false
+end
+
+function render_attachment_hud_deployable_droid(screen_w, screen_h, map_data, vehicle, attachment)
+    local hud_pos = vec2(screen_w / 2, screen_h / 2)
+    local hud_size = vec2(180, 89)
+    local hud_min = vec2(hud_pos:x() - hud_size:x() / 2, hud_pos:y() - hud_size:y() / 2)
+    local hud_max = vec2(hud_pos:x() + hud_size:x() / 2, hud_pos:y() + hud_size:y() / 2)
+    local col = color8(0, 255, 0, 255)
+    
+    local ammo = attachment:get_ammo_remaining()
+    local deploy_factor = attachment:get_target_accuracy()
+    local deploy_factor_pivot = 1 - invlerp_clamp(deploy_factor, 0, 0.5)
+    local deploy_factor_slide = invlerp_clamp(deploy_factor, 0.5, 0.9)
+    local is_deployed = ammo < 1
+    local is_deploying = is_deployed == false and deploy_factor > 0
+
+    local deploy_col = iff(is_deployed, color_status_bad, iff(is_deploying, color_status_warning, col))
+
+    update_ui_push_offset(hud_min:x() + 14, hud_max:y() - 22)
+    update_ui_rectangle(-4, 0, 1, 22, deploy_col)
+    update_ui_rectangle(20, 0, 1, 22, deploy_col)
+    update_ui_rectangle(-4, 22, 25, 1, deploy_col)
+
+    update_ui_push_offset(0, -18 * deploy_factor_slide)
+
+    update_ui_rectangle(-1, 0, 1, 20, deploy_col)
+    update_ui_rectangle(17, 0, 1, 20, deploy_col)
+    update_ui_rectangle(-1, 20, 19, 1, deploy_col)
+
+    if is_deployed == false then
+        local function round_to(a, b)
+            return math.floor(a / b + 0.5) * b
+        end
+
+        local icon_col = iff(is_deployed, color_status_bad, iff(is_deploying, iff(g_animation_time % 500 > 250, color_status_warning, color_empty), col))
+        update_ui_image_rot(8, 10, atlas_icons.icon_chassis_16_droid, icon_col, round_to(-math.pi * 0.5 * deploy_factor_pivot, math.pi / 4))
+    end
+
+    update_ui_pop_offset()
+
+    update_ui_text(9 - 100, 24, iff(is_deployed, update_get_loc(e_loc.upp_empty), update_get_loc(e_loc.upp_armed)), 200, 1, iff(is_deployed, color_status_bad, col), 0)
+    update_ui_pop_offset()
 
     return false
 end
@@ -2708,6 +2766,7 @@ function get_is_vision_show_target_distance(attachment_def)
         or attachment_def == e_game_object_type.attachment_turret_heavy_cannon
         or attachment_def == e_game_object_type.attachment_turret_battle_cannon
         or attachment_def == e_game_object_type.attachment_turret_carrier_main_gun
+        or attachment_def == e_game_object_type.attachment_turret_droid
 end
 
 function get_is_vision_target_lock_behaviour(attachment_def)
@@ -2760,6 +2819,7 @@ function get_is_vision_reveal_targets(attachment_def)
         or attachment_def == e_game_object_type.attachment_turret_missile
         or attachment_def == e_game_object_type.attachment_turret_ciws
         or attachment_def == e_game_object_type.attachment_camera
+        or attachment_def == e_game_object_type.attachment_turret_droid
 end
 
 

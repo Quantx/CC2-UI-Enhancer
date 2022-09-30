@@ -1285,6 +1285,7 @@ function render_map_facility_ui(screen_w, screen_h, x, y, w, h, category_data, f
         local item_data = g_item_data[item_type]
 
         if item_data ~= nil then
+            ui.window_col_active = color_status_bad
             local window = ui:begin_window(item_data.name .. "##queueitem", 30, y + 10, w - 60, h - 30, atlas_icons.column_pending, true, 2)
                 imgui_item_description(ui, screen_vehicle, item_data, false, true)
 
@@ -1319,6 +1320,7 @@ function render_map_facility_ui(screen_w, screen_h, x, y, w, h, category_data, f
                     end
                 end
             ui:end_window()
+            ui.window_col_active = color_white
         else
             g_tab_map.selected_facility_queue_item = -1
         end
@@ -1416,12 +1418,12 @@ function get_node_tooltip_h(tooltip_w, id, type)
                     local cy = 13
 
                     for i = 1, #unlocks do
-                        cx = cx + 16
-
                         if cx + 16 > tooltip_w - 5 then
                             cx = 18
                             cy = cy + 16
                         end
+
+                        cx = cx + 16
                     end
 
                     return cy + 18
@@ -2028,7 +2030,7 @@ function tab_stock_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_
             local order_amount = screen_vehicle:get_inventory_order(item_data.index)
 
             local is_active = is_tab_active and g_tab_stock.is_confirm_discard == false
-            local window = ui:begin_window(item_data.name .. "##item", 30, 10, w - 60, h - 28, atlas_icons.column_stock, is_active, 2)
+            local window = ui:begin_window(item_data.name .. "##item", 30, 10, w - 60, h - 28, atlas_icons.column_pending, is_active, 2)
                 imgui_item_description(ui, screen_vehicle, item_data, true, is_active)
                 ui:header(update_get_loc(e_loc.upp_order))
                 
@@ -2163,78 +2165,6 @@ function tab_stock_input_scroll(dy)
     g_ui:input_scroll(dy)
 end
 
-function imgui_item_description(ui, vehicle, item_data, is_inventory, is_active)
-    local window = ui:get_window()
-    local region_w, region_h = ui:get_region()
-    ui:spacer(2)
-
-    update_ui_rectangle_outline(window.cx + 4, window.cy - 1, 18, 18, color_grey_dark)
-    update_ui_image(window.cx + 5, window.cy, item_data.icon, iff(is_active, color_white, color_grey_dark), 0)
-
-    local text_h = update_ui_text(window.cx + 25, window.cy, item_data.desc, region_w - 30, 0, color_grey_dark, 0)
-    window.cy = window.cy + math.max(text_h, 17)
-
-    ui:spacer(2)
-
-    local icon_w = region_w / 4
-    local cx = window.cx
-    local cy = window.cy
-
-    if update_get_resource_item_hidden(item_data.index) == false then
-        update_ui_image(math.floor(cx + 5), cy, atlas_icons.column_weight, color_grey_dark, 0)
-        update_ui_text(math.floor(cx + 15), cy, item_data.mass, math.floor(icon_w) - 15, 0, color_grey_dark, 0)
-    end
-
-    cx = cx + icon_w
-
-    if is_inventory then
-        local island_stock = {}
-        local barge_stock = {}
-        local team = update_get_team(vehicle:get_team())
-
-        if team:get() then
-            island_stock = team:get_island_stock()
-            barge_stock = team:get_barge_stock()
-        end
-
-        local island_count = clamp(island_stock[item_data.index] or 0, -99999, 99999)
-        local col = iff(is_active, iff(island_count > 0, color_status_ok, color_status_bad), color_grey_dark)
-
-        update_ui_image(math.floor(cx + 5), cy, atlas_icons.column_warehouse, col, 0)
-        update_ui_text(math.floor(cx + 16), cy, island_count, math.floor(icon_w) - 15, 0, col, 0)
-        cx = cx + icon_w
-
-        local barge_count = clamp(barge_stock[item_data.index] or 0, -99999, 99999)
-        col = iff(is_active, iff(barge_count > 0, color_status_ok, color_grey_dark), color_grey_dark)
-
-        update_ui_image(math.floor(cx + 5), cy, atlas_icons.column_distance, col, 0)
-        update_ui_text(math.floor(cx + 16), cy, barge_count, math.floor(icon_w) - 15, 0, col, 0)
-        cx = cx + icon_w
-
-        local stock_count = vehicle:get_inventory_count_by_item_index(item_data.index)
-        col = iff(is_active, iff(stock_count > 0, color_status_ok, color_status_bad), color_grey_dark)
-
-        update_ui_image(math.floor(cx + 5), cy, atlas_icons.column_stock, col, 0)
-        update_ui_text(math.floor(cx + 16), cy, stock_count, math.floor(icon_w) - 15, 0, col, 0)
-        cx = cx + icon_w
-    else
-        update_ui_image(math.floor(cx + 5), cy, atlas_icons.column_time, color_grey_dark, 0)
-        update_ui_text(math.floor(cx + 16), cy, item_data.time .. "s", math.floor(icon_w) - 15, 0, color_grey_dark, 0)
-        cx = cx + icon_w
-
-        local team = update_get_team(update_get_screen_team_id())
-        local col = color_status_bad
-
-        if team:get() and team:get_currency() >= item_data.cost then
-            col = color_status_ok
-        end
-
-        update_ui_image(math.floor(cx + 5), cy, atlas_icons.column_currency, col, 0)
-        update_ui_text(math.floor(cx + 16), cy, item_data.cost, math.floor(icon_w) - 15, 0, col, 0)
-    end
-
-    ui:spacer(10)
-end
 
 --------------------------------------------------------------------------------
 --

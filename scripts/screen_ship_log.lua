@@ -118,10 +118,10 @@ function imgui_notification_log(ui, log, column_widths, column_margins, is_read)
     local text_col = color_grey_dark
 
     if log_type == e_map_notification_type.island_captured then
-        log_message = update_get_loc(e_loc.island_captured) .. " - " .. get_tile_name(log:get_tile_id())
+        log_message = update_get_loc(e_loc.island_captured) .. ": " .. get_tile_name(log:get_tile_id())
         text_col = color_status_ok
     elseif log_type == e_map_notification_type.island_lost then
-        log_message = update_get_loc(e_loc.island_lost) .. " - " .. get_tile_name(log:get_tile_id())
+        log_message = update_get_loc(e_loc.island_lost) .. ": " .. get_tile_name(log:get_tile_id())
         text_col = color_status_bad
     elseif log_type == e_map_notification_type.blueprint_unlocked then
         local blueprints = log:get_blueprints()
@@ -129,17 +129,23 @@ function imgui_notification_log(ui, log, column_widths, column_margins, is_read)
         text_col = color_highlight
     elseif log_type == e_map_notification_type.enemy_vehicle_destroyed then
         local definition_name = get_chassis_data_by_definition_index(log:get_vehicle_definition_index())
-        log_message = update_get_loc(e_loc.vehicle_destroyed) .. " - " .. definition_name .. " - " .. log:get_team_id()
+        log_message = update_get_loc(e_loc.vehicle_destroyed) .. ": " .. definition_name .. " - " .. log:get_team_id()
     elseif log_type == e_map_notification_type.team_vehicle_destroyed then
         local definition_name = get_chassis_data_by_definition_index(log:get_vehicle_definition_index())
-        log_message = update_get_loc(e_loc.vehicle_destroyed) .. " - "  .. definition_name
+        log_message = update_get_loc(e_loc.vehicle_destroyed) .. ": "  .. definition_name
+        text_col = color_status_bad
+    elseif log_type == e_map_notification_type.team_vehicle_self_destructed then
+        local definition_name = get_chassis_data_by_definition_index(log:get_vehicle_definition_index())
+        log_message = update_get_loc(e_loc.vehicle_self_destructed) .. ": "  .. definition_name
         text_col = color_status_bad
     elseif log_type == e_map_notification_type.team_player_joined then
-        log_message = update_get_loc(e_loc.crew_joined) .. " - "  .. log:get_name()
+        log_message = update_get_loc(e_loc.crew_joined) .. ": "  .. log:get_name()
     elseif log_type == e_map_notification_type.team_player_left then
-        log_message = update_get_loc(e_loc.crew_left) .. " - "  .. log:get_name()
+        log_message = update_get_loc(e_loc.crew_left) .. ": "  .. log:get_name()
     elseif log_type == e_map_notification_type.team_virus_bot_retired then
         log_message = update_get_loc(e_loc.virus_bot_retired)
+    elseif log_type == e_map_notification_type.team_droid_retired then
+        log_message = update_get_loc(e_loc.droid_retired)
     end
 
     if #log_message > 0 then
