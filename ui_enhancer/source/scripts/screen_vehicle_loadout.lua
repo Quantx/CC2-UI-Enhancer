@@ -38,7 +38,7 @@ function get_selected_chassis_options(bay_index)
             { region=atlas_icons.icon_chassis_16_wing_small, type=e_game_object_type.chassis_air_wing_light },
             { region=atlas_icons.icon_chassis_16_wing_large, type=e_game_object_type.chassis_air_wing_heavy },
             { region=atlas_icons.icon_chassis_16_rotor_small, type=e_game_object_type.chassis_air_rotor_light },
-            { region=atlas_icons.icon_chassis_16_rotor_large, type=e_game_object_type.chassis_air_rotor_large }
+            { region=atlas_icons.icon_chassis_16_rotor_large, type=e_game_object_type.chassis_air_rotor_heavy }
         }
     end
 
