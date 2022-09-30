@@ -100,3 +100,5 @@ Vehicle Control Screen
 [*]Added tooltips for waypoint altitude
 [*]Added player names to vehicle tooltips
 [/list]
+
+[b]PLEASE USE THE DISCUSSION TAB AT THE TOP TO REPORT BUGS, DO NOT CREATE A COMMENT.[/b]
