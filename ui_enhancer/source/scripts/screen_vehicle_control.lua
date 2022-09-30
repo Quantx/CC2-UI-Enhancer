@@ -1530,8 +1530,8 @@ function update(screen_w, screen_h, ticks)
                             local vehicle_pos_xz = vehicle:get_position_xz()
                             local screen_pos_x, screen_pos_y = get_screen_from_world(vehicle_pos_xz:x(), vehicle_pos_xz:y(), g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
 
-                        -- render waypoints
-                        
+                            -- render waypoints
+                            
                             local vehicle_support_id = vehicle:get_supporting_vehicle_id()
 
                             local waypoint_count = vehicle:get_waypoint_count()
@@ -1549,7 +1549,7 @@ function update(screen_w, screen_h, ticks)
                             if vehicle_team == update_get_screen_team_id() and show_waypoints then
                                 local waypoint_color = g_color_waypoint
 
-                                if g_highlighted_vehicle_id == vehicle:get_id() and g_highlighted_waypoint_id == 0 then
+                                if g_highlighted.vehicle_id == vehicle:get_id() and g_highlighted.waypoint_id == 0 then
                                     waypoint_color = color8(255, 255, 255, 255)
                                 end
 
@@ -1740,9 +1740,9 @@ function update(screen_w, screen_h, ticks)
                                         local is_group = (is_group_a or is_group_b or is_group_c or is_group_d)
                                         local is_deploy = waypoint:get_type() == e_waypoint_type.deploy
 
-                                        if g_highlighted_vehicle_id == vehicle:get_id() and g_highlighted_waypoint_id == 0 then
+                                        if g_highlighted.vehicle_id == vehicle:get_id() and g_highlighted.waypoint_id == 0 then
                                             waypoint_color = color8(255, 255, 255, 255)
-                                        elseif g_highlighted_vehicle_id == vehicle:get_id() and g_highlighted_waypoint_id == waypoint:get_id() then
+                                        elseif g_highlighted.vehicle_id == vehicle:get_id() and g_highlighted.waypoint_id == waypoint:get_id() then
                                             waypoint_color = color8(255, 255, 255, 255)
                                         elseif is_deploy then
                                             waypoint_color = g_color_airlift_order
@@ -1796,7 +1796,7 @@ function update(screen_w, screen_h, ticks)
                                 elseif g_drag_vehicle_id == vehicle:get_id() then
                                     element_color = color8(255, 255, 255, 255)
                                     is_highlight = true
-                                elseif g_highlighted_vehicle_id == vehicle:get_id() then
+                                elseif g_highlighted.vehicle_id == vehicle:get_id() then
                                     element_color = color8(255, 255, 255, 255)
                                     is_highlight = true
                                 end
@@ -2115,9 +2115,9 @@ function update(screen_w, screen_h, ticks)
             if highlighted_vehicle:get() then
                 local vehicle_definition_index = highlighted_vehicle:get_definition_index()
 
-                if g_highlighted_waypoint_id > 0 then
+                if g_highlighted.waypoint_id > 0 then
                     -- render waypoint tooltip
-                    local highlighted_waypoint = highlighted_vehicle:get_waypoint_by_id(g_highlighted_waypoint_id)
+                    local highlighted_waypoint = highlighted_vehicle:get_waypoint_by_id(g_highlighted.waypoint_id)
 
                     if get_is_vehicle_air(vehicle_definition_index) then
                         local alt_str = string.format( "%.0f ", highlighted_waypoint:get_altitude() ) .. update_get_loc(e_loc.acronym_meters)

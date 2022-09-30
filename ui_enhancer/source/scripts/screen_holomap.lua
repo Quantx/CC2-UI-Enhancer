@@ -1855,7 +1855,7 @@ function render_selection_vehicle(screen_w, screen_h, vehicle)
         local loadout_w = 74
         local left_w = (screen_w / 2) - loadout_w - 25
 
-        local window = ui:begin_window(update_get_loc(e_loc.upp_loadout), 10 + (screen_w / 4) + left_w + 5, (screen_h / 2) - 50, loadout_w, 84, atlas_icons.column_stock, false, 2)
+        local window = ui:begin_window(update_get_loc(e_loc.upp_loadout), 10 + (screen_w / 4) + left_w + 5, (screen_h / 2) - 80, loadout_w, 84, atlas_icons.column_stock, false, 2)
             local region_w, region_h = ui:get_region()
             window.cy = region_h / 2 - 32
             imgui_vehicle_chassis_loadout(ui, vehicle, nil)
@@ -1875,7 +1875,7 @@ function render_selection_vehicle(screen_w, screen_h, vehicle)
 
         local title = vehicle_definition_name .. string.format( " ID %.0f", vehicle:get_id() )
 
-        ui:begin_window(title, 10 + (screen_w / 4), (screen_h / 2) - 50, left_w, 100, atlas_icons.column_pending, true, 2)
+        ui:begin_window(title, 10 + (screen_w / 4), (screen_h / 2) - 80, left_w, 100, atlas_icons.column_pending, true, 2)
             ui:stat(update_get_loc(e_loc.hp), hitpoints .. "/" .. hitpoints_total, iff(damage_factor < 0.2, color_low, color_high))
 
             if vehicle_definition_index == e_game_object_type.chassis_land_turret then
@@ -1896,6 +1896,47 @@ function render_selection_vehicle(screen_w, screen_h, vehicle)
             end
 --]]
         ui:end_window()
+        
+        local attachment_count = vehicle:get_attachment_count()
+        local attachments = {}
+
+        for i = 0, attachment_count - 1, 1 do
+            local attachment = vehicle:get_attachment(i)
+
+            if attachment:get() and (attachment:get_ammo_capacity() > 0 or attachment:get_fuel_capacity() > 0) then
+                table.insert(attachments, attachment)
+            end
+        end
+
+        if #attachments > 0 and vehicle:get_definition_index() ~= e_game_object_type.chassis_land_turret then
+            local window = ui:begin_window(update_get_loc(e_loc.upp_ammo), 10 + (screen_w / 4), (screen_h / 2) + 25, left_w, { max=130 }, atlas_icons.column_stock, false, 2)
+            local region_w, region_h = ui:get_region()
+            local cy = 0
+
+            update_ui_rectangle(18, 0, 1, region_h, color_grey_dark)
+
+            for _, attachment in ipairs(attachments) do
+                local attachment_data = get_attachment_data_by_definition_index(attachment:get_definition_index())
+                update_ui_image(1, cy + 1, attachment_data.icon16, color_white, 0)
+
+                local ammo_capacity = attachment:get_ammo_capacity()
+                local fuel_capacity = attachment:get_fuel_capacity()
+
+                if ammo_capacity > 0 then
+                    local ammo_remaining = attachment:get_ammo_remaining()
+                    update_ui_text(21, cy + 4, ammo_remaining .. "/" .. ammo_capacity, 100, 0, iff(ammo_remaining == 0, color_status_bad, color_status_ok), 0)
+                elseif fuel_capacity > 0 then
+                    local fuel_remaining = attachment:get_fuel_remaining()
+                    update_ui_text(21, cy + 4, fuel_remaining  .. "/" .. fuel_capacity, 100, 0, iff(fuel_remaining == 0, color_status_bad, color_status_ok), 0)
+                end
+
+                cy = cy + 17
+                update_ui_rectangle(0, cy, region_w, 1, color8(255, 255, 255, 2))
+            end
+
+            window.cy = cy + 1
+            ui:end_window()
+        end
     end
 end
 
