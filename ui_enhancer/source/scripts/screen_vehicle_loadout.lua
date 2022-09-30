@@ -37,7 +37,8 @@ function get_selected_chassis_options(bay_index)
             { region=atlas_icons.icon_chassis_16_wing_small, type=e_game_object_type.chassis_air_wing_light },
             { region=atlas_icons.icon_chassis_16_wing_large, type=e_game_object_type.chassis_air_wing_heavy },
             { region=atlas_icons.icon_chassis_16_rotor_small, type=e_game_object_type.chassis_air_rotor_light },
-            { region=atlas_icons.icon_chassis_16_rotor_large, type=e_game_object_type.chassis_air_rotor_heavy }
+            { region=atlas_icons.icon_chassis_16_wheel_large, type=e_game_object_type.chassis_land_wheel_heavy },
+            { region=atlas_icons.icon_chassis_16_wheel_mule, type=e_game_object_type.chassis_land_wheel_mule }
         }
     end
 
@@ -210,6 +211,8 @@ function update(screen_w, screen_h, ticks)
                         local attachment_definition = attachment:get_definition_index()
                         local attachment_type = attached_vehicle:get_attachment_type(g_selected_attachment_index)
                         local selection_options = get_selected_vehicle_attachment_options(attachment_type)
+                        
+                        local button_w = iff(attachment_type == e_game_object_attachment_type.plate_logistics_container, 20, 16)
 
                         for i = 1, #selection_options do
                             if attachment_definition == selection_options[i].type then
@@ -297,17 +300,19 @@ function render_screen_attachment(screen_w, screen_h, this_vehicle, attached_veh
             local selection_options = get_selected_vehicle_attachment_options(attachment_type)
 
             local function render_attachment_option(item, is_active, is_selected)
-                render_button_bg(1, 0, 16, 25, iff(is_active, iff(is_selected, color_highlight, color_button_bg), color_button_bg_inactive), 1)
-                update_ui_image(1, 0, item.region, iff(is_active, iff(is_selected, color_white, color_black), color_black), 0)
+                render_button_bg(1, 0, button_w, 25, iff(is_active, iff(is_selected, color_highlight, color_button_bg), color_button_bg_inactive), 1)
+
+                local icon_w = update_ui_get_image_size(item.region)
+                update_ui_image((button_w - icon_w) / 2 + 1, 0, item.region, iff(is_active, iff(is_selected, color_white, color_black), color_black), 0)
 
                 if item ~= selection_options[1] then
                     if update_get_resource_item_for_definition(item.type) ~= -1 then
-                        update_ui_text(1, 16, this_vehicle:get_inventory_count_by_definition_index(item.type), 16, 1, color_black, 0)
+                        update_ui_text(1, 16, this_vehicle:get_inventory_count_by_definition_index(item.type), button_w, 1, color_black, 0)
                     else
                         local ammo_type = update_get_attachment_ammo_item_type(item.type)
 
                         if ammo_type ~= -1 then
-                            update_ui_text(1, 16, this_vehicle:get_inventory_count_by_item_index(ammo_type), 16, 1, color_black, 0)
+                            update_ui_text(1, 16, format_ammo_quantity(math.min(this_vehicle:get_inventory_count_by_item_index(ammo_type), 99000)), button_w, 1, color_black, 0)
                         end
                     end
                 end
@@ -324,7 +329,7 @@ function render_screen_attachment(screen_w, screen_h, this_vehicle, attached_veh
             end
 
             ui:begin_window(update_get_loc(e_loc.attachment).."##attachment", 0, 95, screen_w, screen_h - 95, nil, is_active, 1)
-                g_selected_option_index, g_attachment_combo_scroll, is_pressed = imgui_combo_custom(ui, g_selected_option_index, selection_options, 18, 25, g_attachment_combo_scroll, render_attachment_option)
+                g_selected_option_index, g_attachment_combo_scroll, is_pressed = imgui_combo_custom(ui, g_selected_option_index, selection_options, button_w + 2, 25, g_attachment_combo_scroll, render_attachment_option)
 
                 if is_pressed then  
                     local definition_index = selection_options[g_selected_option_index + 1].type
@@ -431,5 +436,13 @@ function render_no_stock_indicator(x, y, w)
         update_ui_text(0, 2, update_get_loc(e_loc.upp_out_of_stock), w, 1, color_black, 0)
 
         update_ui_pop_offset()
+    end
+end
+
+function format_ammo_quantity(amount)
+    if amount < 1000 then
+        return string.format("%.0f", amount)
+    else
+        return string.format("%.0f", amount / 1000) .. update_get_loc(e_loc.acronym_thousand)
     end
 end

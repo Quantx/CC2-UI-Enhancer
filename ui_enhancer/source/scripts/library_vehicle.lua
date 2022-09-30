@@ -15,7 +15,7 @@ function get_icon_data_by_definition_index(index)
     region_vehicle_icon = atlas_icons.map_icon_air
     icon_offset = 4
 
-    if index == e_game_object_type.chassis_land_wheel_light or index == e_game_object_type.chassis_land_wheel_medium or index == e_game_object_type.chassis_land_wheel_heavy then
+    if index == e_game_object_type.chassis_land_wheel_light or index == e_game_object_type.chassis_land_wheel_medium or index == e_game_object_type.chassis_land_wheel_heavy or index == e_game_object_type.chassis_land_wheel_mule then
         region_vehicle_icon = atlas_icons.map_icon_surface
         icon_offset = 4
     elseif index == e_game_object_type.chassis_carrier then
@@ -33,6 +33,9 @@ function get_icon_data_by_definition_index(index)
     elseif index == e_game_object_type.chassis_sea_ship_light or index == e_game_object_type.chassis_sea_ship_heavy then
         region_vehicle_icon = atlas_icons.map_icon_ship
         icon_offset = 5
+    elseif index == e_game_object_type.chassis_deployable_droid then
+        region_vehicle_icon = atlas_icons.map_icon_droid
+        icon_offset = 4
     end
 
     return region_vehicle_icon, icon_offset
@@ -65,6 +68,10 @@ function get_chassis_data_by_definition_index(index)
         return update_get_loc(e_loc.upp_needlefish), atlas_icons.icon_chassis_16_ship_light, update_get_loc(e_loc.upp_ndl), update_get_loc(e_loc.upp_light_patrol_ship)
     elseif index == e_game_object_type.chassis_sea_ship_heavy then
         return update_get_loc(e_loc.upp_swordfish), atlas_icons.icon_chassis_16_ship_heavy, update_get_loc(e_loc.upp_swd), update_get_loc(e_loc.upp_heavy_patrol_ship)
+    elseif index == e_game_object_type.chassis_land_wheel_mule then
+        return update_get_loc(e_loc.upp_mule), atlas_icons.icon_chassis_16_wheel_mule, update_get_loc(e_loc.upp_mul), update_get_loc(e_loc.upp_logistics_support_vehicle)
+    elseif index == e_game_object_type.chassis_deployable_droid then
+        return update_get_loc(e_loc.upp_droid), atlas_icons.icon_chassis_16_droid, update_get_loc(e_loc.upp_drd), update_get_loc(e_loc.upp_droid)
     end
 
     return update_get_loc(e_loc.upp_unknown), atlas_icons.icon_chassis_16_wheel_small, "---", ""
@@ -283,6 +290,51 @@ function get_attachment_data_by_definition_index(index)
             icon16 = atlas_icons.icon_attachment_16_air_torpedo,
             name_short = "TORP EXPL",
         },
+        [e_game_object_type.attachment_logistics_container_20mm] = {
+            name = update_get_loc(e_loc.upp_logistics_container_20mm),
+            icon16 = atlas_icons.icon_attachment_16_logistics_container_20mm,
+            name_short = "BOX 20MM",
+        },
+        [e_game_object_type.attachment_logistics_container_30mm] = {
+            name = update_get_loc(e_loc.upp_logistics_container_30mm),
+            icon16 = atlas_icons.icon_attachment_16_logistics_container_30mm,
+            name_short = "BOX 30MM",
+        },
+        [e_game_object_type.attachment_logistics_container_40mm] = {
+            name = update_get_loc(e_loc.upp_logistics_container_40mm),
+            icon16 = atlas_icons.icon_attachment_16_logistics_container_40mm,
+            name_short = "BOX 40MM",
+        },
+        [e_game_object_type.attachment_logistics_container_100mm] = {
+            name = update_get_loc(e_loc.upp_logistics_container_100mm),
+            icon16 = atlas_icons.icon_attachment_16_logistics_container_100mm,
+            name_short = "BOX 100MM",
+        },
+        [e_game_object_type.attachment_logistics_container_120mm] = {
+            name = update_get_loc(e_loc.upp_logistics_container_120mm),
+            icon16 = atlas_icons.icon_attachment_16_logistics_container_120mm,
+            name_short = "BOX 120MM",
+        },
+        [e_game_object_type.attachment_logistics_container_fuel] = {
+            name = update_get_loc(e_loc.upp_logistics_container_fuel),
+            icon16 = atlas_icons.icon_attachment_16_logistics_container_fuel,
+            name_short = "BOX FUEL",
+        },
+        [e_game_object_type.attachment_logistics_container_ir_missile] = {
+            name = update_get_loc(e_loc.upp_logistics_container_ir_missile),
+            icon16 = atlas_icons.icon_attachment_16_logistics_container_ir_missile,
+            name_short = "BOX IR MSL",
+        },
+        [e_game_object_type.attachment_turret_droid] = {
+            name = update_get_loc(e_loc.upp_turret_droid),
+            icon16 = atlas_icons.icon_attachment_16_turret_droid,
+            name_short = "GUN DROID",
+        },
+        [e_game_object_type.attachment_deployable_droid] = {
+            name = update_get_loc(e_loc.upp_deployable_droid),
+            icon16 = atlas_icons.icon_attachment_16_deployable_droid,
+            name_short = "DEP DROID",
+        },
     }
 
     return attachment_data[index] or attachment_data[-1]
@@ -307,6 +359,10 @@ function get_chassis_image_by_definition_index(index)
         return atlas_icons.icon_chassis_turret
     elseif index == e_game_object_type.chassis_sea_ship_light then
         return atlas_icons.icon_chassis_sea_ship_light
+    elseif index == e_game_object_type.chassis_land_wheel_mule then
+        return atlas_icons.icon_chassis_wheel_mule
+    elseif index == e_game_object_type.chassis_deployable_droid then
+        return atlas_icons.icon_chassis_deployable_droid
     end
 
     return atlas_icons.icon_chassis_unknown
@@ -332,6 +388,8 @@ function get_is_vehicle_land(definition_index)
         or definition_index == e_game_object_type.chassis_land_wheel_light
         or definition_index == e_game_object_type.chassis_land_robot_dog
         or definition_index == e_game_object_type.chassis_land_turret
+        or definition_index == e_game_object_type.chassis_land_wheel_mule
+        or definition_index == e_game_object_type.chassis_deployable_droid
 end
 
 function get_is_vehicle_airliftable(definition_index)
@@ -339,6 +397,7 @@ function get_is_vehicle_airliftable(definition_index)
         or definition_index == e_game_object_type.chassis_land_wheel_medium
         or definition_index == e_game_object_type.chassis_land_wheel_light
         or definition_index == e_game_object_type.chassis_land_robot_dog
+        or definition_index == e_game_object_type.chassis_land_wheel_mule
 end
 
 function get_attack_type_icon(attack_type)
@@ -424,6 +483,10 @@ function get_is_vehicle_type_waypoint_capable(vehicle_definition_index)
     elseif vehicle_definition_index == e_game_object_type.chassis_sea_ship_light then
         return true
     elseif vehicle_definition_index == e_game_object_type.chassis_sea_ship_heavy then
+        return true
+    elseif vehicle_definition_index == e_game_object_type.chassis_land_wheel_mule then
+        return true
+    elseif vehicle_definition_index == e_game_object_type.chassis_deployable_droid then
         return true
     end
 

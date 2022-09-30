@@ -2537,6 +2537,30 @@ function get_ui_vehicle_chassis_attachments(vehicle)
                 { i=2, x=0, y=15 },
             }
         }
+    elseif vehicle_definition_index == e_game_object_type.chassis_land_wheel_mule then
+        vehicle_attachment_rows = {
+            {
+                { i=1, x=-20, y=-18 },
+                { i=2, x=20, y=-18 }
+            },
+            {
+                { i=3, x=-20, y=0 },
+                { i=4, x=20, y=0 }
+            },
+            {
+                { i=5, x=-20, y=18 },
+                { i=6, x=20, y=18 }
+            }
+        }
+    elseif vehicle_definition_index == e_game_object_type.chassis_deployable_droid then
+        vehicle_attachment_rows = {
+            {
+                { i=0, x=0, y=-13 }
+            },
+            {
+                { i=1, x=0, y=0 }
+            }
+        }
     end
 
     return vehicle_attachment_rows
@@ -2609,6 +2633,9 @@ function imgui_vehicle_chassis_loadout(ui, vehicle, selected_bay_index)
             elseif attachment_type == e_game_object_attachment_type.plate_small_inverted then
                 attachment_w = 8
                 attachment_h = 8
+            elseif attachment_type == e_game_object_attachment_type.plate_logistics_container then
+                attachment_w = 16
+                attachment_h = 16
             end
 
             local x = cx + 32 - (attachment_w / 2) + render_data.x
@@ -2623,15 +2650,29 @@ function imgui_vehicle_chassis_loadout(ui, vehicle, selected_bay_index)
                 local attachment_definition_index = attachment:get_definition_index()
 
                 if attachment_definition_index > 0 then
-                    local ammo_factor = attachment:get_ammo_factor()
+                    local total_capacity = 0
+                    local resupply_factor = 0
+
+                    if attachment:get_ammo_capacity() > 0 then
+                        total_capacity = total_capacity + 1
+                        resupply_factor = resupply_factor + attachment:get_ammo_factor()
+                    end
+
+                    if attachment:get_fuel_capacity() > 0 then
+                        total_capacity = total_capacity + 1
+                        resupply_factor = resupply_factor + attachment:get_fuel_factor()
+                    end
+
+                    resupply_factor = iff(total_capacity == 0, 1, resupply_factor / total_capacity)
+                    
                     local attachment_icon_region, attachment_16_icon_region = get_attachment_icons(attachment_definition_index)
                     local icon_w, icon_h = update_ui_get_image_size(attachment_icon_region)
 
-                    if ammo_factor < 1.0 then
+                    if resupply_factor < 1.0 then
                         update_ui_image(x + (attachment_w - icon_w) / 2, y + (attachment_h - icon_h) / 2, attachment_icon_region, color_status_bad, 0)
 
                         update_ui_rectangle(x + 1, y + (attachment_h / 2) - 2, attachment_w - 2, 4, color_black)
-                        update_ui_rectangle(x + 1, y + (attachment_h / 2) - 2, (attachment_w - 2) * ammo_factor, 4, color_white)
+                        update_ui_rectangle(x + 1, y + (attachment_h / 2) - 2, (attachment_w - 2) * resupply_factor, 4, color_white)
                     else
                         update_ui_image(x + (attachment_w - icon_w) / 2, y + (attachment_h - icon_h) / 2, attachment_icon_region, color_status_ok, 0)
                     end
@@ -3207,14 +3248,16 @@ function imgui_item_button(self, item_data, label, is_enabled)
     
     local icon_col = iff(is_active, iff(is_selected, color_white, color_grey_dark), color_grey_dark)
     local text_col = iff(is_active, iff(is_selected, color_black, color_grey_dark), color_grey_dark)
+    
+     local _, text_h = update_ui_get_text_size(label, w - bx - 23, 0)
 
     if is_active and is_selected then
-        render_button_bg(x + 1, y, w - 2, 16, color_highlight)
+        render_button_bg(x + 1, y, w - 2, text_h + 6, color_highlight)
     end
 
     update_ui_image(bx, by, item_data.icon, icon_col, 0)
     update_ui_text(bx + 16 + 2, by + 3, label, w - bx - 23, 0, text_col, 0)
-    window.cy = window.cy + 17
+    window.cy = window.cy + text_h + 7
 
     local is_hovered = self:hoverable(x, y, w, window.cy - y, true)
 
@@ -3534,4 +3577,77 @@ function format_quantity(amount)
     else
         return string.format("%.0f", amount / 1000) .. update_get_loc(e_loc.acronym_thousand)
     end
+end
+
+function imgui_item_description(ui, vehicle, item_data, is_inventory, is_active)
+    local window = ui:get_window()
+    local region_w, region_h = ui:get_region()
+    ui:spacer(2)
+
+    update_ui_rectangle_outline(window.cx + 4, window.cy - 1, 18, 18, color_grey_dark)
+    update_ui_image(window.cx + 5, window.cy, item_data.icon, iff(is_active, color_white, color_grey_dark), 0)
+
+    local text_h = update_ui_text(window.cx + 25, window.cy, item_data.desc, region_w - 30, 0, color_grey_dark, 0)
+    window.cy = window.cy + math.max(text_h, 17)
+
+    ui:spacer(2)
+
+    local icon_w = region_w / 4
+    local cx = window.cx
+    local cy = window.cy
+
+    if update_get_resource_item_hidden(item_data.index) == false then
+        update_ui_image(math.floor(cx + 5), cy, atlas_icons.column_weight, color_grey_dark, 0)
+        update_ui_text(math.floor(cx + 15), cy, item_data.mass, math.floor(icon_w) - 15, 0, color_grey_dark, 0)
+    end
+
+    cx = cx + icon_w
+
+    if is_inventory then
+        local island_stock = {}
+        local barge_stock = {}
+        local team = update_get_team(vehicle:get_team())
+
+        if team:get() then
+            island_stock = team:get_island_stock()
+            barge_stock = team:get_barge_stock()
+        end
+
+        local island_count = clamp(island_stock[item_data.index] or 0, -99999, 99999)
+        local col = iff(is_active, iff(island_count > 0, color_status_ok, color_status_bad), color_grey_dark)
+
+        update_ui_image(math.floor(cx + 5), cy, atlas_icons.column_warehouse, col, 0)
+        update_ui_text(math.floor(cx + 16), cy, island_count, math.floor(icon_w) - 15, 0, col, 0)
+        cx = cx + icon_w
+
+        local barge_count = clamp(barge_stock[item_data.index] or 0, -99999, 99999)
+        col = iff(is_active, iff(barge_count > 0, color_status_ok, color_grey_dark), color_grey_dark)
+
+        update_ui_image(math.floor(cx + 5), cy, atlas_icons.column_distance, col, 0)
+        update_ui_text(math.floor(cx + 16), cy, barge_count, math.floor(icon_w) - 15, 0, col, 0)
+        cx = cx + icon_w
+
+        local stock_count = vehicle:get_inventory_count_by_item_index(item_data.index)
+        col = iff(is_active, iff(stock_count > 0, color_status_ok, color_status_bad), color_grey_dark)
+
+        update_ui_image(math.floor(cx + 5), cy, atlas_icons.column_stock, col, 0)
+        update_ui_text(math.floor(cx + 16), cy, stock_count, math.floor(icon_w) - 15, 0, col, 0)
+        cx = cx + icon_w
+    else
+        update_ui_image(math.floor(cx + 5), cy, atlas_icons.column_time, color_grey_dark, 0)
+        update_ui_text(math.floor(cx + 16), cy, item_data.time .. "s", math.floor(icon_w) - 15, 0, color_grey_dark, 0)
+        cx = cx + icon_w
+
+        local team = update_get_team(update_get_screen_team_id())
+        local col = color_status_bad
+
+        if team:get() and team:get_currency() >= item_data.cost then
+            col = color_status_ok
+        end
+
+        update_ui_image(math.floor(cx + 5), cy, atlas_icons.column_currency, col, 0)
+        update_ui_text(math.floor(cx + 16), cy, item_data.cost, math.floor(icon_w) - 15, 0, col, 0)
+    end
+
+    ui:spacer(10)
 end
