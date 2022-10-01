@@ -1733,6 +1733,13 @@ function render_ground_hud(screen_w, screen_h, vehicle)
     render_damage_gauge(vec2(hud_min:x() + hud_size:x() - 1, hud_pos:y() + 45 - 50), 50, vehicle, col)
     render_control_mode(vec2(hud_min:x() + hud_size:x() - 16, hud_pos:y() + 45 + 5), vehicle, col)
 
+    if g_selected_attachment_index == 0 then
+        local turret = get_vehicle_attachment(vehicle:get_id(), 1)
+        if turret ~= nil then
+            render_vehicle_turret_direction(screen_w, screen_h, vehicle, turret, col)
+        end
+    end
+
     if get_is_damage_warning(vehicle) then
         local col_red = color8(255, 0, 0, 255)
         render_warning_text(hud_pos:x(), hud_min:y() - 10, update_get_loc(e_loc.upp_dmg_critical), col_red)
@@ -1858,6 +1865,35 @@ end
 -- SPECIALIST HUD ELEMENTS
 --
 --------------------------------------------------------------------------------
+
+-- Render turret direction relative to driver
+function render_vehicle_turret_direction(screen_w, screen_h, vehicle, turret, col)
+    local attachment_icon_region, attachment_16_icon_region = get_attachment_icons(turret:get_definition_index())
+--  local icon_w, icon_h = update_ui_get_image_size(attachment_icon_region)
+
+    local hud_size = vec2(230, 140) 
+    local hud_min = vec2((screen_w - hud_size:x()) / 2, (screen_h - hud_size:y()) / 2)
+    local hud_pos = vec2(hud_min:x() + hud_size:x() / 2, hud_min:y() + hud_size:y() / 2)
+
+    local pos_x = hud_min:x() + hud_size:x() - 6
+    local pos_y = hud_pos:y() - 30
+    
+    local vehicle_pos = vehicle:get_position()
+    local vehicle_dir = vehicle:get_forward()
+    local turret_hit_pos = turret:get_hitscan_position()
+    
+    local turret_ang = math.atan( turret_hit_pos:x() - vehicle_pos:x(), turret_hit_pos:z() - vehicle_pos:z() )
+    local vehicle_ang = math.atan( vehicle_dir:x(), vehicle_dir:z() )
+    
+    --local projectile_cooldown = clamp((1 - turret:get_projectile_cooldown_factor()) * 255, 0, 255)
+    --local turret_col = color8(projectile_cooldown, 255, projectile_cooldown, 255)
+    
+    local off_x = math.sin(turret_ang - vehicle_ang) * 4
+    local off_y = math.cos(turret_ang - vehicle_ang) * 4
+    
+    update_ui_image_rot( pos_x, pos_y, atlas_icons.hud_ticker_small, col, -(math.pi / 2) )
+    update_ui_image_rot( pos_x + off_x, pos_y - off_y, attachment_icon_region, col, turret_ang - vehicle_ang )
+end
 
 function render_attachment_range(hud_pos, attachment, is_camera)
     local hit_dist = iff( is_camera, vec3_dist(update_get_camera_position(), attachment:get_hitscan_position()), attachment:get_hitscan_distance() )
@@ -2819,6 +2855,7 @@ function render_vision_target_missile_outline(pos, is_clamped, col)
     update_ui_image_rot(x, y, iff(is_clamped, atlas_icons.hud_target_offscreen, atlas_icons.hud_target_missile), col, 0)
 end
 
+-- Render chassis direction relative to turret
 function render_turret_vehicle_direction(screen_w, screen_h, vehicle, turret, col)
     local attachment_icon_region, attachment_16_icon_region = get_attachment_icons(turret:get_definition_index())
 --  local icon_w, icon_h = update_ui_get_image_size(attachment_icon_region)
