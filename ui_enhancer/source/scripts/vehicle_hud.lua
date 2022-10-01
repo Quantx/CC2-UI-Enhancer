@@ -1733,8 +1733,15 @@ function render_ground_hud(screen_w, screen_h, vehicle)
     render_damage_gauge(vec2(hud_min:x() + hud_size:x() - 1, hud_pos:y() + 45 - 50), 50, vehicle, col)
     render_control_mode(vec2(hud_min:x() + hud_size:x() - 16, hud_pos:y() + 45 + 5), vehicle, col)
 
-    if g_selected_attachment_index == 0 then
-        local turret = get_vehicle_attachment(vehicle:get_id(), 1)
+    local def = vehicle:get_definition_index()
+
+    if g_selected_attachment_index == 0 and def ~= e_game_object_type.chassis_land_wheel_mule then
+        local turret_index = 1
+        if def == e_game_object_type.chassis_land_wheel_heavy then
+            turret_index = 2
+        end
+        
+        local turret = get_vehicle_attachment(vehicle:get_id(), turret_index)
         if turret ~= nil then
             render_vehicle_turret_direction(screen_w, screen_h, vehicle, turret, col)
         end
@@ -1885,14 +1892,14 @@ function render_vehicle_turret_direction(screen_w, screen_h, vehicle, turret, co
     local turret_ang = math.atan( turret_hit_pos:x() - vehicle_pos:x(), turret_hit_pos:z() - vehicle_pos:z() )
     local vehicle_ang = math.atan( vehicle_dir:x(), vehicle_dir:z() )
     
-    --local projectile_cooldown = clamp((1 - turret:get_projectile_cooldown_factor()) * 255, 0, 255)
-    --local turret_col = color8(projectile_cooldown, 255, projectile_cooldown, 255)
+    local projectile_cooldown = math.floor(clamp((1 - turret:get_projectile_cooldown_factor()) * 255, 0, 255))
+    local turret_col = color8(projectile_cooldown, 255, projectile_cooldown, 255)
     
     local off_x = math.sin(turret_ang - vehicle_ang) * 4
     local off_y = math.cos(turret_ang - vehicle_ang) * 4
     
     update_ui_image_rot( pos_x, pos_y, atlas_icons.hud_ticker_small, col, -(math.pi / 2) )
-    update_ui_image_rot( pos_x + off_x, pos_y - off_y, attachment_icon_region, col, turret_ang - vehicle_ang )
+    update_ui_image_rot( pos_x + off_x, pos_y - off_y, attachment_icon_region, turret_col, turret_ang - vehicle_ang )
 end
 
 function render_attachment_range(hud_pos, attachment, is_camera)
