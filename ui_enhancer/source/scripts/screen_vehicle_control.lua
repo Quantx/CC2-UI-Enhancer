@@ -747,14 +747,14 @@ function render_selection_waypoint(screen_w, screen_h)
                     local inc_val = { -500, -100, 100, 500 }
                     local inc_act = ui:button_group({ "-500", "-100", "+100", "+500" }, true)
                     if inc_act >= 0 and inc_act < #inc_val then
-                        selected_vehicle:set_waypoint_altitude(g_selection_waypoint_id, math.max( 0, math.min( 2000, waypoint_altitude + inc_val[inc_act + 1])))
+                        selected_vehicle:set_waypoint_altitude(g_selection.waypoint_id, math.max( 0, math.min( 2000, waypoint_altitude + inc_val[inc_act + 1])))
                     end
 
                     -- waypoint altitude presets
                     local pre_val = { 400, 1100, 1700, 2000 }
                     local pre_act = ui:button_group({ "400", "1100", "1700", "2000" }, true)
                     if pre_act >= 0 and pre_act < #pre_val then
-                        selected_vehicle:set_waypoint_altitude(g_selection_waypoint_id, pre_val[pre_act + 1])
+                        selected_vehicle:set_waypoint_altitude(g_selection.waypoint_id, pre_val[pre_act + 1])
                     end
                 end
             ui:end_window()
@@ -1790,10 +1790,10 @@ function update(screen_w, screen_h, ticks)
                                 local element_color = get_vehicle_team_color(vehicle_team)
                                 local is_highlight = false
 
-                                if g_selection_vehicle_id == vehicle:get_id() then
+                                if g_selection.vehicle_id == vehicle:get_id() then
                                     element_color = color8(255, 255, 255, 255)
                                     is_highlight = true
-                                elseif g_drag_vehicle_id == vehicle:get_id() then
+                                elseif g_drag.vehicle_id == vehicle:get_id() then
                                     element_color = color8(255, 255, 255, 255)
                                     is_highlight = true
                                 elseif g_highlighted.vehicle_id == vehicle:get_id() then
