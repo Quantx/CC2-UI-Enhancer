@@ -1736,14 +1736,17 @@ function render_ground_hud(screen_w, screen_h, vehicle)
     local def = vehicle:get_definition_index()
 
     if g_selected_attachment_index == 0 and def ~= e_game_object_type.chassis_land_wheel_mule then
-        local turret_index = 1
-        if def == e_game_object_type.chassis_land_wheel_heavy then
-            turret_index = 2
-        end
-        
+        local turret_index = iff(def == e_game_object_type.chassis_land_wheel_heavy, 2, 1)
         local turret = get_vehicle_attachment(vehicle:get_id(), turret_index)
         if turret ~= nil then
-            render_vehicle_turret_direction(screen_w, screen_h, vehicle, turret, col)
+            -- Don't render for the following since they're not turrets
+            local turret_def = turret:get_definition_index()
+            if  turret_def ~= e_game_object_type.attachment_turret_robot_dog_capsule
+            and turret_def ~= e_game_object_type.attachment_camera_observation
+            and turret_def ~= e_game_object_type.attachment_radar_golfball
+            then
+                render_vehicle_turret_direction(screen_w, screen_h, vehicle, turret, col)
+            end
         end
     end
 
@@ -1875,7 +1878,8 @@ end
 
 -- Render turret direction relative to driver
 function render_vehicle_turret_direction(screen_w, screen_h, vehicle, turret, col)
-    local attachment_icon_region, attachment_16_icon_region = get_attachment_icons(turret:get_definition_index())
+    local turret_def = turret:get_definition_index()
+    local attachment_icon_region, attachment_16_icon_region = get_attachment_icons(turret_def)
 --  local icon_w, icon_h = update_ui_get_image_size(attachment_icon_region)
 
     local hud_size = vec2(230, 140) 
@@ -1895,11 +1899,18 @@ function render_vehicle_turret_direction(screen_w, screen_h, vehicle, turret, co
     local projectile_cooldown = math.floor(clamp((1 - turret:get_projectile_cooldown_factor()) * 255, 0, 255))
     local turret_col = color8(projectile_cooldown, 255, projectile_cooldown, 255)
     
-    local off_x = math.sin(turret_ang - vehicle_ang) * 4
-    local off_y = math.cos(turret_ang - vehicle_ang) * 4
-    
     update_ui_image_rot( pos_x, pos_y, atlas_icons.hud_ticker_small, col, -(math.pi / 2) )
-    update_ui_image_rot( pos_x + off_x, pos_y - off_y, attachment_icon_region, turret_col, turret_ang - vehicle_ang )
+    
+    if turret_def == e_game_object_type.attachment_turret_missile then
+        update_ui_image_rot( pos_x, pos_y - 4, attachment_icon_region, turret_col, -(math.pi / 2) )
+    elseif turret_def == e_game_object_type.attachment_turret_droid then
+        update_ui_image_rot( pos_x, pos_y - 2, attachment_icon_region, turret_col, turret_ang - vehicle_ang )
+    else
+        local off_x = math.sin(turret_ang - vehicle_ang) * 4
+        local off_y = math.cos(turret_ang - vehicle_ang) * 4
+        
+        update_ui_image_rot( pos_x + off_x, pos_y - off_y, attachment_icon_region, turret_col, turret_ang - vehicle_ang )
+    end
 end
 
 function render_attachment_range(hud_pos, attachment, is_camera)
@@ -2879,8 +2890,11 @@ function render_turret_vehicle_direction(screen_w, screen_h, vehicle, turret, co
     local vehicle_dir = vehicle:get_forward()
     local vehicle_ang = math.atan( vehicle_dir:x(), vehicle_dir:z() )
     
+    local turret_def = turret:get_definition_index()
+    local off_y = iff(turret_def == e_game_object_type.attachment_turret_droid, -2, -4)
+    
     update_ui_image_rot( pos_x, pos_y, atlas_icons.hud_ticker_small, col, -(turret_ang - vehicle_ang) - (math.pi / 2) )
-    update_ui_image_rot( pos_x, pos_y - 4, attachment_icon_region, col, 0 )
+    update_ui_image_rot( pos_x, pos_y + off_y, attachment_icon_region, col, 0 )
 end
 
 -- toggle between no target and a specific target
