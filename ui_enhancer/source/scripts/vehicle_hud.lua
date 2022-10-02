@@ -1741,7 +1741,8 @@ function render_ground_hud(screen_w, screen_h, vehicle)
         if turret ~= nil then
             -- Don't render for the following since they're not turrets
             local turret_def = turret:get_definition_index()
-            if  turret_def ~= e_game_object_type.attachment_turret_robot_dog_capsule
+            if  turret_def >= 0 and turret_def < e_game_object_type.count -- Don't render for unknown turrets
+            and turret_def ~= e_game_object_type.attachment_turret_robot_dog_capsule
             and turret_def ~= e_game_object_type.attachment_camera_observation
             and turret_def ~= e_game_object_type.attachment_radar_golfball
             then
