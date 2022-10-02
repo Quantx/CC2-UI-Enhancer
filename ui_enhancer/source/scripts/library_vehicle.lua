@@ -323,17 +323,17 @@ function get_attachment_data_by_definition_index(index)
         [e_game_object_type.attachment_logistics_container_ir_missile] = {
             name = update_get_loc(e_loc.upp_logistics_container_ir_missile),
             icon16 = atlas_icons.icon_attachment_16_logistics_container_ir_missile,
-            name_short = "BOX IR MSL",
+            name_short = "BOX IR " .. update_get_loc(e_loc.upp_msl),
         },
         [e_game_object_type.attachment_turret_droid] = {
             name = update_get_loc(e_loc.upp_turret_droid),
             icon16 = atlas_icons.icon_attachment_16_turret_droid,
-            name_short = "GUN DROID",
+            name_short = "DUAL 30MM",
         },
         [e_game_object_type.attachment_deployable_droid] = {
             name = update_get_loc(e_loc.upp_deployable_droid),
             icon16 = atlas_icons.icon_attachment_16_deployable_droid,
-            name_short = "DEP DROID",
+            name_short = "DROID",
         },
     }
 

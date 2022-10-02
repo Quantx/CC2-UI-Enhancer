@@ -2875,6 +2875,9 @@ end
 
 -- Render chassis direction relative to turret
 function render_turret_vehicle_direction(screen_w, screen_h, vehicle, turret, col)
+    local def = vehicle:get_definition_index()
+    if def == e_game_object_type.chassis_land_turret then return nil end
+    
     local attachment_icon_region, attachment_16_icon_region = get_attachment_icons(turret:get_definition_index())
 --  local icon_w, icon_h = update_ui_get_image_size(attachment_icon_region)
 
