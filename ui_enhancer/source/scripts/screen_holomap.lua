@@ -850,8 +850,8 @@ function update(screen_w, screen_h, ticks)
 
             local cy = label_h / 2 - 4
 
-            local color_sun = color8( 255, 255, 0, 255 )
-            local color_moon = color8( 0, 0, 255, 255 )
+            local color_sun = color8( 255, 255, 5, 255 )
+            local color_moon = color8( 5, 5, 255, 255 )
 
             update_ui_image(timeline_pos + timeline_w,     cy, atlas_icons.map_icon_surface, color_moon, 0)
             update_ui_image(timeline_pos + timeline_w / 2, cy, atlas_icons.map_icon_surface, color_sun,  0)
