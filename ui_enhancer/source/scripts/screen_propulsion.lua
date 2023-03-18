@@ -4,6 +4,7 @@ g_flight_deck_states = {
     queued = 2,
     landing = 3,
     launch = 4,
+    holding = 5,
 }
 
 g_flight_deck_color = {
