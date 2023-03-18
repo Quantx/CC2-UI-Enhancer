@@ -11,7 +11,8 @@ g_flight_deck_color = {
     [g_flight_deck_states.taxi] = color_grey_mid,
     [g_flight_deck_states.queued] = color8(205, 8, 246, 255),
     [g_flight_deck_states.landing] = color8(205, 8, 8, 255),
-    [g_flight_deck_states.launch] = color_status_dark_green
+    [g_flight_deck_states.launch] = color_status_dark_green,
+    [g_flight_deck_states.holding] = color_status_bad
 }
 
 g_flight_deck_state = g_flight_deck_states.none
@@ -121,7 +122,8 @@ function update(screen_w, screen_h, ticks)
         [g_flight_deck_states.taxi] = update_get_loc(e_loc.upp_air_traffic_taxi),
         [g_flight_deck_states.queued] = update_get_loc(e_loc.upp_air_traffic_queued),
         [g_flight_deck_states.landing] = update_get_loc(e_loc.upp_air_traffic_landing),
-        [g_flight_deck_states.launch] = update_get_loc(e_loc.upp_air_traffic_launch)
+        [g_flight_deck_states.launch] = update_get_loc(e_loc.upp_air_traffic_launch),
+        [g_flight_deck_states.holding] = update_get_loc(e_loc.upp_air_traffic_holding)
     }
 
     if g_flight_deck_state == g_flight_deck_states.landing or g_flight_deck_state == g_flight_deck_states.launch then
@@ -237,6 +239,8 @@ function render_docking_queue_info(x, y, this_vehicle)
 
                 if dock_state == e_vehicle_dock_state.undocking then
                     deck_state = g_flight_deck_states.launch
+                elseif dock_state == e_vehicle_dock_state.undock_holding then
+                    deck_state = g_flight_deck_states.holding
                 elseif dock_state == e_vehicle_dock_state.docking then
                     deck_state = g_flight_deck_states.landing
                 elseif dock_state == e_vehicle_dock_state.docking_taxi then
@@ -244,7 +248,7 @@ function render_docking_queue_info(x, y, this_vehicle)
                 elseif dock_state == e_vehicle_dock_state.dock_queue then
                     deck_state = g_flight_deck_states.queued
                 end
-                
+
                 if deck_state > g_flight_deck_states.none then
                     local pos_rel = update_get_map_vehicle_position_relate_to_parent_vehicle(this_vehicle:get_id(), vehicle:get_id())
                     local pos_x = pos_rel:x() * 0.5
@@ -263,7 +267,10 @@ function render_docking_queue_info(x, y, this_vehicle)
                     
                         local _, vehicle_icon = get_chassis_data_by_definition_index(def)
                         local col = mult_alpha(g_flight_deck_color[deck_state], iff(pos_rel:y() > 16, 1, 0.25))
-                        update_ui_image_rot(pos_x, pos_y, vehicle_icon, col, round_to(-(vehicle_ang - carrier_ang), math.pi / 8))
+
+                        if deck_state ~= g_flight_deck_states.holding or is_blink_on then
+                            update_ui_image_rot(pos_x, pos_y, vehicle_icon, col, round_to(-(vehicle_ang - carrier_ang), math.pi / 8))
+                        end
                     end
                     
                     g_flight_deck_state = math.max(deck_state, g_flight_deck_state)

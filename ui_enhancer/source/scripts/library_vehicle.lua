@@ -335,6 +335,11 @@ function get_attachment_data_by_definition_index(index)
             icon16 = atlas_icons.icon_attachment_16_deployable_droid,
             name_short = "DROID",
         },
+        [e_game_object_type.attachment_turret_gimbal_30mm] = {
+            name = update_get_loc(e_loc.upp_30mm_gimbal),
+            icon16 = atlas_icons.icon_attachment_16_turret_gimbal,
+            name_short = update_get_loc(e_loc.upp_gun) .. " 30MM",
+        },
     }
 
     return attachment_data[index] or attachment_data[-1]

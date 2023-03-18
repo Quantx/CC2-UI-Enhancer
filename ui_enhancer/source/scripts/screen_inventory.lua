@@ -676,6 +676,12 @@ function get_destination_data(destination_id, destination_type)
         if vehicle:get() then
             if is_vehicle_carrier(vehicle) then
                 local vehicle_name = get_chassis_data_by_definition_index(vehicle:get_definition_index())
+                local special_id = vehicle:get_special_id()
+
+                if special_id ~= 0 then
+                    vehicle_name = vehicle_name .. " (" .. special_id .. ")"
+                end
+                
                 return vehicle_name, g_map_colors.carrier, atlas_icons.icon_chassis_16_carrier
             end
         end
@@ -727,7 +733,7 @@ function tab_map_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_ve
         focus_world()
     end
 
-    update_map_cursor_state(screen_w, screen_h)
+    update_map_cursor_state(x, y, w, h)
     
     if is_tab_active and g_tab_map.is_overlay == false then    
         if g_is_mouse_mode == false or g_tab_map.is_drag_pan_map == false then
@@ -742,7 +748,12 @@ function tab_map_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_ve
         if g_tab_map.is_overlay == false then
             g_tab_map.camera_pos_x = g_tab_map.camera_pos_x + (g_input_axis.x * g_tab_map.camera_size * 0.01)
             g_tab_map.camera_pos_y = g_tab_map.camera_pos_y + (g_input_axis.y * g_tab_map.camera_size * 0.01)
-            input_map_zoom_camera(1 - (g_input_axis.w * 0.1))
+            
+            if update_get_active_input_type() == e_active_input.keyboard then
+                input_map_zoom_camera(1 - (g_input_axis.w * 0.1), screen_w, screen_h, x + w / 2, y + h / 2)
+            else
+                input_map_zoom_camera(1 - (g_input_axis.w * 0.1), screen_w, screen_h)
+            end
         end
 
         if g_is_mouse_mode then
@@ -1503,6 +1514,16 @@ function render_node_tooltip(w, h, id, type)
     local name, color = get_node_data(id, type)
 
     if type == g_node_types.carrier then
+        local carrier = update_get_map_vehicle_by_id(id)
+
+        if carrier:get() then
+            local special_id = carrier:get_special_id() 
+
+            if special_id ~= 0 then
+                name = name .. " (" .. special_id .. ")"
+            end
+        end
+    
         update_ui_image(2, h / 2 - 8, atlas_icons.icon_chassis_16_carrier, color, 0)
         update_ui_text(18, h / 2 - 4, name, 200, 0, color_white, 0)
     elseif type == g_node_types.barge then
@@ -1621,22 +1642,32 @@ function get_tile_blueprint_unlocks(tile)
     return unlocks
 end
 
-function update_map_cursor_state(screen_w, screen_h)
+function update_map_cursor_state(x, y, w, h)
     if update_get_is_focus_local() == false then return end
     
     if update_get_active_input_type() == e_active_input.keyboard then
         g_tab_map.cursor_pos_x = g_pointer_pos_x
         g_tab_map.cursor_pos_y = g_pointer_pos_y
     else
-        g_tab_map.cursor_pos_x = screen_w / 2
-        g_tab_map.cursor_pos_y = screen_h / 2
+        g_tab_map.cursor_pos_x = x + w / 2
+        g_tab_map.cursor_pos_y = y + h / 2
     end
 end
 
-function input_map_zoom_camera(factor)
+function input_map_zoom_camera(factor, screen_w, screen_h, zoom_x, zoom_y)
+    local cursor_x = zoom_x or g_tab_map.cursor_pos_x
+    local cursor_y = zoom_y or g_tab_map.cursor_pos_y
+    local cursor_prev_x, cursor_prev_y = get_world_from_screen(cursor_x, cursor_y, g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
+
     g_tab_map.camera_size = g_tab_map.camera_size * factor
     g_tab_map.camera_size = math.min(g_tab_map.camera_size, g_tab_map.camera_size_max)
     g_tab_map.camera_size = math.max(g_tab_map.camera_size, g_tab_map.camera_size_min)
+
+    local cursor_next_x, cursor_next_y = get_world_from_screen(cursor_x, cursor_y, g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
+    local dx = cursor_next_x - cursor_prev_x
+    local dy = cursor_next_y - cursor_prev_y
+    g_tab_map.camera_pos_x = g_tab_map.camera_pos_x - dx
+    g_tab_map.camera_pos_y = g_tab_map.camera_pos_y - dy
 end
 
 function update_map_hovered(screen_w, screen_h)
@@ -1869,7 +1900,7 @@ end
 
 function tab_map_input_scroll(dy)
     if g_is_pointer_hovered and g_tab_map.is_overlay == false then
-		input_map_zoom_camera(1 - dy * 0.15)
+		input_map_zoom_camera(1 - dy * 0.15, g_screen_w, g_screen_h)
     end
 
     g_ui:input_scroll(dy)

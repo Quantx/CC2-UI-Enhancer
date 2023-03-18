@@ -10,11 +10,23 @@ end
 
 function update(screen_w, screen_h, ticks) 
     if update_screen_overrides(screen_w, screen_h, ticks)  then return end
+    local screen_vehicle_id = update_get_screen_vehicle():get_id()
 
     local ui = g_ui
     ui:begin_ui()
 
-    local log_count = update_get_delivery_log_count()
+    local logs = {}
+
+    for i = 0, update_get_delivery_log_count() - 1 do
+        local log_time, modified_tick, log = update_get_delivery_log(i)
+
+        if log:get_carrier_id() == screen_vehicle_id  then
+            table.insert(logs, { log_time, modified_tick, log })
+        end
+    end
+
+    local log_count = #logs
+    
     ui.window_col_active = iff(g_last_read_index < log_count, pulse(0.25, color_status_ok, color_grey_dark), color_white)
 
     local window = ui:begin_window(update_get_loc(e_loc.upp_barge_delivery_log), 10, 10, screen_w - 20, screen_h - 35, atlas_icons.column_pending, true, 0, false)
@@ -45,7 +57,7 @@ function update(screen_w, screen_h, ticks)
             update_ui_text(0, window.cy, "---", region_w, 1, color_grey_dark, 0)
         else
             for i = log_count - 1 - view_start, math.max(log_count - view_end, 0), -1 do
-                local log_time, modified_tick, log = update_get_delivery_log(i)
+                local log_time, modified_tick, log = table.unpack(logs[i + 1])
                 
                 if update_get_is_focus_local() then
                     g_last_read_index = math.max(i + 1, g_last_read_index)

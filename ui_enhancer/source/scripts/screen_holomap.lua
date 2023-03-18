@@ -131,6 +131,8 @@ function begin()
 end
 
 function update(screen_w, screen_h, ticks) 
+    g_screen_w = screen_w
+    g_screen_h = screen_h
     g_is_mouse_mode = update_get_active_input_type() == e_active_input.keyboard
     g_animation_time = g_animation_time + ticks
 
@@ -988,7 +990,12 @@ function input_axis(x, y, z, w)
     if not g_override and not update_get_is_notification_holomap_set() then
         g_map_x = g_map_x + x * g_map_size * 0.02
         g_map_z = g_map_z + y * g_map_size * 0.02
-        map_zoom(1.0 - w * 0.1)
+
+        if update_get_active_input_type() == e_active_input.keyboard then
+            map_zoom(1.0 - w * 0.1, g_screen_w, g_screen_h, g_screen_w / 2, g_screen_h / 2)
+        else
+            map_zoom(1.0 - w * 0.1, g_screen_w, g_screen_h)
+        end
     end
 end
 
@@ -1008,7 +1015,7 @@ function input_scroll(dy)
     
     if update_get_is_notification_holomap_set() == false then
         if g_is_mouse_mode then
-            map_zoom(1 - dy * 0.15)
+            map_zoom(1 - dy * 0.15, g_screen_w, g_screen_h)
         end
     end
 end
@@ -1017,9 +1024,19 @@ function on_set_focus_mode(mode)
     g_focus_mode = mode
 end
 
-function map_zoom(amount)
+function map_zoom(amount, screen_w, screen_h, zoom_x, zoom_y)
+    local cursor_x = zoom_x or g_cursor_pos_next_x
+    local cursor_y = zoom_y or g_cursor_pos_next_y
+    local cursor_prev_x, cursor_prev_y = get_world_from_screen(cursor_x, cursor_y, g_map_x + g_map_x_offset, g_map_z + g_map_z_offset, g_map_size + g_map_size_offset, screen_w, screen_h, 2.6 / 1.6)
+
     g_map_size = g_map_size * amount
     g_map_size = math.max(500, math.min(g_map_size, 200000))
+
+    local cursor_next_x, cursor_next_y = get_world_from_screen(cursor_x, cursor_y, g_map_x + g_map_x_offset, g_map_z + g_map_z_offset, g_map_size + g_map_size_offset, screen_w, screen_h, 2.6 / 1.6)
+    local dx = cursor_next_x - cursor_prev_x
+    local dy = cursor_next_y - cursor_prev_y
+    g_map_x = g_map_x - dx
+    g_map_z = g_map_z - dy
 end
 
 function render_notification_display(screen_w, screen_h, notification)
