@@ -78,6 +78,9 @@ g_is_ruler_set = false
 g_ruler_x = 0
 g_ruler_y = 0
 
+g_screen_w = 0
+g_screen_h = 0
+
 g_highlighted_waypoint_id = 0
 g_highlighted_vehicle_id = 0
 g_selection_vehicle_id = 0
@@ -1025,14 +1028,14 @@ function on_set_focus_mode(mode)
 end
 
 function map_zoom(amount, screen_w, screen_h, zoom_x, zoom_y)
-    local cursor_x = zoom_x or g_cursor_pos_next_x
-    local cursor_y = zoom_y or g_cursor_pos_next_y
-    local cursor_prev_x, cursor_prev_y = get_world_from_screen(cursor_x, cursor_y, g_map_x + g_map_x_offset, g_map_z + g_map_z_offset, g_map_size + g_map_size_offset, screen_w, screen_h, 2.6 / 1.6)
+    local cursor_x = zoom_x or g_pointer_pos_x
+    local cursor_y = zoom_y or g_pointer_pos_y
+    local cursor_prev_x, cursor_prev_y = get_world_from_holomap(cursor_x, cursor_y, screen_w, screen_h)
 
     g_map_size = g_map_size * amount
     g_map_size = math.max(500, math.min(g_map_size, 200000))
 
-    local cursor_next_x, cursor_next_y = get_world_from_screen(cursor_x, cursor_y, g_map_x + g_map_x_offset, g_map_z + g_map_z_offset, g_map_size + g_map_size_offset, screen_w, screen_h, 2.6 / 1.6)
+    local cursor_next_x, cursor_next_y = get_world_from_holomap(cursor_x, cursor_y, screen_w, screen_h)
     local dx = cursor_next_x - cursor_prev_x
     local dy = cursor_next_y - cursor_prev_y
     g_map_x = g_map_x - dx
