@@ -562,17 +562,27 @@ g_chat = {
 	open_time = 0,
 	ui = nil,
 	keyboard_state = 0,
+	is_team_chat = false,
+	is_ignore_enter = false,
+	is_ignore_change_mode = false,
+	is_ignore_next_char = false,
 
-	open = function(self)
+	open = function(self, is_team_chat)
 		self.is_chat_box = true
 		self.open_time = update_get_time_ms()
 		self.text = ""
+		self.is_team_chat = is_team_chat
 	end,
 
 	close = function(self)
 		self.is_chat_box = false
 		self.text_input_mode_cooldown = 2
-		update_ui_event("chat", self.text)
+
+		if self.is_team_chat then
+			update_ui_event("chat_team", self.text)
+		else
+			update_ui_event("chat", self.text)
+		end
 	end,
 }
 
@@ -584,6 +594,7 @@ g_voice_anim_factor = 0
 g_time_since_voice = 5000
 g_screen_border = 5
 g_animation_time = 0
+g_color_text_team = color_friendly
 
 g_back_width = 0
 g_back_height = 0
@@ -749,14 +760,24 @@ function input_event(event, action)
 	g_chat.ui:input_event(event, action)
 
 	if event == e_input.chat and action == e_input_action.press then
-		g_chat.is_ignore_enter = true
-
 		if g_chat.is_chat_box then
 			g_chat:close()
-		else
-			if get_is_chat_box_available() then
-				g_chat:open()
-			end
+		elseif get_is_chat_box_available() then
+			g_chat.is_ignore_enter = true
+			g_chat.is_ignore_next_char = true
+			g_chat:open(false)
+		end
+	elseif event == e_input.chat_team and action == e_input_action.press then
+		if g_chat.is_chat_box == false and get_is_chat_box_available() then
+			g_chat.is_ignore_enter = true
+			g_chat.is_ignore_next_char = true
+			g_chat.is_ignore_change_mode = true
+			g_chat:open(true)
+		end
+	elseif event == e_input.chat_cycle_mode and action == e_input_action.press then
+		if g_chat.is_chat_box and g_chat.is_ignore_change_mode == false then
+			g_chat.is_ignore_next_char = true
+			g_chat.is_team_chat = not g_chat.is_team_chat
 		end
 	elseif event == e_input.text_enter and action == e_input_action.press then
 		if g_chat.is_ignore_enter == false then
@@ -794,7 +815,7 @@ function input_axis(x, y, z, w)
 end
 
 function input_text(text)
-	if g_chat.is_chat_box then
+	if g_chat.is_chat_box and g_chat.is_ignore_next_char == false then
 		g_chat.text = g_chat.text .. text
 		g_chat.text = clamp_str(g_chat.text, 128)
 		g_chat.text_blink_time = 0
@@ -932,22 +953,44 @@ function get_input_icons(game_input, special_input)
 
 		if icon_data ~= nil then
 			if #icon_datas > 0 then
-				if special_input == e_ui_interaction_special.map_drag and update_get_active_input_type() == e_active_input.gamepad then
-					table.insert(icon_datas, { delim = "+"} )
-				elseif v.input == e_game_input.select_attachment_9 and display_input_prev.input == e_game_input.select_attachment_1 then
-					table.insert(icon_datas, { delim = "-"} )
-				else
-					table.insert(icon_datas, { delim = "/" })
-				end
-			end
+				local merged_icon = merge_icon_data(icon_datas[#icon_datas], icon_data)
 
-			table.insert(icon_datas, icon_data)
+				if merged_icon ~= nil then
+					icon_datas[#icon_datas] = merged_icon
+				else
+					if special_input == e_ui_interaction_special.map_drag and update_get_active_input_type() == e_active_input.gamepad then
+						table.insert(icon_datas, { delim = "+"} )
+					elseif v.input == e_game_input.select_attachment_9 and display_input_prev.input == e_game_input.select_attachment_1 then
+						table.insert(icon_datas, { delim = "-"} )
+					else
+						table.insert(icon_datas, { delim = "/" })
+					end
+					
+					table.insert(icon_datas, icon_data)
+				end
+			else
+				table.insert(icon_datas, icon_data)
+			end
 		end
 
 		display_input_prev = v
 	end
 
 	return icon_datas
+end
+
+function merge_icon_data(icon_prev, icon_next)
+	if icon_prev.icon == atlas_icons.gamepad_icon_special_ls_ud and icon_next.icon == atlas_icons.gamepad_icon_special_ls_lr then
+		return { icon=atlas_icons.gamepad_icon_ls, icon_col=icon_prev.icon_col }
+	elseif icon_prev.icon == atlas_icons.gamepad_icon_special_ls_lr and icon_next.icon == atlas_icons.gamepad_icon_special_ls_ud then
+		return { icon=atlas_icons.gamepad_icon_ls, icon_col=icon_prev.icon_col }
+	elseif icon_prev.icon == atlas_icons.gamepad_icon_special_rs_ud and icon_next.icon == atlas_icons.gamepad_icon_special_rs_lr then
+		return { icon=atlas_icons.gamepad_icon_rs, icon_col=icon_prev.icon_col }
+	elseif icon_prev.icon == atlas_icons.gamepad_icon_special_rs_lr and icon_next.icon == atlas_icons.gamepad_icon_special_rs_ud then
+		return { icon=atlas_icons.gamepad_icon_rs, icon_col=icon_prev.icon_col }
+	end
+
+	return nil
 end
 
 function get_special_input_icon(special_input)
@@ -958,17 +1001,8 @@ function get_special_input_icon(special_input)
 		[e_ui_interaction_special.gamepad_dpad_all] = { icon = atlas_icons.gamepad_icon_special_dpad_all },
 		[e_ui_interaction_special.gamepad_dpad_ud] = { icon = atlas_icons.gamepad_icon_special_dpad_ud },
 		[e_ui_interaction_special.gamepad_dpad_lr] = { icon = atlas_icons.gamepad_icon_special_dpad_lr },
-		[e_ui_interaction_special.map_pan] = { icon = atlas_icons.gamepad_icon_special_ls },
-		[e_ui_interaction_special.map_zoom] = { icon = atlas_icons.gamepad_icon_special_rs_ud },
 		[e_ui_interaction_special.info] = { icon = atlas_icons.column_pending, icon_col = color_empty, icon_w = -5, text_col = color_info },
 		[e_ui_interaction_special.info_desc] = { icon = atlas_icons.column_pending, icon_col = color_empty, icon_w = -5, text_col = color_info_desc },
-		[e_ui_interaction_special.air_yaw] = { icon = atlas_icons.gamepad_icon_special_rs_lr },
-		[e_ui_interaction_special.air_pitch] = { icon = atlas_icons.gamepad_icon_special_ls_ud },
-		[e_ui_interaction_special.air_roll] = { icon = atlas_icons.gamepad_icon_special_ls_lr },
-		[e_ui_interaction_special.air_throttle] = { icon = atlas_icons.gamepad_icon_special_rs_ud },
-		[e_ui_interaction_special.vehicle_zoom] = { icon = atlas_icons.gamepad_icon_special_ls_ud },
-		[e_ui_interaction_special.land_steer] = { icon = atlas_icons.gamepad_icon_special_ls_lr },
-		[e_ui_interaction_special.land_throttle] = { icon = atlas_icons.gamepad_icon_special_ls_ud },
 		[e_ui_interaction_special.gamepad_scroll] = { icon = atlas_icons.gamepad_icon_special_rs_ud },
 		[e_ui_interaction_special.cancel_rebind] = { icon = atlas_icons.gamepad_icon_start },
 		[e_ui_interaction_special.map_drag] = { icon = atlas_icons.gamepad_icon_special_ls },
@@ -1002,13 +1036,19 @@ end
 
 function get_game_input_icon(game_input)
 	if update_get_active_input_type() == e_active_input.gamepad then
-		local button, axis = get_bindings_gamepad(game_input)
+		local button, axis, joy_button, joy_axis = get_bindings_gamepad(game_input)
 
 		if button ~= -1 then
 			local icon, icon_col = get_gamepad_button_icon(button)
 			return { icon = icon, icon_col = icon_col }
 		elseif axis ~= -1 then
 			local icon, icon_col = get_gamepad_axis_icon(axis)
+			return { icon = icon, icon_col = icon_col }
+		elseif joy_button ~= -1 then
+			local icon, icon_col = get_joystick_button_icon(joy_button)
+			return { icon = icon, icon_col = icon_col }
+		elseif joy_axis ~= -1 then
+			local icon, icon_col = get_joystick_axis_icon(joy_axis)
 			return { icon = icon, icon_col = icon_col }
 		end
 	else
@@ -1039,6 +1079,24 @@ function get_display_inputs(game_input, special_input)
 			return { { input = e_game_input.interact_a } }
 		elseif special_input == e_ui_interaction_special.chat then
 			return { { input = e_game_input.chat }, { input = e_game_input.back } }
+		elseif special_input == e_ui_interaction_special.map_pan then
+			return { { input = e_game_input.axis_move_x }, { input = e_game_input.axis_move_y } }
+		elseif special_input == e_ui_interaction_special.map_zoom then
+			return { { input = e_game_input.axis_look_y } }
+		elseif special_input == e_ui_interaction_special.air_yaw then
+			return { { input = e_game_input.axis_vehicle_air_yaw } }
+		elseif special_input == e_ui_interaction_special.air_pitch then
+			return { { input = e_game_input.axis_vehicle_air_pitch } }
+		elseif special_input == e_ui_interaction_special.air_roll then
+			return { { input = e_game_input.axis_vehicle_air_roll } }
+		elseif special_input == e_ui_interaction_special.air_throttle then
+			return { { input = e_game_input.axis_vehicle_air_throttle } }
+		elseif special_input == e_ui_interaction_special.land_steer then
+			return { { input = e_game_input.axis_vehicle_ground_steer } }
+		elseif special_input == e_ui_interaction_special.land_throttle then
+			return { { input = e_game_input.axis_vehicle_ground_throttle } }
+		elseif special_input == e_ui_interaction_special.vehicle_zoom then
+			return { { input = e_game_input.axis_vehicle_air_pitch } }
 		end
 	else
 		local mouse_flight_mode = update_get_mouse_flight_mode()
@@ -1203,11 +1261,11 @@ function update_chat(delta_time)
 		update_add_ui_interaction_special(update_get_loc(e_loc.interaction_confirm), e_ui_interaction_special.chat)
 
 		if update_get_active_input_type() == e_active_input.gamepad then
-			update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_all)
 			update_add_ui_interaction(update_get_loc(e_loc.input_text_shift), e_game_input.text_shift)
 			update_add_ui_interaction(update_get_loc(e_loc.input_backspace), e_game_input.text_backspace)
 			update_add_ui_interaction(update_get_loc(e_loc.input_text_space), e_game_input.text_space)
 			update_add_ui_interaction(update_get_loc(e_loc.interaction_select), e_game_input.interact_a)
+			update_add_ui_interaction(update_get_loc(iff(g_chat.is_team_chat, e_loc.chat_global, e_loc.chat_team)), e_game_input.chat_cycle_mode)
 		end
 
 		if g_chat.is_backspace then
@@ -1225,6 +1283,8 @@ function update_chat(delta_time)
 	update_set_is_text_input_mode(g_chat.is_chat_box or g_chat.text_input_mode_cooldown > 0)
 
 	g_chat.is_ignore_enter = false
+	g_chat.is_ignore_change_mode = false
+	g_chat.is_ignore_next_char = false
 end
 
 function render_chat(screen_w, screen_h, delta_time)
@@ -1272,14 +1332,17 @@ function render_chat(screen_w, screen_h, delta_time)
 			if cy + text_h < border then break end
 	
 			local text_col = color_white
+			local sender_col = color_grey_mid
 
 			if msg.type == e_chat_message_type.server_notification then
 				text_col = color_grey_mid
+			elseif msg.type == e_chat_message_type.player_team then
+				sender_col = g_color_text_team
 			end
 
 			update_ui_push_clip(border, cy, sender_w, 10)
 			update_ui_text(border + 1, cy + 1, msg.sender, 1000, 0, color_black, 0)
-			update_ui_text(border, cy, msg.sender, 1000, 0, color_grey_mid, 0)
+			update_ui_text(border, cy, msg.sender, 1000, 0, sender_col, 0)
 			update_ui_pop_clip()
 	
 			update_ui_text(border * 2 + sender_w + 1, cy + 1, msg.message, msg_w, 0, color_black, 0)
@@ -1291,8 +1354,22 @@ function render_chat(screen_w, screen_h, delta_time)
 	update_ui_pop_clip()
 
 	if g_chat.is_chat_box then
+		if math.floor(g_chat.text_blink_time) % 500 < 250 then
+			update_ui_set_text_color(1, iff(#g_chat.text >= 128, color_status_bad, color_white))
+		else
+			update_ui_set_text_color(1, color_empty)
+		end
+		
+		local render_text = "$[0]" .. g_chat.text .. "$[1]|"
+		update_ui_set_text_color(0, color_white)
+
+		if g_chat.is_team_chat then
+			update_ui_set_text_color(2, g_color_text_team)
+			render_text = "$[2]" .. update_get_loc(e_loc.chat_team) .. "> " .. render_text
+		end
+
 		local text_w = chat_w - 2 * border
-		local _, text_h = update_ui_get_text_size(g_chat.text .. "|", text_w, 0)
+		local _, text_h = update_ui_get_text_size(render_text .. "|", text_w, 0)
 		local text_factor = clamp((update_get_time_ms() - g_chat.open_time) / 100, 0, 1)
 	
 		update_ui_push_offset(0, chat_h)
@@ -1300,13 +1377,6 @@ function render_chat(screen_w, screen_h, delta_time)
 
 		update_ui_rectangle(0, 0, chat_w, text_h + 4, color_black)
 
-		if math.floor(g_chat.text_blink_time) % 500 < 250 then
-			update_ui_set_text_color(1, iff(#g_chat.text >= 128, color_status_bad, color_white))
-		else
-			update_ui_set_text_color(1, color_empty)
-		end
-		
-		local render_text = g_chat.text .. "$[1]|"
 		update_ui_text(border, 2, render_text, text_w, 0, color_white, 0)
 
 		if update_get_active_input_type() == e_active_input.gamepad then
@@ -1780,7 +1850,7 @@ function get_text_lines(str)
 end
 
 function get_bindings_gamepad(game_input)
-	return update_get_input_binding_gamepad_button(game_input), update_get_input_binding_gamepad_axis(game_input)
+	return update_get_input_binding_gamepad_button(game_input), update_get_input_binding_gamepad_axis(game_input), update_get_input_binding_joystick_button(game_input), update_get_input_binding_joystick_axis(game_input)
 end
 
 function get_bindings_keyboard(game_input)

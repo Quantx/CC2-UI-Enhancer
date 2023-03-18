@@ -6,13 +6,18 @@ g_tab_map = {
     input_pointer = nil,
     input_scroll = nil,
     is_overlay = false,
-
+    highlighted_carrier_id = 0,
+    selected_carrier_id = 0,
+    
     is_map_pos_initialised = false,
     camera_pos_x = 81438,
     camera_pos_y = 91753,
     camera_size = 256 * 1024,
     camera_size_min = 1024,
     camera_size_max = 256 * 1024,
+    cursor_pos_x = 0,
+    cursor_pos_y = 0,
+    ui_container = nil,
 }
 
 g_tab_game = {
@@ -138,6 +143,7 @@ function begin()
     g_tab_map.input_pointer = tab_map_input_pointer
     g_tab_map.input_scroll = tab_map_input_scroll
     g_tab_map.tab_title = update_get_loc(e_loc.upp_map)
+    g_tab_map.ui_container = lib_imgui:create_ui()
 
     g_tab_game.render = tab_game_render
     g_tab_game.begin = tab_game_begin
@@ -287,6 +293,10 @@ function update_interaction_ui()
         if g_active_tab == g_tabs.map then
             update_add_ui_interaction_special(update_get_loc(e_loc.interaction_pan), e_ui_interaction_special.map_pan)
             update_add_ui_interaction_special(update_get_loc(e_loc.interaction_zoom), e_ui_interaction_special.map_zoom)
+
+            if g_tab_map.highlighted_carrier_id ~= 0 then
+			    update_add_ui_interaction(update_get_loc(e_loc.interaction_select), e_game_input.interact_a)
+            end
         end
     end
 end
@@ -404,6 +414,8 @@ function on_close_pause_menu()
     g_tab_game.screen_index = 0
     g_tab_game.confirm_save_slot = nil
     g_tab_game.confirm_load_slot = nil
+    g_is_pointer_pressed = false
+    g_tab_map.selected_carrier_id = 0
 end
 
 
@@ -414,6 +426,7 @@ end
 --------------------------------------------------------------------------------
 
 function tab_map_render(screen_w, screen_h, x, y, w, h, delta_time, is_active)
+    local ui = g_tab_map.ui_container
     update_set_screen_background_type(1)
 
     if g_tab_map.is_map_pos_initialised == false then
@@ -421,15 +434,28 @@ function tab_map_render(screen_w, screen_h, x, y, w, h, delta_time, is_active)
         focus_world()
     end
 
-    if is_active then
+    if update_get_active_input_type() == e_active_input.keyboard then
+        g_tab_map.cursor_pos_x = g_pointer_pos_x
+        g_tab_map.cursor_pos_y = g_pointer_pos_y
+    else
+        g_tab_map.cursor_pos_x = x + w / 2
+        g_tab_map.cursor_pos_y = y + h / 2
+    end
+
+    if is_active and g_tab_map.is_overlay == false then
         local speed_multiplier = delta_time / 30
 
         g_tab_map.camera_pos_x = g_tab_map.camera_pos_x + g_input_axis.x * g_tab_map.camera_size * 0.01 * speed_multiplier
         g_tab_map.camera_pos_y = g_tab_map.camera_pos_y + g_input_axis.y * g_tab_map.camera_size * 0.01 * speed_multiplier
-        tab_map_zoom(1 - (g_input_axis.w * 0.1 * speed_multiplier))
+
+        if update_get_active_input_type() == e_active_input.keyboard then
+            tab_map_zoom(1 - (g_input_axis.w * 0.1 * speed_multiplier), screen_w, screen_h, x + w / 2, y + h / 2)
+        else
+            tab_map_zoom(1 - (g_input_axis.w * 0.1 * speed_multiplier), screen_w, screen_h)
+        end
         
         if g_is_mouse_mode then
-            tab_map_zoom(1 - g_pointer_scroll * 0.15)
+            tab_map_zoom(1 - g_pointer_scroll * 0.15, screen_w, screen_h)
         end
 
         if update_get_active_input_type() == e_active_input.keyboard and g_is_pointer_pressed then
@@ -468,29 +494,79 @@ function tab_map_render(screen_w, screen_h, x, y, w, h, delta_time, is_active)
         end
     end
 
-    -- render vehicles
+    local function filter_highlight_vehicles(v)
+        local def = v:get_definition_index()
+        return def == e_game_object_type.chassis_carrier and v:get_team_id() == update_get_local_team_id()
+    end
+
+    -- update highlighted carrier
+
+    g_tab_map.highlighted_carrier_id = 0
+    local highlighted_carrier = nil
+
+    if g_tab_map.is_overlay == false and is_active then
+        if g_is_mouse_mode == false or g_is_pointer_pressed == false then
+            local highlighted_distance_best = 10
+
+            for _, vehicle in iter_vehicles(filter_highlight_vehicles) do
+                local vehicle_pos_xz = vehicle:get_position()
+                local screen_pos_x, screen_pos_y = world_to_screen(vehicle_pos_xz:x(), vehicle_pos_xz:z())
+                local vehicle_distance_to_cursor = math.abs(screen_pos_x - g_tab_map.cursor_pos_x) + math.abs(screen_pos_y - g_tab_map.cursor_pos_y)
+
+                if vehicle_distance_to_cursor < highlighted_distance_best and vehicle_distance_to_cursor < 8 then
+                    g_tab_map.highlighted_carrier_id = vehicle:get_id()
+                    highlighted_distance_best = vehicle_distance_to_cursor
+                    highlighted_carrier = vehicle
+                end
+            end
+        end
+    end
 
     local function filter_vehicles(v)
         local def = v:get_definition_index()
-        return v:get_is_docked() == false and def ~= e_game_object_type.drydock and def ~= e_game_object_type.chassis_spaceship and v:get_is_observation_revealed()
+        return (v:get_is_docked() == false or def == e_game_object_type.chassis_carrier) and def ~= e_game_object_type.drydock and def ~= e_game_object_type.chassis_spaceship and v:get_is_observation_revealed()
     end
+
+    -- render vehicles
+
+    local respawn_carrier_id = update_get_respawn_carrier_id()
 
     for _, vehicle in iter_vehicles(filter_vehicles) do
         local icon_region, icon_offset = get_icon_data_by_definition_index(vehicle:get_definition_index())
         local team_color = update_get_team_color(vehicle:get_team_id())
         local position_xz = vehicle:get_position()
         local screen_x, screen_y = world_to_screen(position_xz:x(), position_xz:z())
+        local vehicle_color = iff(vehicle:get_id() == g_tab_map.highlighted_carrier_id, color_white, team_color)
 
         if vehicle:get_is_visible() then
-            update_ui_image(screen_x - icon_offset, screen_y - icon_offset, icon_region, team_color, 0)
+            update_ui_image(screen_x - icon_offset, screen_y - icon_offset, icon_region, vehicle_color, 0)
+
+            if vehicle:get_id() == respawn_carrier_id and g_animation_time % 500.0 > 250.0 then
+                update_ui_rectangle_outline(screen_x - 8, screen_y - 8, 16, 16, vehicle_color)
+            end
         else
             local last_known_position_xz, is_last_known_position_set = vehicle:get_vision_last_known_position_xz()
 
             if is_last_known_position_set then
                 local screen_x, screen_y = world_to_screen(last_known_position_xz:x(), last_known_position_xz:y())
-                update_ui_image(screen_x - 2, screen_y - 2, atlas_icons.map_icon_last_known_pos, team_color, 0)
+                update_ui_image(screen_x - 2, screen_y - 2, atlas_icons.map_icon_last_known_pos, vehicle_color, 0)
             end
         end
+    end
+
+    -- render cursor
+
+    if update_get_active_input_type() == e_active_input.gamepad and is_active then
+        local crosshair_color = color8(255, 255, 255, 255)
+
+        if g_tab_map.highlighted_carrier_id ~= 0 then
+            crosshair_color = color8(0, 0, 0, 255)
+        end
+
+        update_ui_rectangle(g_tab_map.cursor_pos_x, g_tab_map.cursor_pos_y + 2, 1, 4, crosshair_color)
+        update_ui_rectangle(g_tab_map.cursor_pos_x, g_tab_map.cursor_pos_y - 5, 1, 4, crosshair_color)
+        update_ui_rectangle(g_tab_map.cursor_pos_x + 2, g_tab_map.cursor_pos_y, 4, 1, crosshair_color)
+        update_ui_rectangle(g_tab_map.cursor_pos_x - 5, g_tab_map.cursor_pos_y, 4, 1, crosshair_color)
     end
 
     -- render ui
@@ -509,28 +585,105 @@ function tab_map_render(screen_w, screen_h, x, y, w, h, delta_time, is_active)
     end
 
     update_ui_pop_offset()
+
+    if highlighted_carrier ~= nil then
+        local vehicle_definition_index = highlighted_carrier:get_definition_index()
+        local vehicle_definition_name, vehicle_definition_region = get_chassis_data_by_definition_index(vehicle_definition_index)
+        local carrier_name = vehicle_definition_name
+
+        local special_id = highlighted_carrier:get_special_id()
+
+        if special_id ~= 0 then
+            carrier_name = carrier_name .. " (" .. special_id .. ")"
+        end
+
+        local tooltip_w = 18
+        local text_w = update_ui_get_text_size(carrier_name, 200, 0)
+        tooltip_w = tooltip_w + text_w + 2
+        tooltip_w = tooltip_w + 12
+
+        render_tooltip(x + 5, y + 5, w - 10, h - 10, g_tab_map.cursor_pos_x, g_tab_map.cursor_pos_y, tooltip_w, 20, 10, function(w, h)
+            local cx = 2
+            update_ui_image(cx, 1, vehicle_definition_region, color_white, 0)
+            cx = cx + 16
+            update_ui_text(cx, 6, carrier_name, 200, 0, color_white, 0)
+            cx = cx + text_w + 2
+            update_ui_image(cx, 6, atlas_icons.column_transit, color_highlight, 0)
+        end)
+    end
+
+    g_tab_map.is_overlay = false
+    ui:begin_ui(delta_time)
+
+    if g_tab_map.selected_carrier_id ~= 0 then
+        g_tab_map.is_overlay = true
+        update_ui_rectangle(0, 0, screen_w, screen_h, color8(0, 0, 0, 200))
+
+        ui:begin_window_dialog(update_get_loc(e_loc.upp_travel_to_carrier).."##confirm_travel", screen_w / 2, screen_h / 2, w - 100, h - 100, atlas_icons.column_distance, is_active)
+        
+        if ui:button(update_get_loc(e_loc.upp_cancel), true, 1) then
+            g_tab_map.selected_carrier_id = 0
+        end
+
+        if ui:button(update_get_loc(e_loc.upp_confirm), true, 1) then
+            update_ui_event("character_return_to_bridge", g_tab_map.selected_carrier_id)
+            g_tab_map.selected_carrier_id = 0
+            update_exit_pause_menu()
+        end
+
+        ui:end_window()
+    end
+
+    ui:end_ui()
 end
 
-function tab_map_zoom(amount)
+function tab_map_zoom(amount, screen_w, screen_h, zoom_x, zoom_y)
+    local cursor_x = zoom_x or g_tab_map.cursor_pos_x
+    local cursor_y = zoom_y or g_tab_map.cursor_pos_y
+    local cursor_prev_x, cursor_prev_y = get_world_from_screen(cursor_x, cursor_y, g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
+
     g_tab_map.camera_size = g_tab_map.camera_size * amount
     g_tab_map.camera_size = math.min(g_tab_map.camera_size, g_tab_map.camera_size_max)
     g_tab_map.camera_size = math.max(g_tab_map.camera_size, g_tab_map.camera_size_min)
+
+    local cursor_next_x, cursor_next_y = get_world_from_screen(cursor_x, cursor_y, g_tab_map.camera_pos_x, g_tab_map.camera_pos_y, g_tab_map.camera_size, screen_w, screen_h)
+    local dx = cursor_next_x - cursor_prev_x
+    local dy = cursor_next_y - cursor_prev_y
+    g_tab_map.camera_pos_x = g_tab_map.camera_pos_x - dx
+    g_tab_map.camera_pos_y = g_tab_map.camera_pos_y - dy
 end
 
 function tab_map_input_event(event, action)
     if action == e_input_action.press then
-        if event == e_input.back then
-            return true
+        if g_tab_map.selected_carrier_id ~= 0 then
+            if event == e_input.back then
+                g_tab_map.selected_carrier_id = 0
+            else
+                g_tab_map.ui_container:input_event(event, action)
+            end
+        else
+            if event == e_input.back then
+                return true
+            elseif event == e_input.action_a or event == e_input.pointer_1 then
+                if g_tab_map.highlighted_carrier_id ~= 0 then
+                    g_tab_map.selected_carrier_id = g_tab_map.highlighted_carrier_id
+                    g_tab_map.highlighted_carrier_id = 0
+                end
+            end
         end
+    else
+        g_tab_map.ui_container:input_event(event, action)
     end
     
     return false
 end
 
 function tab_map_input_pointer(is_hovered, x, y)
+    g_tab_map.ui_container:input_pointer(is_hovered, x, y)
 end
 
 function tab_map_input_scroll(dy)
+    g_tab_map.ui_container:input_scroll(dy)
 end
 
 function focus_world()
@@ -1345,6 +1498,7 @@ function tab_manual_render(screen_w, screen_h, x, y, w, h, delta_time, is_active
                 { "h", update_get_loc(e_loc.upp_buttons) },
                 { "b", atlas_icons.help_button_grey_small, update_get_loc(e_loc.deploy_s1_s8), update_get_loc(e_loc.manual_vehicle_control_buttons_s), tag="veh_con_button_deploy_land" },
                 { "b", atlas_icons.help_button_grey_small, update_get_loc(e_loc.deploy_a1_a8), update_get_loc(e_loc.manual_vehicle_control_buttons_a), tag="veh_con_button_deploy_air" },
+                { "b", atlas_icons.help_button_red, update_get_loc(e_loc.button_hold_on_deck), update_get_loc(e_loc.manual_vehicle_control_button_hold_air), tag="veh_con_button_hold_air" },
 
                 { "h", update_get_loc(e_loc.upp_map_key) },
                 { "ic16", atlas_icons.map_icon_waypoint, color8(0, 255, 255, 8), update_get_loc(e_loc.vehicle_waypoint) },

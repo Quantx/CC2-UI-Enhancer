@@ -111,7 +111,9 @@ e_game_object_type = {
 	chassis_deployable_droid_broken = 98,
 	attachment_turret_droid = 99,
 	attachment_deployable_droid = 100,
-    count = 101,
+	attachment_turret_gimbal_30mm = 101,
+
+    count = 102,
 }
 
 e_game_object_attachment_type = {
@@ -1677,8 +1679,34 @@ e_loc = {
 	deploy_droid = 1519,
 	upp_deployable_droid = 1520,
 	droid_retired = 1521,
+	input_chat_team = 1522,
+	input_chat_cycle_mode = 1523,
+	chat_team = 1524,
+	chat_global = 1525,
+	upp_air_traffic_holding = 1526,
+	button_hold_on_deck = 1527,
+	indicator_holding = 1528,
+	turret_gimbal_30mm = 1529,
+	air_vehicle_cannon = 1530,
+	upp_30mm_gimbal = 1531,
+	upp_travel_to_carrier = 1532,
+	carriers_per_human_team = 1533,
+	manual_vehicle_control_button_hold_air = 1534,
+	upp_input_category_player = 1535,
+	upp_input_category_vehicle = 1536,
+	input_axis_vehicle_throttle = 1537,
+	input_axis_vehicle_pitch = 1538,
+	input_axis_vehicle_yaw = 1539,
+	input_axis_vehicle_roll = 1540,
+	input_invert = 1541,
+	upp_vehicle_throttle_mode = 1542,
+	vehicle_throttle_mode_relative = 1543,
+	vehicle_throttle_mode_absolute = 1544,
+	vehicle_throttle_mode_air = 1545,
+	vehicle_throttle_mode_ground = 1546,
+	upp_flight_invert = 1547,
 
-	count = 1522,
+	count = 1548,
 }
 
 e_barge_destination_type = {
@@ -1710,6 +1738,8 @@ e_input = {
 	text_space = 10,
 	chat = 11,
 	text_shift = 12,
+	chat_team = 13,
+	chat_cycle_mode = 14,
 }
 
 e_input_action = {
@@ -1793,8 +1823,16 @@ e_game_input = {
 	text_space = 49,
 	chat = 50,
 	text_shift = 51,
+	chat_team = 52,
+	chat_cycle_mode = 53,
+	axis_vehicle_air_throttle = 54,
+	axis_vehicle_air_pitch = 55,
+	axis_vehicle_air_yaw = 56,
+	axis_vehicle_air_roll = 57,
+	axis_vehicle_ground_throttle = 58,
+	axis_vehicle_ground_steer = 59,
 	
-	count = 52,
+	count = 60,
 }
 
 e_ui_interaction_special = {
@@ -1925,6 +1963,7 @@ e_vehicle_dock_state = {
 	docked = 4,
 	dock_queue = 5,
 	docking_taxi = 6,
+	undock_holding = 7,
 }
 
 e_objective_display_type = {
@@ -1978,6 +2017,7 @@ e_mod_visibility = {
 e_chat_message_type = {
 	player = 0,
 	server_notification = 1,
+	player_team = 2,
 }
 
 e_inventory_item = {
@@ -2040,6 +2080,8 @@ e_inventory_item = {
 	support_turret_ciws = 56,
 	support_turret_missile = 57,
 	vehicle_wheel_mule = 58,
+	deployable_droid = 59,
+	attachment_turret_gimbal_30mm = 60,
 
-	count = 59,
+	count = 61,
 }

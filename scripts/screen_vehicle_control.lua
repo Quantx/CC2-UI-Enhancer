@@ -175,6 +175,8 @@ g_viewing_vehicle_id = 0
 g_is_vehicle_team_colors = false
 g_is_island_team_colors = true
 g_is_render_grid = true
+g_screen_w = 0
+g_screen_h = 0
 
 g_blend_tick = 0
 g_prev_pos_x = 0
@@ -192,7 +194,7 @@ g_input_y = 0
 g_input_z = 0
 g_input_w = 0
 
-g_team_carrier_pos = vec3(0, 0, 0)
+g_screen_vehicle_pos = vec2(0, 0)
 
 g_animation_time = 0
 g_go_code = 0
@@ -815,8 +817,8 @@ function render_selection_map(screen_w, screen_h)
         ui:header(update_get_loc(e_loc.upp_actions))
 
         if ui:list_item(update_get_loc(e_loc.upp_center_to_carrier), true) then
-            g_camera_pos_x = g_team_carrier_pos:x()
-            g_camera_pos_y = g_team_carrier_pos:z()
+            g_camera_pos_x = g_screen_vehicle_pos:x()
+            g_camera_pos_y = g_screen_vehicle_pos:y()
         end
 
         ui:header(update_get_loc(e_loc.upp_orders))
@@ -962,10 +964,13 @@ function begin()
 end
 
 function update(screen_w, screen_h, ticks) 
+    g_screen_w = screen_w
+    g_screen_h = screen_h
     g_is_mouse_mode = g_is_pointer_hovered and update_get_active_input_type() == e_active_input.keyboard
     g_animation_time = g_animation_time + ticks
 
     local screen_vehicle = update_get_screen_vehicle()
+    g_screen_vehicle_pos = screen_vehicle:get_position_xz()
 
     if g_is_camera_pos_initialised == false and screen_vehicle:get() then
         g_is_camera_pos_initialised = true
@@ -1016,7 +1021,12 @@ function update(screen_w, screen_h, ticks)
         if get_is_map_movement_allowed() then
             g_camera_pos_x = g_camera_pos_x + (g_input_x * g_camera_size * 0.01)
             g_camera_pos_y = g_camera_pos_y + (g_input_y * g_camera_size * 0.01)
-            input_zoom_camera(1 - (g_input_w * 0.1))
+
+            if update_get_active_input_type() == e_active_input.keyboard then
+                input_zoom_camera(1 - (g_input_w * 0.1), screen_w, screen_h, screen_w / 2, screen_h / 2)
+            else
+                input_zoom_camera(1 - (g_input_w * 0.1), screen_w, screen_h)
+            end
 
             if update_get_active_input_type() == e_active_input.keyboard and g_is_pointer_pressed then
                 g_drag_distance = g_drag_distance + math.abs(g_pointer_pos_x - g_pointer_pos_x_prev) + math.abs(g_pointer_pos_y - g_pointer_pos_y_prev)
@@ -1044,7 +1054,7 @@ function update(screen_w, screen_h, ticks)
         g_highlighted:clear()
 
         if g_is_mouse_mode == false or g_is_drag_pan_map == false then
-            highlighted_distance_best = 10
+            local highlighted_distance_best = 10
 
             if is_placing_turret then
                 if get_is_collapse_islands() == false then
@@ -1118,12 +1128,6 @@ function update(screen_w, screen_h, ticks)
                         if vehicle_definition_index ~= e_game_object_type.chassis_spaceship and vehicle_definition_index ~= e_game_object_type.drydock then
                             local vehicle_team = vehicle:get_team()
                             local vehicle_attached_parent_id = vehicle:get_attached_parent_id()
-
-                            if vehicle:get_definition_index() == 0 and vehicle_team == update_get_screen_team_id() then -- carrier
-                                local vehicle_pos_xz = vehicle:get_position_xz()
-                                g_team_carrier_pos:x(vehicle_pos_xz:x())
-                                g_team_carrier_pos:z(vehicle_pos_xz:y())
-                            end
 
                             if vehicle_attached_parent_id == 0 and vehicle:get_is_visible() and vehicle:get_is_observation_revealed() then
                                 local vehicle_pos_xz = vehicle:get_position_xz()
@@ -2326,12 +2330,22 @@ function update_cursor_state(screen_w, screen_h)
     end
 end
 
-function input_zoom_camera(factor)
+function input_zoom_camera(factor, screen_w, screen_h, zoom_x, zoom_y)
     if g_screen_index == 0 then
         if get_is_map_movement_allowed() then
+            local cursor_x = zoom_x or g_cursor_pos_x
+            local cursor_y = zoom_y or g_cursor_pos_y
+            local cursor_prev_x, cursor_prev_y = get_world_from_screen(cursor_x, cursor_y, g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
+
             g_camera_size = g_camera_size * factor
             g_camera_size = math.min(g_camera_size, 256 * 1024)
             g_camera_size = math.max(g_camera_size, 128)
+
+            local cursor_next_x, cursor_next_y = get_world_from_screen(cursor_x, cursor_y, g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
+            local dx = cursor_next_x - cursor_prev_x
+            local dy = cursor_next_y - cursor_prev_y
+            g_camera_pos_x = g_camera_pos_x - dx
+            g_camera_pos_y = g_camera_pos_y - dy
         end
     end
 end
@@ -2605,7 +2619,7 @@ end
 
 function input_scroll(dy)
 	if g_is_pointer_hovered then
-		input_zoom_camera(1 - dy * 0.15)
+		input_zoom_camera(1 - dy * 0.15, g_screen_w, g_screen_h)
     end
     
     if g_selection:is_selection() then
@@ -2686,6 +2700,13 @@ function render_vehicle_tooltip(w, h, vehicle)
     local vehicle_pos_xz = vehicle:get_position_xz()
     local vehicle_definition_index = vehicle:get_definition_index()
     local vehicle_definition_name, vehicle_definition_region = get_chassis_data_by_definition_index(vehicle_definition_index)
+    local vehicle_name = vehicle_definition_name
+
+    local special_id = vehicle:get_special_id()
+
+    if special_id ~= 0 then
+        vehicle_name = vehicle_name .. " (" .. special_id .. ")"
+    end
 
     local bar_h = 17
     local repair_factor = vehicle:get_repair_factor()
@@ -2720,8 +2741,8 @@ function render_vehicle_tooltip(w, h, vehicle)
         update_ui_image(cx, 2, vehicle_definition_region, color8(255, 255, 255, 255), 0)
         cx = cx + 18
 
-        update_ui_text(cx, 6, vehicle_definition_name, 124, 0, color8(255, 255, 255, 255), 0)
-        cx = cx + update_ui_get_text_size(vehicle_definition_name, 10000, 0) + 2
+        update_ui_text(cx, 6, vehicle_name, 124, 0, color8(255, 255, 255, 255), 0)
+        cx = cx + update_ui_get_text_size(vehicle_name, 10000, 0) + 2
     else
         update_ui_image(cx, 2, atlas_icons.icon_chassis_16_wheel_small, color_inactive, 0)
         cx = cx + 18

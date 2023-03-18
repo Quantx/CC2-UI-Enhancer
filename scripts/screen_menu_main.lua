@@ -1069,6 +1069,7 @@ function imgui_game_customisation(ui, is_multiplayer)
 	local team_count_ai = update_get_new_game_team_count_ai()
 	local team_count_human = update_get_new_game_team_count_human()
 	local island_count_per_team = update_get_new_game_island_count_per_team()
+	local carrier_count_per_team = update_get_new_game_carrier_count_per_team()
 	local base_difficulty = update_get_new_game_base_difficulty()
 	local loadout_type = update_get_new_game_loadout_type()
 	local blueprints_type = update_get_new_game_blueprints()
@@ -1124,6 +1125,11 @@ function imgui_game_customisation(ui, is_multiplayer)
 
 	island_count_per_team, is_modified = ui:selector(update_get_loc(e_loc.starting_islands), island_count_per_team, 1, 64, 1)
 	if is_modified then update_set_new_game_island_count_per_team(island_count_per_team) end
+
+	if is_multiplayer then
+		carrier_count_per_team, is_modified = ui:selector(update_get_loc(e_loc.carriers_per_human_team), carrier_count_per_team, 1, 4, 1)
+		if is_modified then update_set_new_game_carrier_count_per_team(carrier_count_per_team) end
+	end
 
 	base_difficulty, is_modified = imgui_selector_icon(ui, update_get_loc(e_loc.base_difficulty), base_difficulty, 1, 4, 1, atlas_icons.column_difficulty, 8, iff(base_difficulty > 1, iff(base_difficulty > 3, color_status_bad, color_status_warning), color_status_ok))
 	if is_modified then update_set_new_game_base_difficulty(base_difficulty) end

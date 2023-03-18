@@ -275,6 +275,10 @@ function get_attachment_data_by_definition_index(index)
             name = update_get_loc(e_loc.upp_deployable_droid),
             icon16 = atlas_icons.icon_attachment_16_deployable_droid,
         },
+        [e_game_object_type.attachment_turret_gimbal_30mm] = {
+            name = update_get_loc(e_loc.upp_30mm_gimbal),
+            icon16 = atlas_icons.icon_attachment_16_turret_gimbal,
+        },
     }
 
     return attachment_data[index] or attachment_data[-1]
@@ -509,6 +513,7 @@ function get_vehicle_capability(vehicle)
             or attachment_def == e_game_object_type.attachment_turret_artillery
             or attachment_def == e_game_object_type.attachment_turret_battle_cannon
             or attachment_def == e_game_object_type.attachment_turret_droid
+            or attachment_def == e_game_object_type.attachment_turret_gimbal_30mm
             then
                 has_cannon = true
             elseif attachment_def == e_game_object_type.attachment_turret_missile then

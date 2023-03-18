@@ -662,11 +662,13 @@ function render_attachment_info(info_pos, map_data, vehicle, attachment, alpha, 
                         update_add_ui_interaction(update_get_loc(e_loc.interaction_zoom), e_game_input.attachment_primary)
                     end
 
-                    update_ui_image(pos:x(), pos:y(), atlas_icons.column_stabilisation_mode, colors.green, 0)
-                    update_ui_text(pos:x() + 12, pos:y(), get_stabilisation_mode_loc(attachment:get_stabilisation_mode()), 200, 0, colors.green, 0)
-                    pos:y(pos:y() + 10)
-                    
-                    update_add_ui_interaction(update_get_loc(e_loc.interaction_stabilisation), e_game_input.toggle_stabilisation_mode)
+                    if vehicle:get_definition_index() ~= e_game_object_type.chassis_land_turret then
+                        update_ui_image(pos:x(), pos:y(), atlas_icons.column_stabilisation_mode, colors.green, 0)
+                        update_ui_text(pos:x() + 12, pos:y(), get_stabilisation_mode_loc(attachment:get_stabilisation_mode()), 200, 0, colors.green, 0)
+                        pos:y(pos:y() + 10)
+
+                        update_add_ui_interaction(update_get_loc(e_loc.interaction_stabilisation), e_game_input.toggle_stabilisation_mode)
+                    end
                 end
             end
             
@@ -1052,6 +1054,7 @@ function render_attachment_hud(screen_w, screen_h, map_data, tick_fraction, vehi
     or def == e_game_object_type.attachment_turret_battle_cannon
     or def == e_game_object_type.attachment_turret_carrier_main_gun
     or def == e_game_object_type.attachment_turret_droid
+    or def == e_game_object_type.attachment_turret_gimbal_30mm
     then
         is_render_center = render_attachment_hud_cannon(screen_w, screen_h, map_data, vehicle, attachment, def)
     elseif def == e_game_object_type.attachment_turret_artillery
@@ -2439,8 +2442,8 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
 
     local filter_target = function(v)
         if v:get_id() ~= vehicle_id then
-            if (get_is_vision_render_land(attachment_def) and get_is_vehicle_land(v:get_definition_index()))
-            or (get_is_vision_render_air(attachment_def) and get_is_vehicle_air(v:get_definition_index()))
+            if (get_is_vision_render_land(attachment_def) and v:get_is_land_target())
+            or (get_is_vision_render_air(attachment_def) and v:get_is_air_target())
             or (get_is_vision_render_sea(attachment_def) and get_is_vehicle_sea(v:get_definition_index())) then
                 if is_render_own_team then
                     return true
@@ -2767,11 +2770,11 @@ function get_is_vision_show_target_distance(attachment_def)
         or attachment_def == e_game_object_type.attachment_turret_battle_cannon
         or attachment_def == e_game_object_type.attachment_turret_carrier_main_gun
         or attachment_def == e_game_object_type.attachment_turret_droid
+        or attachment_def == e_game_object_type.attachment_turret_gimbal_30mm
 end
 
 function get_is_vision_target_lock_behaviour(attachment_def)
     return attachment_def == e_game_object_type.attachment_turret_rocket_pod
-        or attachment_def == e_game_object_type.attachment_turret_missile
         or attachment_def == e_game_object_type.attachment_hardpoint_missile_ir
         or attachment_def == e_game_object_type.attachment_hardpoint_missile_laser
         or attachment_def == e_game_object_type.attachment_hardpoint_missile_aa
@@ -2786,7 +2789,7 @@ function get_is_vision_render_land(attachment_def)
 end
 
 function get_is_vision_render_air(attachment_def)
-    return (attachment_def ~= e_game_object_type.attachment_hardpoint_missile_ir)
+    return true
 end
 
 function get_is_vision_render_sea(attachment_def)
@@ -2820,6 +2823,7 @@ function get_is_vision_reveal_targets(attachment_def)
         or attachment_def == e_game_object_type.attachment_turret_ciws
         or attachment_def == e_game_object_type.attachment_camera
         or attachment_def == e_game_object_type.attachment_turret_droid
+        or attachment_def == e_game_object_type.attachment_turret_gimbal_30mm
 end
 
 

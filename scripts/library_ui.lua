@@ -1261,10 +1261,12 @@ lib_imgui = {
         local y = window.cy
         local w, h = self:get_region()
         local is_active = window.is_active
-        local is_hovered, is_selected = self:hoverable(x, y, w, 12, true)
 
         local label_w = math.floor(w * window.label_bias)
         local combo_w = w - label_w - 2
+        local _, text_label_height = update_ui_get_text_size(label, label_w, 0)
+        local selector_h = math.max(text_label_height, 12)
+        local is_hovered, is_selected = self:hoverable(x, y, w, selector_h, true)
 
         local text_col = iff(is_active, iff(is_selected, color_white, color_grey_dark), color_grey_dark)
         local combo_col = iff(is_active, iff(is_selected, color_highlight, color_grey_mid), color_grey_dark)
@@ -1286,13 +1288,13 @@ lib_imgui = {
         -- update_ui_image(x + label_w, y + 1, atlas_icons.text_back, iff(value > min, arrow_col, color_grey_dark), 0)
         -- update_ui_image(x + label_w + combo_w - 5, y + 2, atlas_icons.text_back, iff(value < max, arrow_col, color_grey_dark), 2)
 
-        window.cy = window.cy + 12
+        window.cy = window.cy + selector_h
 
         local is_modified = false
 
         if is_selected and is_active then
-            local is_left_hovered = self:is_hovered(x + label_w, y, 5, 12)
-            local is_right_hovered = self:is_hovered(x + label_w + combo_w - 5, y, 5, 12)
+            local is_left_hovered = self:is_hovered(x + label_w, y, 5, selector_h)
+            local is_right_hovered = self:is_hovered(x + label_w + combo_w - 5, y, 5, selector_h)
             local is_left_clicked = is_hovered and (self.input_pointer_1 or self.input_pointer_1_repeat) and is_left_hovered
             local is_right_clicked = is_hovered and (self.input_pointer_1 or self.input_pointer_1_repeat) and is_right_hovered
 
@@ -1314,7 +1316,7 @@ lib_imgui = {
         return value, is_modified
     end,
 
-    combo = function(self, label, value, items, is_enabled)
+    combo = function(self, label, value, items, is_enabled, callback_render_item)
         local window = self:get_window()
         local x = window.cx
         local y = window.cy
@@ -1333,7 +1335,16 @@ lib_imgui = {
 
         local text_h = update_ui_text(x + 5, y + 1, label, label_w - 5, 0, text_col, 0)
 
-        update_ui_text(x + label_w, y + 1, items[value + 1], math.floor(combo_w / 2) * 2, 1, combo_col, 0)
+        update_ui_push_offset(x + label_w + 5, y + 1)
+
+        if callback_render_item ~= nil then
+            callback_render_item(items[value + 1], math.floor(combo_w / 2) * 2 - 10, 10)
+        else
+            text_h = math.max(text_h, update_ui_text(0, 0, items[value + 1], math.floor(combo_w / 2) * 2 - 10, 1, combo_col, 0))
+        end
+
+        update_ui_pop_offset()
+
         update_ui_image(x + label_w, y + 1, atlas_icons.text_back, iff(value > 0, arrow_col, color_grey_dark), 0)
         update_ui_image(x + label_w + combo_w - 5, y + 2, atlas_icons.text_back, iff(value + 1 < #items, arrow_col, color_grey_dark), 2)
 
@@ -1455,7 +1466,7 @@ lib_imgui = {
         return value
     end,
 
-    keybinding = function(self, label, key, pointer, button, axis)
+    keybinding = function(self, label, key, pointer, button, axis, joy_button, joy_axis, joy_name, is_connected)
         local window = self:get_window()
         local x = window.cx
         local y = window.cy
@@ -1484,12 +1495,28 @@ lib_imgui = {
         elseif axis >= 0 and axis < 6 then
             local icon, icon_col = get_gamepad_axis_icon(axis)
             update_ui_image(icon_x - 5, icon_y - 5, icon, iff(is_active, icon_col, color_grey_dark), 0)
+        elseif joy_button >= 0 then
+            local icon, icon_col = get_joystick_button_icon(joy_button)
+            update_ui_image(icon_x - 5, icon_y - 5, icon, iff(is_active, icon_col, color_grey_dark), 0)
+            update_ui_image(icon_x - 5 + 20, icon_y - 5, atlas_icons.column_joystick, iff(is_connected, color_status_ok, color_status_dark_red), 0)
+        elseif joy_axis >= 0 then
+            local icon, icon_col = get_joystick_axis_icon(joy_axis)
+            update_ui_image(icon_x - 5, icon_y - 5, icon, iff(is_active, icon_col, color_grey_dark), 0)
+            update_ui_image(icon_x - 5 + 20, icon_y - 5, atlas_icons.column_joystick, iff(is_connected, color_status_ok, color_status_dark_red), 0)
         else
             update_ui_text(x + label_w, y + 2, "---", math.floor(icon_w / 2) * 2, 1, color_grey_dark, 0)
         end
 
         window.cy = window.cy + text_h + 2
         
+        if joy_button >= 0 or joy_axis >= 0 then
+            if #joy_name > 0 then
+                window.cy = window.cy + 2
+                text_h = update_ui_text(x + 5, window.cy, joy_name, w - 5, 0, iff(is_active and is_selected, color_grey_mid, color_grey_dark), 0)
+                window.cy = window.cy + text_h
+            end
+        end
+
         local is_hovered = self:hoverable(x, y, w, window.cy - y, true)
         local is_action = false
 
@@ -1962,16 +1989,90 @@ end
 function get_gamepad_axis_icon(index)
     local icons = {
         [-1] = { icon = atlas_icons.hud_warning, color = color_white },
-        [0] = { icon = atlas_icons.gamepad_icon_ls },
-        [1] = { icon = atlas_icons.gamepad_icon_ls },
-        [2] = { icon = atlas_icons.gamepad_icon_rs },
-        [3] = { icon = atlas_icons.gamepad_icon_rs },
+        [0] = { icon = atlas_icons.gamepad_icon_special_ls_lr },
+        [1] = { icon = atlas_icons.gamepad_icon_special_ls_ud },
+        [2] = { icon = atlas_icons.gamepad_icon_special_rs_lr },
+        [3] = { icon = atlas_icons.gamepad_icon_special_rs_ud },
         [4] = { icon = atlas_icons.gamepad_icon_lt },
         [5] = { icon = atlas_icons.gamepad_icon_rt },
     }
 
     local icon = icons[index] or icons[-1]
 
+    return icon.icon, (icon.color or color_white)
+end
+
+function get_joystick_button_icon(index)
+    local icons = {
+        [-1] = { icon = atlas_icons.hud_warning, color = color_white },
+        [0] = { icon = atlas_icons.joystick_icon_b1 },
+        [1] = { icon = atlas_icons.joystick_icon_b2 },
+        [2] = { icon = atlas_icons.joystick_icon_b3 },
+        [3] = { icon = atlas_icons.joystick_icon_b4 },
+        [4] = { icon = atlas_icons.joystick_icon_b5 },
+        [5] = { icon = atlas_icons.joystick_icon_b6 },
+        [6] = { icon = atlas_icons.joystick_icon_b7 },
+        [7] = { icon = atlas_icons.joystick_icon_b8 },
+        [8] = { icon = atlas_icons.joystick_icon_b9 },
+        [9] = { icon = atlas_icons.joystick_icon_b10 },
+        [10] = { icon = atlas_icons.joystick_icon_b11 },
+        [11] = { icon = atlas_icons.joystick_icon_b12 },
+        [12] = { icon = atlas_icons.joystick_icon_b13 },
+        [13] = { icon = atlas_icons.joystick_icon_b14 },
+        [14] = { icon = atlas_icons.joystick_icon_b15 },
+        [15] = { icon = atlas_icons.joystick_icon_b16 },
+        [16] = { icon = atlas_icons.joystick_icon_b17 },
+        [17] = { icon = atlas_icons.joystick_icon_b18 },
+        [18] = { icon = atlas_icons.joystick_icon_b19 },
+        [19] = { icon = atlas_icons.joystick_icon_b20 },
+        [20] = { icon = atlas_icons.joystick_icon_b21 },
+        [21] = { icon = atlas_icons.joystick_icon_b22 },
+        [22] = { icon = atlas_icons.joystick_icon_b23 },
+        [23] = { icon = atlas_icons.joystick_icon_b24 },
+        [24] = { icon = atlas_icons.joystick_icon_b25 },
+        [25] = { icon = atlas_icons.joystick_icon_b26 },
+        [26] = { icon = atlas_icons.joystick_icon_b27 },
+        [27] = { icon = atlas_icons.joystick_icon_b28 },
+        [28] = { icon = atlas_icons.joystick_icon_b29 },
+        [29] = { icon = atlas_icons.joystick_icon_b30 },
+        [30] = { icon = atlas_icons.joystick_icon_b31 },
+        [31] = { icon = atlas_icons.joystick_icon_b32 },
+        [32] = { icon = atlas_icons.joystick_icon_b33 },
+        [33] = { icon = atlas_icons.joystick_icon_b34 },
+        [34] = { icon = atlas_icons.joystick_icon_b35 },
+        [35] = { icon = atlas_icons.joystick_icon_b36 },
+        [36] = { icon = atlas_icons.joystick_icon_b37 },
+        [37] = { icon = atlas_icons.joystick_icon_b38 },
+        [38] = { icon = atlas_icons.joystick_icon_b39 },
+        [39] = { icon = atlas_icons.joystick_icon_b40 },
+        [40] = { icon = atlas_icons.joystick_icon_b41 },
+        [41] = { icon = atlas_icons.joystick_icon_b42 },
+        [42] = { icon = atlas_icons.joystick_icon_b43 },
+        [43] = { icon = atlas_icons.joystick_icon_b44 },
+        [44] = { icon = atlas_icons.joystick_icon_b45 },
+        [45] = { icon = atlas_icons.joystick_icon_b46 },
+        [46] = { icon = atlas_icons.joystick_icon_b47 },
+        [47] = { icon = atlas_icons.joystick_icon_b48 },
+    }
+
+    local icon = icons[index] or icons[-1]
+    return icon.icon, (icon.color or color_grey_mid)
+end
+
+function get_joystick_axis_icon(index)
+    local icons = {
+        [-1] = { icon = atlas_icons.hud_warning, color = color_white },
+        [0] = { icon = atlas_icons.joystick_icon_a1 },
+        [1] = { icon = atlas_icons.joystick_icon_a2 },
+        [2] = { icon = atlas_icons.joystick_icon_a3 },
+        [3] = { icon = atlas_icons.joystick_icon_a4 },
+        [4] = { icon = atlas_icons.joystick_icon_a5 },
+        [5] = { icon = atlas_icons.joystick_icon_a6 },
+        [6] = { icon = atlas_icons.joystick_icon_a7 },
+        [7] = { icon = atlas_icons.joystick_icon_a8 },
+    }
+
+    local icon = icons[index] or icons[-1]
     return icon.icon, (icon.color or color_white)
 end
 
@@ -2168,11 +2269,30 @@ function imgui_options_menu(ui, x, y, w, h, is_active, selected_category_index, 
             if ui:button(update_get_loc(e_loc.upp_reset), true, 1) then
                 update_ui_event("rebind_input keyboard reset")
             end
+
+            local category_inputs = {}
             
             for i = 0, input_count - 1 do
                 if update_get_is_input_rebindable_keyboard(i) then
-                    if ui:keybinding(update_get_game_input_name(i), update_get_input_binding_keyboard_key(i), update_get_input_binding_keyboard_pointer(i), -1, -1) then
-                        update_ui_event("rebind_input keyboard " .. i)
+                    local category = update_get_game_input_category(i)
+                    if category_inputs[category] == nil then category_inputs[category] = {} end
+                    table.insert(category_inputs[category], i)
+                end
+            end
+
+            local categories = {}
+            for k, _ in pairs(category_inputs) do table.insert(categories, k) end
+            table.sort(categories)
+
+            for _, v in ipairs(categories) do
+                local inputs = category_inputs[v]
+                ui:header(update_get_input_category_name(v))
+
+                for i = 1, #inputs do
+                    local input = inputs[i]
+
+                    if ui:keybinding(update_get_game_input_name(input), update_get_input_binding_keyboard_key(input), update_get_input_binding_keyboard_pointer(input), -1, -1, -1, -1, "", false) then
+                        update_ui_event("rebind_input keyboard " .. input)
                     end
                     ui:divider()
                 end
@@ -2224,21 +2344,61 @@ function imgui_options_menu(ui, x, y, w, h, is_active, selected_category_index, 
             ui:header(update_get_loc(e_loc.upp_sensitivity))
             settings.gamepad_sensitivity_x          = ui:slider(update_get_loc(e_loc.horizontal), settings.gamepad_sensitivity_x, 0.2, 2, 0.1)
             settings.gamepad_sensitivity_y          = ui:slider(update_get_loc(e_loc.vertical), settings.gamepad_sensitivity_y, 0.2, 2, 0.1)
-            ui:header(update_get_loc(e_loc.upp_invert))
-            settings.gamepad_inv_x                  = ui:checkbox(update_get_loc(e_loc.horizontal), settings.gamepad_inv_x)
-            settings.gamepad_inv_y                  = ui:checkbox(update_get_loc(e_loc.vertical), settings.gamepad_inv_y)
+            ui:header(update_get_loc(e_loc.upp_flight_invert))
+            settings.gamepad_flight_inv_x           = ui:checkbox(update_get_loc(e_loc.horizontal), settings.gamepad_flight_inv_x)
+            settings.gamepad_flight_inv_y           = ui:checkbox(update_get_loc(e_loc.vertical), settings.gamepad_flight_inv_y)
+            
+            local throttle_modes = { update_get_loc(e_loc.vehicle_throttle_mode_relative), update_get_loc(e_loc.vehicle_throttle_mode_absolute), }
+
+            ui:header(update_get_loc(e_loc.upp_vehicle_throttle_mode))
+            settings.gamepad_vehicle_throttle_mode_air      = ui:combo(update_get_loc(e_loc.vehicle_throttle_mode_air), settings.gamepad_vehicle_throttle_mode_air, throttle_modes)
+            settings.gamepad_vehicle_throttle_mode_ground   = ui:combo(update_get_loc(e_loc.vehicle_throttle_mode_ground), settings.gamepad_vehicle_throttle_mode_ground, throttle_modes)
+
             ui:header(update_get_loc(e_loc.upp_bindings_buttons))
             
             if ui:button(update_get_loc(e_loc.upp_reset), true, 1) then
                 update_ui_event("rebind_input gamepad reset")
             end
             
+            local category_inputs = {}
+            
             for i = 0, input_count - 1 do
-                if update_get_is_input_rebindable_gamepad(i) then
-                    if ui:keybinding(update_get_game_input_name(i), -1, -1, update_get_input_binding_gamepad_button(i), update_get_input_binding_gamepad_axis(i)) then
-                        update_ui_event("rebind_input gamepad " .. i)
+                if update_get_is_input_rebindable_gamepad(i) or update_get_is_input_rebindable_gamepad_as_axis(i) then
+                    local category = update_get_game_input_category(i)
+                    if category_inputs[category] == nil then category_inputs[category] = {} end
+                    table.insert(category_inputs[category], i)
+                end
+            end
+
+            local categories = {}
+            for k, _ in pairs(category_inputs) do table.insert(categories, k) end
+            table.sort(categories)
+
+            for _, v in ipairs(categories) do
+                local inputs = category_inputs[v]
+
+                table.sort(inputs, function(a, b)
+                    if update_get_is_input_rebindable_gamepad_as_axis(a) == update_get_is_input_rebindable_gamepad_as_axis(b) then
+                        return a < b
                     end
-                    ui:divider()
+                    
+                    return update_get_is_input_rebindable_gamepad_as_axis(b)
+                end)
+
+                ui:header(update_get_input_category_name(v))
+
+                for i = 1, #inputs do
+                    local input = inputs[i]
+
+                    if update_get_is_input_rebindable_gamepad_as_axis(input) then
+                        imgui_gamepad_axis_binding(ui, input)
+                        ui:divider()
+                    else
+                        if ui:keybinding(update_get_game_input_name(input), -1, -1, update_get_input_binding_gamepad_button(input), update_get_input_binding_gamepad_axis(input), update_get_input_binding_joystick_button(input), update_get_input_binding_joystick_axis(input), update_get_input_binding_joystick_name(input), update_get_input_binding_joystick_connected(input)) then
+                            update_ui_event("rebind_input gamepad " .. input)
+                        end
+                        ui:divider()
+                    end
                 end
             end
         ui:end_window()
@@ -2254,6 +2414,142 @@ function imgui_options_menu(ui, x, y, w, h, is_active, selected_category_index, 
 
     if settings.gfx_resolution_pending_x ~= settings_prev.gfx_resolution_pending_x or settings.gfx_resolution_pending_y ~= settings_prev.gfx_resolution_pending_y then
         update_ui_event("set_game_setting gfx_resolution", settings.gfx_resolution_pending_x, settings.gfx_resolution_pending_y)
+    end
+end
+
+function imgui_gamepad_axis_binding(ui, input)
+    local gamepad_axis_icons = {
+        [0] = atlas_icons.gamepad_icon_special_ls_lr,
+        [1] = atlas_icons.gamepad_icon_special_ls_ud,
+        [2] = atlas_icons.gamepad_icon_special_rs_lr,
+        [3] = atlas_icons.gamepad_icon_special_rs_ud,
+    }
+
+    local joystick_axis_icons = {
+        [0] = atlas_icons.joystick_icon_a1,
+        [1] = atlas_icons.joystick_icon_a2,
+        [2] = atlas_icons.joystick_icon_a3,
+        [3] = atlas_icons.joystick_icon_a4,
+        [4] = atlas_icons.joystick_icon_a5,
+        [5] = atlas_icons.joystick_icon_a6,
+        [6] = atlas_icons.joystick_icon_a7,
+        [7] = atlas_icons.joystick_icon_a8,
+    }
+
+    local axis_options = {
+        { axis=0, icon=gamepad_axis_icons[0] },
+        { axis=1, icon=gamepad_axis_icons[1] },
+        { axis=2, icon=gamepad_axis_icons[2] },
+        { axis=3, icon=gamepad_axis_icons[3] },
+    }
+
+    for i = 0, 7 do
+        if update_get_input_joystick_connected(i) then
+            for j = 0, update_get_input_joystick_axis_count(i) - 1 do
+                table.insert(axis_options, {
+                    axis=j,
+                    icon=joystick_axis_icons[j],
+                    joystick=i,
+                    guid=update_get_input_joystick_guid(i),
+                    name=update_get_input_joystick_name(i)
+                })
+            end
+        end
+    end
+
+    local axis = update_get_input_binding_gamepad_axis(input)
+    local joy_axis = update_get_input_binding_joystick_axis(input)
+    local joy_guid = update_get_input_binding_joystick_guid(input)
+    local selected_index = -1
+
+    for i = 1, #axis_options do
+        if #joy_guid > 0 then
+            if axis_options[i].guid == joy_guid and axis_options[i].axis == joy_axis then
+                selected_index = i - 1
+                break
+            end
+        elseif axis_options[i].axis == axis then
+            selected_index = i - 1
+            break
+        end
+    end
+    
+    if selected_index == -1 then
+        -- joystick not connected
+
+        if #joy_guid > 0 then
+            table.insert(axis_options, {
+                axis=joy_axis,
+                icon=joystick_axis_icons[joy_axis],
+                joystick=-1,
+                guid=joy_guid,
+                name=update_get_input_binding_joystick_name(input),
+            })
+            selected_index = #axis_options - 1
+        elseif axis >= 0 then
+            table.insert(axis_options, {
+                axis=axis,
+                icon=gamepad_axis_icons[axis],
+            })
+            selected_index = #axis_options - 1
+        end
+    end
+    
+    ui:spacer(2)
+
+    selected_index, is_modified = ui:combo(update_get_game_input_name(input), selected_index, axis_options, true, function(item, w, h)
+        if item == nil or item.icon == nil then
+            update_ui_text(0, 0, "---", w, 1, color_grey_dark, 0)
+            return
+        end
+
+        update_ui_image(2, 0, item.icon, color_white, 0)
+        local axis_value = 0
+        
+        if item.joystick == nil then
+            axis_value = clamp(update_get_input_gamepad_axis_value(item.axis), -1, 1)
+        else
+            axis_value = clamp(update_get_input_joystick_axis_value(item.joystick, item.axis), -1, 1)
+        end
+        
+        local bar_x = 15
+        local bar_w = w - 18
+
+        if update_get_input_binding_is_axis_inverted(input) then
+            update_ui_rectangle(bar_x, h / 2 - 1, bar_w, 2, color_grey_dark)
+            update_ui_rectangle(bar_x + bar_w / 2, h / 2 - 1, math.floor(bar_w / 2 * axis_value + 0.5), 2, color8(255, 255, 255, 8))
+            update_ui_rectangle(bar_x + bar_w / 2, h / 2 - 1, math.floor(bar_w / 2 * axis_value + 0.5) * -1, 2, color_highlight)
+        else
+            update_ui_rectangle(bar_x, h / 2 - 1, bar_w, 2, color_grey_dark)
+            update_ui_rectangle(bar_x + bar_w / 2, h / 2 - 1, math.floor(bar_w / 2 * axis_value + 0.5), 2, color_highlight)
+        end
+    end)
+
+    local is_ui_selected = ui:is_item_selected()
+    local selected = axis_options[selected_index + 1]
+    
+    if selected ~= nil then
+        if selected.joystick then
+            local window = ui:get_window()
+            local w, h = ui:get_region()
+            update_ui_image(window.cx + w - 15, window.cy, atlas_icons.column_joystick, iff(update_get_input_binding_joystick_connected(input), color_status_ok, color_status_dark_red), 0)
+            window.cy = window.cy + update_ui_text(window.cx + 5, window.cy, selected.name, w - 25, 0, iff(is_ui_selected, color_grey_mid, color_grey_dark), 0)
+        end
+
+        if is_modified then
+            if selected.joystick == nil then
+                update_ui_event("rebind_input_axis gamepad", input, selected.axis)
+            else
+                update_ui_event("rebind_input_axis joystick", input, selected.joystick, selected.axis)
+            end
+        end
+    end
+
+    local is_inverted = update_get_input_binding_is_axis_inverted(input)
+    is_inverted, is_modified = ui:checkbox(update_get_loc(e_loc.input_invert), is_inverted)
+
+    if is_modified then
+        update_ui_event("rebind_input_axis invert", input, is_inverted)
     end
 end
 
