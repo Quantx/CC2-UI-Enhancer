@@ -218,6 +218,8 @@ function render_vehicle_list( win_list, is_air )
     end
 
     if #vehicle_list > 0 then
+        local tooltip = nil
+
         for _, v in pairs(vehicle_list) do
             local vehicle = v.vehicle
             local id = vehicle:get_id()
@@ -472,18 +474,27 @@ function render_vehicle_list( win_list, is_air )
                     elseif selected_col == 5 then
                         text = string.format("Ammo")
                     end
-                
-                    local text_w, text_h = update_ui_get_text_size(text, list_region_w - 10, 1)
 
-                    local function callback_render_tooltip(w, h) 
-                        update_ui_text(2, 1, text, w - 2, 1, color_grey_mid, 0)
-                    end
-
-                    render_tooltip(0, 0, list_region_w - 5, list_region_h, sx, sy + sh / 2, text_w + 4, text_h + 2, sh / 2 + 4, callback_render_tooltip, color_button_bg_inactive)
+                    tooltip = {
+                        msg = text,
+                        x = sx,
+                        y = sy,
+                        h = sh
+                    }
                 end
-            
+
                 g_hovered_vehicle_id = id
             end
+        end
+
+        if tooltip ~= nil then
+            local text_w, text_h = update_ui_get_text_size(tooltip.msg, list_region_w - 10, 1)
+
+            local function callback_render_tooltip(w, h)
+                update_ui_text(2, 1, tooltip.msg, w - 2, 1, color_grey_mid, 0)
+            end
+
+            render_tooltip(0, 0, list_region_w - 5, list_region_h, tooltip.x, tooltip.y + tooltip.h / 2, text_w + 4, text_h + 2, tooltip.h / 2 + 4, callback_render_tooltip, color_button_bg_inactive)
         end
 
         update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_ud)
