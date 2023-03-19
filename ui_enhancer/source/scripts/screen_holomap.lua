@@ -384,8 +384,8 @@ function update(screen_w, screen_h, ticks)
                         local team_color = update_get_team_color(island_capture)
 
                         if island_capture ~= island_team and island_capture ~= -1 and island_capture_progress > 0 then
-                            update_ui_rectangle(screen_pos_x - 13, screen_pos_y - 16, 26, 5, color_black)
-                            update_ui_rectangle(screen_pos_x - 12, screen_pos_y - 15, 24 * island_capture_progress, 3, team_color)
+                            update_ui_rectangle_outline(screen_pos_x - 13, screen_pos_y - 6, 26, 5, team_color)
+                            update_ui_rectangle(screen_pos_x - 12, screen_pos_y - 5, 24 * island_capture_progress, 3, team_color)
                         end
                     end
 

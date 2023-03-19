@@ -36,8 +36,8 @@ function update(screen_w, screen_h, ticks)
             local section_w = (screen_w - 2 * border_out - border_in) / 2
             local section_h = screen_h - 2 * border_out
 
-            render_attachment_info(border_out, border_out, section_w, section_h, attachments[1], vehicle, team, update_get_loc(e_loc.upp_icbm), 29)
-            render_attachment_info(border_out + section_w + border_in, border_out, section_w, section_h, attachments[2], vehicle, team, update_get_loc(e_loc.upp_gun), 35)
+            render_attachment_info(border_out, border_out, section_w, section_h, attachments[1], vehicle, team, update_get_loc(e_loc.upp_icbm), e_inventory_item.ammo_cruise_missile)
+            render_attachment_info(border_out + section_w + border_in, border_out, section_w, section_h, attachments[2], vehicle, team, update_get_loc(e_loc.upp_gun), e_inventory_item.ammo_160mm_artillery)
         end
     end
 

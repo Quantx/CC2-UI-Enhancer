@@ -331,7 +331,7 @@ function render_vehicle_list( win_list, is_air )
             elseif vehicle_dock_state == e_vehicle_dock_state.pending_undock then
             
                 vehicle_state_string = "STBY"
-                vehicle_state_string = "Waiting to Launch"
+                vehicle_state_description = "Waiting to Launch"
                 vehicle_state_color = g_colors.carrier
             
             -- taxi

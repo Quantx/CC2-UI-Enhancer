@@ -98,7 +98,7 @@ function render_attachment_info(x, y, w, h, attachment, vehicle)
 
         render_health_bar(w - 5, cy, 20, vehicle, col)
 
-        local ammo_stock = vehicle:get_inventory_count_by_item_index(19) -- AA missile
+        local ammo_stock = vehicle:get_inventory_count_by_item_index(e_inventory_item.hardpoint_missile_aa)
 
         cx = 4
         update_ui_image(cx, cy, atlas_icons.column_stock, iff(ammo_stock > 0, col, color_status_bad), 0)
