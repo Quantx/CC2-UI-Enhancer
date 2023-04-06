@@ -166,6 +166,7 @@ function update(screen_w, screen_h, tick_fraction, delta_time, local_peer_id, ve
 
     if vehicle:get() then
         if g_is_connected then
+            Variometer:update(vehicle)
             local attachment = vehicle:get_attachment(g_selected_attachment_index)
             local is_attachment_render_center = false
 
@@ -1199,6 +1200,14 @@ function render_attachment_hud_bomb(screen_w, screen_h, map_data, vehicle, attac
             local predicted_hit_pos = linked_attachments[i]:get_bomb_hit_position()
             local hit_pos_screen = update_world_to_screen(predicted_hit_pos)
         
+            -- draw a line from our velocity vector to the CCIP point
+            update_ui_line(
+                    Variometer.predicted_vector.x,
+                    Variometer.predicted_vector.y,
+                    hit_pos_screen:x(),
+                    hit_pos_screen:y(),
+                    color8(0, 255, 0, 255))
+
             update_ui_image_rot(hit_pos_screen:x(), hit_pos_screen:y(), atlas_icons.hud_impact_marker, color8(0, 255, 0, 255), 0)
         end
     end
@@ -2027,6 +2036,8 @@ function render_artificial_horizion(screen_w, screen_h, pos, size, vehicle, col)
         local projected_velocity = vec3(position:x() + velocity:x() * project_dist, position:y() + velocity:y() * project_dist, position:z() + velocity:z() * project_dist)
         local predicted_position = artificial_horizon_to_screen(screen_w, screen_h, pos, scale, update_world_to_screen(projected_velocity))
         update_ui_image_rot(predicted_position:x(), predicted_position:y(), atlas_icons.hud_horizon_cursor, col, 0)
+        Variometer.predicted_vector.x = predicted_position:x()
+        Variometer.predicted_vector.y = predicted_position:y()
     end
 
     local roll_pos_a = update_world_to_screen(vec3(position:x() + (forward_xz:x() + side_xz:x()) * project_dist, position:y(), position:z() + (forward_xz:z() + side_xz:z()) * project_dist))
@@ -2080,6 +2091,8 @@ function render_altitude_meter(pos, altitude, col)
     )
 
     update_ui_text(pos:x(), pos:y() + 101, update_get_loc(e_loc.upp_alt), 200, 0, col, 0)
+    Variometer:render(pos, col)
+
 end
 
 function render_airspeed_meter(pos, vehicle, step, col)
@@ -3347,3 +3360,218 @@ end
 --         update_ui_text(x, y, "no metatable", 300, 0, color8(128, 128, 128, 255), 0)
 --     end
 -- end
+
+
+---
+-- HUD Variometer Mod
+---
+
+-- class to store arbitrary values with a max tick age
+-- this was inspired by the gun funnel history code but isn't related to it now
+TimedHistory = {
+    ident = 0,
+    debug = 0,
+    interval = 1,
+    ttl = 30,
+    ticks_per_sec = 30, -- estimated
+    last_tick = 0,
+    data = {},
+    mean = 0,
+    sample_size = 0,
+    sample_min = 20000,
+    sample_max = 0,
+    last_value = 0,
+
+    add_value = function(self, v)
+        local tick = update_get_logic_tick()
+        local sample_sum = 0
+        local sample_count = 0
+        local xsample_min = 2000
+        local xsample_max = 0
+        self.last_value = v
+        if self.debug > 0 then
+            update_ui_text(
+                    10 + 180 * self.ident,
+                    30,
+                    string.format("%d mean() = %s", self.ident, self.mean),
+                    300, 0, color8(255, 128, 128, 255), 0)
+        end
+        if tick - self.last_tick > self.interval then
+            local sample = { time = tick, value = v }
+            self.data[tick] = sample
+            self.last_tick = tick
+            -- trim off the oldest items
+            for k, val in pairs(self.data) do
+                if self.debug > 0 then
+                    update_ui_text(
+                            10 + 180 * self.ident,
+                            50 + 10 * sample_count,
+                            string.format("%d value = %s", self.ident, val.value),
+                            300, 0, color8(255, 128, 128, 255), 0)
+                end
+                if tick - val.time > (self.ttl * self.ticks_per_sec) then
+                    self.data[k] = nil
+                else
+                    if val.value > 0 then
+                        sample_sum = sample_sum + val.value
+                        sample_count = sample_count + 1
+                        if val.value > xsample_max then
+                            xsample_max = val.value
+                        end
+                        if val.value < xsample_min then
+                            xsample_min = val.value
+                        end
+
+                    end
+                end
+            end
+
+            self.sample_max = xsample_max
+            self.sample_min = xsample_min
+
+            if sample_count > 0 then
+                self.mean = sample_sum / sample_count
+            end
+            self.sample_size = sample_count
+        end
+    end,
+}
+function TimedHistory:new(o)
+    o = o or {}
+    setmetatable(o, self)
+    self.__index = self
+    return o
+end
+
+VarTimedHistory = TimedHistory:new()
+
+Variometer = {
+    alt = VarTimedHistory:new{ttl=1, ident=0, data={}},
+    fuel = VarTimedHistory:new{ttl=30, ident=1, data={}},
+    predicted_vector = {x=0, y=0},
+
+    update = function(self, v)
+        local pe, err = pcall(function() self._update(self, v) end)
+        if pe then
+            --
+        else
+            update_ui_text(5, 40, string.format("err in _update() = %s", err), 300, 0, color8(255, 128, 128, 255), 0)
+        end
+    end,
+
+    _update = function(self, vehicle)
+        self.alt:add_value(vehicle:get_altitude())
+        self.fuel:add_value(vehicle:get_fuel_factor())
+    end,
+
+    fuel_burnrate = function(self)  -- % per sec
+        return (self.fuel.sample_max - self.fuel.sample_min) / self.fuel.ticks_per_sec
+    end,
+
+    render = function(self, pos, col)
+        local pe, err = pcall(function() self._render(self, pos, col) end)
+        if pe then
+            --
+        else
+            update_ui_text(5, 50, string.format("err in _render() = %s", err), 300, 0, color8(255, 128, 128, 255), 0)
+        end
+    end,
+
+    _render = function(self, pos, col)
+        -- render rate of climb
+        local d_alt = self.alt.last_value - self.alt.mean -- m/s
+
+        local d_alt_col = col
+        local d_alt_bar_col = col
+        local col_yellow = color8(255, 255, 0, 255)
+        local col_warn = color8(255, 64, 64, 255)
+        local col_stall = color8(64, 64, 255, 255)
+
+        if d_alt < 0 then
+            d_alt_col = col_yellow
+        end
+        update_ui_text(pos:x(), pos:y() + 110, string.format("%2.0f~", d_alt), 200, 0, d_alt_col, 0)
+
+        -- clamp the bars
+        if d_alt > 51 then
+            d_alt = 51
+        end
+        if d_alt < -50 then
+            d_alt = -50
+        end
+
+        -- set warning colors
+        -- warn about terrain if < 5 sec before impact
+        if d_alt < 0 then
+            if (self.alt.last_value + (d_alt * 5)) < 0 then
+                d_alt_bar_col = col_warn
+            end
+        end
+        -- warn about stall if < 5 sec before 2000
+        if d_alt > 0 then
+            if (self.alt.last_value + (d_alt * 5)) > 2000 then
+                d_alt_bar_col = col_stall
+            end
+        end
+
+        -- render the variometer bars
+        if d_alt < 0 then
+            update_ui_rectangle(
+                    pos:x() -8,
+                    pos:y() + 52,
+                    2, d_alt * -1, d_alt_bar_col)
+        else
+            update_ui_rectangle(
+                    pos:x() -8,
+                    pos:y() + 52 - (d_alt),
+                    2, d_alt , d_alt_bar_col)
+        end
+        -- mid bar
+        update_ui_rectangle(
+                pos:x() -10,
+                pos:y() + 50,
+                5, 2, col)
+
+        -- render fuel updates
+        local fuel_number_col = col
+        if self.fuel.last_value < 0.5 then
+            fuel_number_col = color8(255, 255, 0, 255)
+        end
+        if self.fuel.last_value < 0.25 then
+            fuel_number_col = color8(255, 0, 0, 255)
+        end
+
+        local fuel_count = self.fuel.last_value
+        local fuel_per_min = self:fuel_burnrate() * 60
+        local mins_remaining = fuel_count / fuel_per_min
+
+        -- total %
+        update_ui_text(
+                pos:x() - 38,
+                pos:y() + 140,
+                string.format("%2.1f %s", fuel_count * 100, "%"),
+                64, 0, fuel_number_col, 0)
+
+        -- only render fuel estimates when we have proper data
+        local fuel_use_per_min = "--- %/m"
+        local fuel_time_mins = "--- mins"
+
+        if self.fuel.sample_size > 30 then
+            fuel_use_per_min = string.format("%2.1f %s/m", fuel_per_min * 100, "%")
+            fuel_time_mins = string.format("%3.0f mins", mins_remaining)
+        end
+        -- % / min
+        update_ui_text(
+                pos:x() - 32,
+                pos:y() + 150,
+                fuel_use_per_min,
+                64, 0, col, 0)
+        -- time
+        update_ui_text(
+                pos:x() - 32,
+                pos:y() + 160,
+                fuel_time_mins,
+                200, 0, fuel_number_col, 0)
+
+    end,
+}
