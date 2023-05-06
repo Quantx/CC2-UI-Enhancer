@@ -24,11 +24,6 @@ Compass Screen
 [*]Added heading and directional indicator for the next waypoint
 [/list]
 
-Propulsion Screen
-[list]
-[*]Added aircraft takeoff / landing info to assist helmsmen with angling the carrier
-[/list]
-
 Sonar Screen
 [list]
 [*]Added mute button to sonar screen
@@ -56,8 +51,8 @@ Vehicle Hud
 [*]Always show friendly vehicles
 [*]Always show distance to highlighted vehicle
 [*]Highlighted vehicle's text is now much more readable
-[*]Fixed CWIS and Aircraft Chaingun crosshair disappearing when locking a target
 [*]Show all weapons on highlighted vehicle info
+[*]Aircraft variometer and fuel consumption (Thanks Bedroll)
 [/list]
 
 Landing Screen
