@@ -1792,8 +1792,10 @@ e_game_input = {
 	dpad_up = 16,
 	dpad_down = 17,
 	attachment_primary = 18,
+	UNUSED_0 = 19,
 	attachment_fire = 20,
 	camera_zoom = 21,
+	UNUSED_1 = 22,
 	toggle_control_mode = 23,
 	toggle_stabilisation_mode = 24,
 	select_attachment_1 = 25,
@@ -1825,14 +1827,12 @@ e_game_input = {
 	text_shift = 51,
 	chat_team = 52,
 	chat_cycle_mode = 53,
-	axis_vehicle_air_throttle = 54,
-	axis_vehicle_air_pitch = 55,
-	axis_vehicle_air_yaw = 56,
-	axis_vehicle_air_roll = 57,
-	axis_vehicle_ground_throttle = 58,
-	axis_vehicle_ground_steer = 59,
+	axis_vehicle_throttle = 54,
+	axis_vehicle_pitch = 55,
+	axis_vehicle_yaw = 56,
+	axis_vehicle_roll = 57,
 	
-	count = 60,
+	count = 58,
 }
 
 e_ui_interaction_special = {

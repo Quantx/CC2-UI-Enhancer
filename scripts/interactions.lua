@@ -31,10 +31,10 @@ g_interactions = {
 	end,
 
 	add_interaction = function(self, text, input, special, internal_index)
-		if get_is_input_valid(input, special) == false then
+		if get_is_input_valid(input, special) == false and get_is_special_interaction_type_multiline(special) == false then
 			return
 		end
-		
+
 		local interaction = nil
 		local special_override = nil
 
@@ -595,6 +595,7 @@ g_time_since_voice = 5000
 g_screen_border = 5
 g_animation_time = 0
 g_color_text_team = color_friendly
+g_chatbox_available_ticks = 0
 
 g_back_width = 0
 g_back_height = 0
@@ -1246,6 +1247,12 @@ end
 --------------------------------------------------------------------------------
 
 function update_chat(delta_time)
+	if update_get_is_chat_box_available() then
+		g_chatbox_available_ticks = g_chatbox_available_ticks + 1
+	else
+		g_chatbox_available_ticks = 0
+	end
+
 	if g_chat.text_input_mode_cooldown > 0 then
 		g_chat.text_input_mode_cooldown = g_chat.text_input_mode_cooldown - 1
 	end
@@ -1935,5 +1942,5 @@ function add_interaction(text, input, special)
 end
 
 function get_is_chat_box_available()
-	return update_get_is_multiplayer() and update_get_is_loading() == false
+	return update_get_is_multiplayer() and update_get_is_loading() == false and g_chatbox_available_ticks > 1
 end
