@@ -1700,6 +1700,20 @@ function update(screen_w, screen_h, ticks)
                                             local is_valid = waypoint:get_attack_target_is_valid(k)
 
                                             if is_valid then
+                                                -- validate that the attack target is visible on the map
+                                                -- if not, remove the waypoint order so it can't be used
+                                                -- track units beyond radar/visible range
+                                                local target_id = waypoint:get_attack_target_target_id(k)
+                                                local target_unit = update_get_map_vehicle_by_id(target_id)
+                                                if target_unit:get() then
+                                                    if not target_unit:get_is_visible() then
+                                                        vehicle:remove_waypoint_attack_target(waypoint:get_id(), k)
+                                                        is_valid = false
+                                                    end
+                                                end
+                                            end
+
+                                            if is_valid then
                                                 local attack_target_pos = waypoint:get_attack_target_position_xz(k)
                                                 local attack_target_attack_type = waypoint:get_attack_target_attack_type(k)
                                                 local attack_target_icon = get_attack_type_icon(attack_target_attack_type)
@@ -1711,7 +1725,7 @@ function update(screen_w, screen_h, ticks)
                                                 if attack_target_attack_type == e_attack_type.airlift then
                                                     color = g_color_airlift_order
                                                 end
-                                                
+
                                                 update_ui_line(waypoint_screen_pos_x, waypoint_screen_pos_y, attack_target_screen_pos_x, attack_target_screen_pos_y, color)
                                                 update_ui_image(attack_target_screen_pos_x - 8, attack_target_screen_pos_y - 8, atlas_icons.map_icon_attack, color, 0)
                                                 update_ui_image(attack_target_screen_pos_x - 4, attack_target_screen_pos_y - 4 - 8, attack_target_icon, color, 0)
