@@ -1023,6 +1023,7 @@ function update(screen_w, screen_h, ticks)
     g_animation_time = g_animation_time + ticks
 
     local screen_vehicle = update_get_screen_vehicle()
+    local screen_team = update_get_screen_team_id()
     g_screen_vehicle_pos = screen_vehicle:get_position_xz()
 
     if g_is_camera_pos_initialised == false and screen_vehicle:get() then
@@ -1150,7 +1151,7 @@ function update(screen_w, screen_h, ticks)
                                 end
                             end
 
-                            if island:get_team_control() == update_get_screen_team_id() then
+                            if island:get_team_control() == screen_team then
                                 local production_count = island:get_facility_production_queue_defense_count()
 
                                 for j = 0, production_count - 1, 1 do
@@ -1193,7 +1194,7 @@ function update(screen_w, screen_h, ticks)
                                 end
                             end
 
-                            if vehicle_team == update_get_screen_team_id() then
+                            if vehicle_team == screen_team and vehicle_definition_index ~= e_game_object_type.chassis_sea_barge then
                                 local waypoint_count = vehicle:get_waypoint_count()
 
                                 if g_drag.vehicle_id == 0 or g_drag.vehicle_id == vehicle:get_id() then
@@ -1310,7 +1311,7 @@ function update(screen_w, screen_h, ticks)
 
                         update_ui_text(screen_pos_x - 64, screen_pos_y - 9, island_name, 128, 1, island_color, 0)
 
-                        if island:get_team_control() == update_get_screen_team_id() then
+                        if island:get_team_control() == screen_team then
                             if is_placing_turret == false then
                                 local production_count = island:get_facility_production_queue_defense_count()
 
@@ -1318,7 +1319,7 @@ function update(screen_w, screen_h, ticks)
                                     local item_type, marker_index = island:get_facility_production_queue_defense_item(j)
                                     local turret_spawn_xz = island:get_marker_position(marker_index)
                                     local screen_pos_x, screen_pos_y = get_screen_from_world(turret_spawn_xz:x(), turret_spawn_xz:y(), g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
-                                    local team_color = get_vehicle_team_color(update_get_screen_team_id())
+                                    local team_color = get_vehicle_team_color(screen_team)
                                     local color = iff(j == 0, iff(g_blink_timer > 15, team_color, color_grey_dark), color_grey_dark)
 
                                     if g_highlighted.island_id == island_id and g_highlighted.production_index == j then
@@ -1414,7 +1415,7 @@ function update(screen_w, screen_h, ticks)
             local weapon_radius_vehicle = update_get_map_vehicle_by_id(g_drag.vehicle_id)
 
             if weapon_radius_vehicle:get() then
-                if weapon_radius_vehicle:get_team() == update_get_screen_team_id() then
+                if weapon_radius_vehicle:get_team() == screen_team then
                     local weapon_range, weapon_range_col = get_vehicle_weapon_range(weapon_radius_vehicle)
                     local world_x, world_y = get_world_from_screen(g_cursor_pos_x, g_cursor_pos_y, g_camera_pos_x, g_camera_pos_y, g_camera_size, 256, 256)
 
@@ -1425,9 +1426,21 @@ function update(screen_w, screen_h, ticks)
                     local def = weapon_radius_vehicle:get_definition_index()
 
                     if def == e_game_object_type.chassis_sea_ship_light or def == e_game_object_type.chassis_sea_ship_heavy then
-                        local team_carrier = screen_vehicle
-                        local vehicle_pos_xz = team_carrier:get_position_xz()
-                        render_weapon_radius(vehicle_pos_xz:x(), vehicle_pos_xz:y(), 500, color8(0, 255, 128, 8))
+                        local vehicle_count = update_get_map_vehicle_count()
+
+                        for i = 0, vehicle_count - 1, 1 do 
+                            local vehicle = update_get_map_vehicle_by_index(i)
+        
+                            if vehicle:get() then
+                                local vehicle_definition_index = vehicle:get_definition_index()
+        
+                                if vehicle:get_definition_index() == e_game_object_type.chassis_carrier and vehicle:get_team() == screen_team then
+                                    local vehicle_pos_xz = vehicle:get_position_xz()
+
+                                    render_weapon_radius(vehicle_pos_xz:x(), vehicle_pos_xz:y(), 500, color8(0, 255, 128, 8))
+                                end
+                            end
+                        end
                     end
                 end
             end
@@ -1438,7 +1451,7 @@ function update(screen_w, screen_h, ticks)
                 local def = weapon_radius_vehicle:get_definition_index()
 
                 if def ~= e_game_object_type.chassis_carrier then
-                    if weapon_radius_vehicle:get_team() == update_get_screen_team_id() or weapon_radius_vehicle:get_is_observation_weapon_revealed() then
+                    if weapon_radius_vehicle:get_team() == screen_team or weapon_radius_vehicle:get_is_observation_weapon_revealed() then
                         local weapon_range, weapon_range_col = get_vehicle_weapon_range(weapon_radius_vehicle)
                         local vehicle_pos_xz = weapon_radius_vehicle:get_position_xz()
 
@@ -1447,11 +1460,23 @@ function update(screen_w, screen_h, ticks)
                         end
                     end
 
-                    if weapon_radius_vehicle:get_team() == update_get_screen_team_id() then
+                    if weapon_radius_vehicle:get_team() == screen_team then
                         if def == e_game_object_type.chassis_sea_ship_light or def == e_game_object_type.chassis_sea_ship_heavy then
-                            local team_carrier = screen_vehicle
-                            local vehicle_pos_xz = team_carrier:get_position_xz()
-                            render_weapon_radius(vehicle_pos_xz:x(), vehicle_pos_xz:y(), 500, color8(0, 255, 128, 8))
+                            local vehicle_count = update_get_map_vehicle_count()
+
+                            for i = 0, vehicle_count - 1, 1 do 
+                                local vehicle = update_get_map_vehicle_by_index(i)
+            
+                                if vehicle:get() then
+                                    local vehicle_definition_index = vehicle:get_definition_index()
+            
+                                    if vehicle:get_definition_index() == e_game_object_type.chassis_carrier and vehicle:get_team() == screen_team then
+                                        local vehicle_pos_xz = vehicle:get_position_xz()
+
+                                        render_weapon_radius(vehicle_pos_xz:x(), vehicle_pos_xz:y(), 500, color8(0, 255, 128, 8))
+                                    end
+                                end
+                            end
                         end
                     end
                 end
@@ -1548,7 +1573,7 @@ function update(screen_w, screen_h, ticks)
                                 show_waypoints = g_is_carrier_waypoint
                             end
                         
-                            if vehicle_team == update_get_screen_team_id() and show_waypoints then
+                            if vehicle_team == screen_team and show_waypoints then
                                 local waypoint_color = g_color_waypoint
 
                                 if g_highlighted.vehicle_id == vehicle:get_id() and g_highlighted.waypoint_id == 0 then
@@ -1874,7 +1899,7 @@ function update(screen_w, screen_h, ticks)
                                     cy = cy + 2
                                 end
 
-                                if vehicle_team == update_get_screen_team_id() and vehicle_definition_index ~= e_game_object_type.chassis_land_robot_dog then
+                                if vehicle_team == screen_team and vehicle_definition_index ~= e_game_object_type.chassis_land_robot_dog then
                                     cx = screen_pos_x - 4
                                     
                                     local is_visible_by_enemy = vehicle:get_is_visible_by_enemy()
@@ -1916,7 +1941,7 @@ function update(screen_w, screen_h, ticks)
                                     end
                                 end
 
-                                if vehicle_team == update_get_screen_team_id() then
+                                if vehicle_team == screen_team then
                                     if vehicle:get_controlling_peer_id() ~= 0 then
                                         update_ui_image(screen_pos_x - icon_offset, screen_pos_y - icon_offset, atlas_icons.map_icon_vehicle_control, element_color, 0)
                                     end
@@ -2180,7 +2205,7 @@ function update(screen_w, screen_h, ticks)
                 render_tooltip(10, 10, screen_w - 20, screen_h - 20, g_cursor_pos_x, g_cursor_pos_y, text_w + 18, 17, 10, function(w, h)
                     update_ui_image(4, 4, atlas_icons.column_team_control, update_get_team_color(highlighted_island:get_team_control()), 0)
 
-                    if highlighted_island:get_team_control() == update_get_screen_team_id() then
+                    if highlighted_island:get_team_control() == screen_team then
                         update_ui_text(14, 4, text, w, 0, color_white, 0)
                     else
                         update_ui_text(14, 4, text, w, 0, color_grey_dark, 0)
