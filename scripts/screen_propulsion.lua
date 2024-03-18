@@ -224,6 +224,8 @@ function render_docking_queue_info(x, y, this_vehicle)
 
     local vehicle_count = update_get_map_vehicle_count()
     local screen_team = update_get_screen_team_id()
+    local this_vehicle_id = this_vehicle:get_id()
+
     g_flight_deck_state = 0
 
     for i = 0, vehicle_count - 1, 1 do
@@ -235,18 +237,20 @@ function render_docking_queue_info(x, y, this_vehicle)
             if vehicle:get_team() == screen_team and get_is_vehicle_air(def) then
                 local is_rotor = (def == e_game_object_type.chassis_air_rotor_light or def == e_game_object_type.chassis_air_rotor_heavy)
                 local dock_state = vehicle:get_dock_state()
+                local dock_parent_id = vehicle:get_dock_parent_id()
+                local attached_parent_id = vehicle:get_attached_parent_id()
                 local deck_state = g_flight_deck_states.none
                 local is_within_carrier_bounds = get_is_within_carrier_bounds(this_vehicle, vehicle)
 
-                if dock_state == e_vehicle_dock_state.undocking then
+                if dock_state == e_vehicle_dock_state.undocking and attached_parent_id == this_vehicle_id then
                     deck_state = g_flight_deck_states.launch
-                elseif dock_state == e_vehicle_dock_state.undock_holding then
+                elseif dock_state == e_vehicle_dock_state.undock_holding and attached_parent_id == this_vehicle_id then
                     deck_state = g_flight_deck_states.holding
-                elseif dock_state == e_vehicle_dock_state.docking then
+                elseif dock_state == e_vehicle_dock_state.docking and dock_parent_id == this_vehicle_id then
                     deck_state = g_flight_deck_states.landing
-                elseif dock_state == e_vehicle_dock_state.docking_taxi then
+                elseif dock_state == e_vehicle_dock_state.docking_taxi and dock_parent_id == this_vehicle_id then
                     deck_state = g_flight_deck_states.taxi
-                elseif dock_state == e_vehicle_dock_state.dock_queue then
+                elseif dock_state == e_vehicle_dock_state.dock_queue and dock_parent_id == this_vehicle_id then
                     deck_state = g_flight_deck_states.queued
                 end
 
