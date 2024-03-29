@@ -146,9 +146,9 @@ end
 --------------------------------------------------------------------------------
 
 function update(screen_w, screen_h, tick_fraction, delta_time, local_peer_id, vehicle, map_data)
+
     update_animations(delta_time, vehicle)
     g_notification:update(delta_time, vehicle)
-
     g_is_attachment_linked = false
 
     g_is_render_speed = true
@@ -165,7 +165,7 @@ function update(screen_w, screen_h, tick_fraction, delta_time, local_peer_id, ve
     end
 
     if vehicle:get() then
-        if g_is_connected then
+        if g_is_render_fuel then
             Variometer:update(vehicle)
             local attachment = vehicle:get_attachment(g_selected_attachment_index)
             local is_attachment_render_center = false
@@ -3369,70 +3369,106 @@ end
 -- class to store arbitrary values with a max tick age
 -- this was inspired by the gun funnel history code but isn't related to it now
 TimedHistory = {
-    ident = 0,
-    debug = 0,
-    interval = 1,
-    ttl = 30,
-    ticks_per_sec = 30, -- estimated
-    last_tick = 0,
     data = {},
-    mean = 0,
-    sample_size = 0,
-    sample_min = 20000,
-    sample_max = 0,
+    last_tick = 0,
     last_value = 0,
+    interval = 1,
+    ticks_per_sec = 60,
+    ttl = 120, -- 2 seconds
+
+    reset = function(self)
+        for k in pairs (self.data) do
+            self.data[k] = nil
+        end
+        self.last_tick = update_get_logic_tick()
+        self.last_value = 0
+    end,
+
+    get_value_after = function(self, tick)
+        for k, val in pairs(self.data) do
+            if val.time > tick then
+                return val.value
+            end
+        end
+        return 0
+    end,
+
+    get_min = function(self)
+        local number = 100000
+        for k, val in pairs(self.data) do
+            if val.value < number then
+                number = val.value
+            end
+        end
+        return number
+    end,
+
+    get_mean = function(self)
+        local avg = 0
+        local total = 0
+        for k, val in pairs(self.data) do
+            if val ~= nil then
+                total = total + val.value
+            end
+        end
+        local count = self:get_count()
+        if count > 0 then
+            avg = 1.0 * total / count
+        end
+
+        return avg
+    end,
+
+    get_max = function(self)
+        local number = -100000
+        for k, val in pairs(self.data) do
+            if val.value > number then
+                number = val.value
+            end
+        end
+        return number
+    end,
+
+    get_count = function(self)
+        local count = 0
+        for k, val in pairs(self.data) do
+            if val ~= nil then
+                count = 1 + count
+            end
+        end
+        return count
+    end,
+
+    get_oldest_time = function(self)
+        local oldest =  9999999
+        for k, val in pairs(self.data) do
+            if val.time < oldest then
+                oldest = val.time
+            end
+        end
+        return oldest
+    end,
 
     add_value = function(self, v)
         local tick = update_get_logic_tick()
-        local sample_sum = 0
-        local sample_count = 0
-        local xsample_min = 2000
-        local xsample_max = 0
-        self.last_value = v
-        if self.debug > 0 then
-            update_ui_text(
-                    10 + 180 * self.ident,
-                    30,
-                    string.format("%d mean() = %s", self.ident, self.mean),
-                    300, 0, color8(255, 128, 128, 255), 0)
+        if tick <= self.last_tick + self.interval then
+            return
         end
-        if tick - self.last_tick > self.interval then
-            local sample = { time = tick, value = v }
-            self.data[tick] = sample
-            self.last_tick = tick
-            -- trim off the oldest items
-            for k, val in pairs(self.data) do
-                if self.debug > 0 then
-                    update_ui_text(
-                            10 + 180 * self.ident,
-                            50 + 10 * sample_count,
-                            string.format("%d value = %s", self.ident, val.value),
-                            300, 0, color8(255, 128, 128, 255), 0)
-                end
-                if tick - val.time > (self.ttl * self.ticks_per_sec) then
-                    self.data[k] = nil
-                else
-                    if val.value > 0 then
-                        sample_sum = sample_sum + val.value
-                        sample_count = sample_count + 1
-                        if val.value > xsample_max then
-                            xsample_max = val.value
-                        end
-                        if val.value < xsample_min then
-                            xsample_min = val.value
-                        end
+        self.last_tick = tick
+        self.last_value = v
+        table.insert(self.data, {
+            time = tick,
+            value = v,
+        })
+        self:trim()
+    end,
 
-                    end
-                end
+    trim = function(self)
+        local keep_after = update_get_logic_tick() - self.ttl
+        for k, val in pairs(self.data) do
+            if val.time < keep_after then
+                self.data[k] = nil
             end
-
-            self.sample_max = xsample_max
-            self.sample_min = xsample_min
-
-            if sample_count > 0 then
-                self.mean = sample_sum / sample_count
-            end
-            self.sample_size = sample_count
         end
     end,
 }
@@ -3443,12 +3479,55 @@ function TimedHistory:new(o)
     return o
 end
 
+function get_vehicle_fuel_total(vehicle)
+    --
+    -- adding a fuel tank to a RZR adds 20%, to a ALB/MNT adds 10%
+    -- each tank is 100 units of fuel
+    -- base tank sizes:
+    -- rzr = 400
+    -- alb = 800
+    -- mnt = 800
+    -- ptr = 1200
+    -- sel = 800
+    -- wlr = 1200
+    -- ber = 1600
+    -- mul = 2000
+
+    if vehicle and vehicle:get() then
+        local def = vehicle:get_definition_index()
+        local base_tank = 800
+        if def == e_game_object_type.chassis_air_rotor_light then
+            base_tank = 400
+        elseif def == e_game_object_type.chassis_air_rotor_heavy or def == e_game_object_type.chassis_land_wheel_medium then
+            base_tank = 1200
+        elseif def == e_game_object_type.chassis_land_wheel_heavy then
+            base_tank = 1600
+        elseif def == e_game_object_type.chassis_land_wheel_mule then
+            base_tank = 2000
+        end
+        local tanks = 0
+        local attachment_count = get_vehicle_attachment_count(vehicle)
+        for i = 0, attachment_count - 1, 1 do
+            local attachment = vehicle:get_attachment(i)
+            if attachment and attachment:get_definition_index() == e_game_object_type.attachment_fuel_tank_plane then
+                tanks = tanks + 1
+            end
+        end
+        return (tanks * 100) + base_tank
+    end
+    return 0
+end
+
 VarTimedHistory = TimedHistory:new()
 
 Variometer = {
-    alt = VarTimedHistory:new{ttl=1, ident=0, data={}},
-    fuel = VarTimedHistory:new{ttl=30, ident=1, data={}},
+    vehicle_id = -1,
+    vehicle_full_fuel = 0,
+    last_fuel = 0,
+    alt = VarTimedHistory:new{ttl=30, data={}, interval=1},
+    fuel = VarTimedHistory:new{ttl=12 * 60, interval=70, data={}},
     predicted_vector = {x=0, y=0},
+    last_tick = 0,
 
     update = function(self, v)
         local pe, err = pcall(function() self._update(self, v) end)
@@ -3460,12 +3539,46 @@ Variometer = {
     end,
 
     _update = function(self, vehicle)
-        self.alt:add_value(vehicle:get_altitude())
-        self.fuel:add_value(vehicle:get_fuel_factor())
+        if vehicle and vehicle:get() then
+            local tick = update_get_logic_tick()
+            if tick == self.last_tick then
+                return
+            end
+            self.last_tick = tick
+            if vehicle:get_id() ~= self.vehicle_id then
+                self.alt:reset()
+                self.fuel:reset()
+                self.vehicle_full_fuel = get_vehicle_fuel_total(vehicle)
+                self.last_fuel = self.vehicle_full_fuel
+            end
+            self.vehicle_id = vehicle:get_id()
+            local fuel = vehicle:get_fuel_factor()
+            self.alt:add_value(vehicle:get_altitude())
+            self.last_fuel = fuel
+            self.fuel:add_value(fuel)
+            --if tick % 180 == 0 then
+            --    local throttle_factor = vehicle:get_throttle_factor()
+            --    local def = vehicle:get_definition_index()
+            --    print(string.format("%d %d %f %f", tick, def, throttle_factor, fuel))
+            --end
+        end
+    end,
+
+    fuel_sample_timespan = function (self)
+        local sample_timespan = (self.fuel.last_tick - self.fuel:get_oldest_time())
+        return sample_timespan
     end,
 
     fuel_burnrate = function(self)  -- % per sec
-        return (self.fuel.sample_max - self.fuel.sample_min) / self.fuel.ticks_per_sec
+        local timespan = self:fuel_sample_timespan()
+        local rate = 0.05
+        if timespan > 180 then
+            local sample_range = self.fuel:get_max() - self.fuel:get_min()
+
+            local sample_seconds = 1.0 * timespan / self.fuel.ticks_per_sec
+            rate = sample_range / sample_seconds
+        end
+        return rate
     end,
 
     render = function(self, pos, col)
@@ -3479,8 +3592,7 @@ Variometer = {
 
     _render = function(self, pos, col)
         -- render rate of climb
-        local d_alt = self.alt.last_value - self.alt.mean -- m/s
-
+        local d_alt = self.alt.last_value - self.alt:get_mean() -- m/s
         local d_alt_col = col
         local d_alt_bar_col = col
         local col_yellow = color8(255, 255, 0, 255)
@@ -3542,36 +3654,66 @@ Variometer = {
         end
 
         local fuel_count = self.fuel.last_value
-        local fuel_per_min = self:fuel_burnrate() * 60
-        local mins_remaining = fuel_count / fuel_per_min
+        local fuel_samples = self.fuel:get_count()
 
-        -- total %
-        update_ui_text(
-                pos:x() - 38,
-                pos:y() + 140,
-                string.format("%2.1f %s", fuel_count * 100, "%"),
-                64, 0, fuel_number_col, 0)
+        if fuel_samples > 0 then
+            local fuel_per_sec = self:fuel_burnrate()
+            local fuel_per_min = fuel_per_sec * 60.0
+            local mins_remaining = fuel_count / fuel_per_min
 
-        -- only render fuel estimates when we have proper data
-        local fuel_use_per_min = "--- %/m"
-        local fuel_time_mins = "--- mins"
+            -- total %
+            update_ui_text(
+                    pos:x() - 38,
+                    pos:y() + 140,
+                    string.format("%2.2f %s", fuel_count * 100, "%"),
+                    64, 0, fuel_number_col, 0)
+            update_ui_text(
+                    pos:x() + 38,
+                    pos:y() + 140,
+                    string.format("%2.1fkg", fuel_count * self.vehicle_full_fuel),
+                    64, 0, fuel_number_col, 0)
 
-        if self.fuel.sample_size > 30 then
-            fuel_use_per_min = string.format("%2.1f %s/m", fuel_per_min * 100, "%")
-            fuel_time_mins = string.format("%3.0f mins", mins_remaining)
+
+            -- only render fuel estimates when we have proper data
+            local fuel_use_per_min = "--- %/m"
+            local fuel_time_mins = "--- mins"
+
+            if fuel_samples > 4 then
+                fuel_use_per_min = string.format("%2.1f %s/m", fuel_per_min * 100, "%")
+                if fuel_samples > 8 then
+                    fuel_time_mins = string.format("%3.1f mins", mins_remaining)
+                end
+            end
+            -- % / min
+            update_ui_text(
+                    pos:x() - 32,
+                    pos:y() + 150,
+                    fuel_use_per_min,
+                    64, 0, col, 0)
+            if fuel_samples > 6 then
+                -- calc the burn rate from a few sec ago
+                local early_duration = 5
+                local early = update_get_logic_tick() - ((2 + early_duration) * self.fuel.ticks_per_sec)
+                local later = update_get_logic_tick() - (2 * self.fuel.ticks_per_sec)
+                local early_total = self.fuel:get_value_after(early)
+                local later_total = self.fuel:get_value_after(later)
+                local delta = early_total - later_total
+                local one_sec_used = (delta / early_duration) * self.vehicle_full_fuel
+
+                -- local instant_fuel_burn = (fuel_per_min * self.vehicle_full_fuel)
+                update_ui_text(
+                        pos:x() + 50,
+                        pos:y() + 150,
+                        string.format("%2.1f/s", one_sec_used),
+                        64, 0, col, 0)
+
+            end
+            -- time
+            update_ui_text(
+                    pos:x() - 38,
+                    pos:y() + 160,
+                    fuel_time_mins,
+                    150, 0, fuel_number_col, 0)
         end
-        -- % / min
-        update_ui_text(
-                pos:x() - 32,
-                pos:y() + 150,
-                fuel_use_per_min,
-                64, 0, col, 0)
-        -- time
-        update_ui_text(
-                pos:x() - 32,
-                pos:y() + 160,
-                fuel_time_mins,
-                200, 0, fuel_number_col, 0)
-
     end,
 }
