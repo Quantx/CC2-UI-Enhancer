@@ -2157,7 +2157,7 @@ function tab_stock_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_
                 total_modify_amount = ui:selector(update_get_loc(e_loc.quantity), total_modify_amount, -99999, 99999, 1, "%+d")
                 g_tab_stock.selected_item_modify_amount = total_modify_amount - order_amount
 
-                local button_action = ui:button_group({ "X", "-100", "-10", "+10", "+100" }, true)
+                local button_action = ui:button_group({ "X", "-100", "-10", "+10", "+100" ,"x10" ,"÷10" }, true)
 
                 if button_action == 0 then
                     g_tab_stock.selected_item_modify_amount = -order_amount
@@ -2169,6 +2169,10 @@ function tab_stock_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_
                     g_tab_stock.selected_item_modify_amount = g_tab_stock.selected_item_modify_amount + 10
                 elseif button_action == 4 then
                     g_tab_stock.selected_item_modify_amount = g_tab_stock.selected_item_modify_amount + 100
+                elseif button_action == 5 then
+                    g_tab_stock.selected_item_modify_amount = g_tab_stock.selected_item_modify_amount * 10
+                elseif button_action == 6 then
+                    g_tab_stock.selected_item_modify_amount = g_tab_stock.selected_item_modify_amount // 10
                 end
             ui:end_window()
 
