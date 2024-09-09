@@ -2049,8 +2049,10 @@ function render_artificial_horizion(screen_w, screen_h, pos, size, vehicle, col)
     local horizon = artificial_horizon_to_screen(screen_w, screen_h, pos, scale, update_world_to_screen(projected_forward))
     update_ui_image_rot(horizon:x(), horizon:y(), atlas_icons.hud_horizon_mid, col, roll)
 
-    local angle_step = 10 / 180 * math.pi
+    local angle_step_deg = 10
+    local angle_step = angle_step_deg / 180 * math.pi
     local steps = math.floor(math.pi * 0.5 / angle_step)
+    local angle_width = 20
 
     for i = 1, steps do
         projected_forward = vec3(position:x() + forward_xz:x() * project_dist, position:y() + math.tan(i * angle_step) * project_dist, position:z() + forward_xz:z() * project_dist)
@@ -2058,11 +2060,21 @@ function render_artificial_horizion(screen_w, screen_h, pos, size, vehicle, col)
         
         if i ~= steps then
             update_ui_image_rot(horizon:x(), horizon:y(), atlas_icons.hud_horizon_high, col, roll)
+            --update_ui_text(horizon:x()-angle_width/2, horizon:y()-5, math.floor(i*angle_step_deg), 20, 1, col, 0)
+
+            local hoz_width = 38
+			update_ui_text(horizon:x()-angle_width/2-math.floor(hoz_width*math.cos(roll)), horizon:y()-5-math.floor(hoz_width*math.sin(roll)), math.floor(i*angle_step_deg), 20, 1, col, 0)
+			update_ui_text(horizon:x()-angle_width/2+math.floor(hoz_width*math.cos(roll))+1, horizon:y()-5+math.floor(hoz_width*math.sin(roll)), math.floor(i*angle_step_deg), 20, 1, col, 0)
         end
 
         projected_forward = vec3(position:x() + forward_xz:x() * project_dist, position:y() - math.tan(i * angle_step) * project_dist, position:z() + forward_xz:z() * project_dist)
         horizon = artificial_horizon_to_screen(screen_w, screen_h, pos, scale, update_world_to_screen(projected_forward))
         update_ui_image_rot(horizon:x(), horizon:y(), atlas_icons.hud_horizon_low, col, roll)
+        --update_ui_text(horizon:x()-angle_width/2, horizon:y()-3, math.floor(-i*angle_step_deg), 20, 1, col, 0)
+
+        local hoz_width = 41
+		update_ui_text(horizon:x()-angle_width/2-math.floor(hoz_width*math.cos(roll)), horizon:y()-3-math.floor(hoz_width*math.sin(roll)), math.floor(-i*angle_step_deg), 20, 1, col, 0)
+		update_ui_text(horizon:x()-angle_width/2+math.floor(hoz_width*math.cos(roll))+1, horizon:y()-3+math.floor(hoz_width*math.sin(roll)), math.floor(-i*angle_step_deg), 20, 1, col, 0)
     end
 
     update_ui_pop_clip()
