@@ -413,16 +413,13 @@ function render_vehicle_list( win_list, is_air )
                     vehicle_state_description = "Waiting for Delta Go"
                     vehicle_state_color = color_status_warning
                 else
-                    --iterate through the waypoints and see if they loop on themselves
-                    for w = 0, waypoint_count - 1, 1 do
-                        waypoint = vehicle:get_waypoint(w)
-                        
-                        if waypoint:get_repeat_index(w) >= 0 then
-                            vehicle_state_string = "LOOP"
-                            vehicle_state_description = "Following Waypoint Loop"
-                            vehicle_state_color = color8(0, 30, 230, 255)
-                            break
-                        end
+                    --check last waypoint to see if it repeats									
+					-- if waypoints loop (i.e. not -1), and the aircraft is currently looping (>0 indicates on route to looping path) then show as looping
+					if vehicle:get_waypoint(waypoint_count - 1):get_repeat_index() == 0 then
+						vehicle_state_string = "LOOP"
+                        vehicle_state_description = "Following Waypoint Loop"
+                        vehicle_state_color = color8(0, 30, 230, 255)
+						
                     end
                 end
             
