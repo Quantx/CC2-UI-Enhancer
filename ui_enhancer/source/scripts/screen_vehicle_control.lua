@@ -395,7 +395,7 @@ function render_selection_vehicle(screen_w, screen_h, vehicle)
             local title = vehicle_definition_name .. string.format( " ID %.0f", vehicle:get_id() )
             local is_window_active = g_selected_vehicle_ui.confirm_self_destruct == false
 
-            ui:begin_window(title, 10, 10, left_w, 101, atlas_icons.column_pending, is_window_active, 2)
+            ui:begin_window(title, 10, 10, left_w, 118, atlas_icons.column_pending, is_window_active, 2)
                 ui:stat(update_get_loc(e_loc.hp), hitpoints .. "/" .. hitpoints_total, iff(damage_factor < 0.2, color_low, color_high))
 
                 if vehicle_definition_index == e_game_object_type.chassis_land_turret then
@@ -407,6 +407,12 @@ function render_selection_vehicle(screen_w, screen_h, vehicle)
                 end
 
                 ui:header(update_get_loc(e_loc.upp_actions))
+
+                if vehicle_definition_index ~= e_game_object_type.chassis_carrier and vehicle_definition_index ~= e_game_object_type.chassis_sea_barge and def_index ~= e_game_object_type.chassis_land_robot_dog then
+                    local is_vehicle_hold_fire = vehicle:get_is_hold_fire()
+                    local is_hold_fire, is_modified = ui:checkbox(update_get_loc(e_loc.hold_fire), is_vehicle_hold_fire)
+                    if is_modified then vehicle:set_is_hold_fire(is_hold_fire) end
+                end
                 
                 if ui:list_item(update_get_loc(e_loc.upp_center_to_vehicle), true) then
                     g_camera_pos_x = vehicle:get_position_xz():x()
@@ -1937,6 +1943,11 @@ function update(screen_w, screen_h, ticks)
                                         end
 
                                         update_ui_image(cx, cy, atlas_icons.map_icon_low_ammo, icon_color, 0)
+                                        cx = cx + 4
+                                    end
+
+                                    if vehicle:get_is_hold_fire() == true then
+                                        update_ui_image(cx, cy, atlas_icons.map_icon_hold_fire, color8(255, 0, 0, 255), 0)
                                         cx = cx + 4
                                     end
                                 end

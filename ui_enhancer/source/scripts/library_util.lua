@@ -233,6 +233,7 @@ atlas_icons = {
     map_icon_damage_indicator = 0,
     map_icon_low_fuel = 0,
     map_icon_low_ammo = 0,
+    map_icon_hold_fire = 0,
     damage_hull = 0,
     damage_bg = 0,
     damage_fr = 0,
