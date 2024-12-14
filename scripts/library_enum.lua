@@ -1705,8 +1705,9 @@ e_loc = {
 	vehicle_throttle_mode_air = 1545,
 	vehicle_throttle_mode_ground = 1546,
 	upp_flight_invert = 1547,
+	hold_fire = 1548,
 
-	count = 1548,
+	count = 1549,
 }
 
 e_barge_destination_type = {

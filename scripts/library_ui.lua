@@ -2247,6 +2247,7 @@ function imgui_options_menu(ui, x, y, w, h, is_active, selected_category_index, 
                 settings.vr_tablet_index                = ui:combo(update_get_loc(e_loc.vr_tablet_index), settings.vr_tablet_index, { "1", "2" })
                 settings.vr_controller_tooltips         = ui:checkbox(update_get_loc(e_loc.vr_controller_tooltips), settings.vr_controller_tooltips)
                 settings.vr_screen_tilt                 = ui:checkbox(update_get_loc(e_loc.vr_screen_tilt), settings.vr_screen_tilt)
+                settings.vr_voice_xmit                 = ui:checkbox(update_get_loc(e_loc.voice), settings.vr_voice_xmit)
                 settings.vr_move_mode                   = ui:combo(update_get_loc(e_loc.vr_move_mode), settings.vr_move_mode, { update_get_loc(e_loc.vr_move_mode_teleport), update_get_loc(e_loc.vr_move_mode_smooth) })
                 settings.vr_smooth_move_speed           = ui:slider(update_get_loc(e_loc.vr_smooth_move_speed), settings.vr_smooth_move_speed, 0.5, 2, 0.1)
                 settings.vr_smooth_rotate_speed         = ui:slider(update_get_loc(e_loc.vr_smooth_rotate_speed), settings.vr_smooth_rotate_speed, 0.5, 2, 0.1)
