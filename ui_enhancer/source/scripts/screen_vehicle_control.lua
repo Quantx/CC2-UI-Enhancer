@@ -1920,6 +1920,15 @@ function update(screen_w, screen_h, ticks)
                                         update_ui_image(screen_pos_x + 3, screen_pos_y - 2, atlas_icons.map_icon_visible, icon_color, 0)
                                     end
 
+                                    local is_refueling = false
+                                    for i = 0, vehicle:get_attachment_count() - 1 do
+                                        local attachment = vehicle:get_attachment(i)
+                                        if attachment:get() and attachment:get_definition_index() == e_game_object_type.attachment_fuel_tank_plane and attachment:get_stabilisation_mode() == "stabilised" then
+                                            is_refueling = true
+                                            break
+                                        end
+                                    end
+
                                     if fuel_factor < 0.5 and get_is_render_fuel_indicator(vehicle) then
                                         local icon_color = iff(fuel_factor < 0.25, color8(255, 0, 0, 255), color8(255, 255, 0, 255))
                                         
@@ -1933,6 +1942,8 @@ function update(screen_w, screen_h, ticks)
 
                                         update_ui_image(cx, cy, atlas_icons.map_icon_low_fuel, icon_color, 0)
                                         cx = cx + 4
+                                    elseif is_refueling then
+                                        update_ui_image(cx, cy, atlas_icons.map_icon_low_fuel, g_color_resupply, 0)
                                     end
 
                                     if ammo_factor < 0.5 and get_is_render_ammo_indicator(vehicle) then
