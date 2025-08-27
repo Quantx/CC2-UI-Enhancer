@@ -434,7 +434,15 @@ function render_map_details(x, y, w, h, screen_w, screen_h, screen_vehicle, atta
     local vehicle_dir_xz = vec2_normal(vec2(vehicle_dir:x(), vehicle_dir:z()))
     local screen_x, screen_y = world_to_screen(screen_vehicle:get_position():x(), screen_vehicle:get_position():z())
     update_ui_line(screen_x, screen_y, screen_x + vehicle_dir_xz:x() * 32, screen_y - vehicle_dir_xz:y() * 32, team_color)
-    
+
+    -- render next waypoint
+    local waypoints = screen_vehicle:get_waypoint_path()
+    if #waypoints > 0 then
+        local wnext = waypoints[1]
+        local wx, wy = world_to_screen(wnext:x(), wnext:y())
+        render_ground_marker_triangle(vec2(wx, wy), color_friendly, 8, 11)
+    end
+
     -- render vehicles
 
     local function filter_vehicles(v)
@@ -1052,7 +1060,6 @@ end
 
 function render_attachment_hud(screen_w, screen_h, map_data, tick_fraction, vehicle, attachment, local_peer_id)
     local def = attachment:get_definition_index()
-
     is_render_center = false
     if def == e_game_object_type.attachment_camera_vehicle_control
     then
@@ -1329,6 +1336,15 @@ function render_attachment_hud_tv_missile(screen_w, screen_h, map_data, vehicle,
 end
 
 function render_attachment_hud_fuel_tank(screen_w, screen_h, attachment)
+    local hud_pos = vec2(screen_w / 2, screen_h / 2)
+    local col = color8(0, 255, 0, 255)
+
+    if attachment:get_stabilisation_mode() == "stabilised" then
+        render_warning_text(hud_pos:x(), hud_pos:y() - 10, update_get_loc(e_loc.upp_refuel), col)
+    end
+
+    update_add_ui_interaction(update_get_loc(e_loc.interaction_toggle_refuel), e_game_input.toggle_stabilisation_mode)
+
     return false
 end
 
@@ -1740,7 +1756,7 @@ function render_ground_hud(screen_w, screen_h, vehicle)
     local col = color8(0, 255, 0, 255)
 
     render_airspeed_meter(vec2(hud_min:x(), hud_min:y() + (hud_size:y() - 110) / 2), vehicle, 1, col)
-    render_compass(vec2(hud_pos:x(), hud_min:y() + hud_size:y()), col)
+    render_compass(vec2(hud_pos:x(), hud_min:y() + hud_size:y()), col, vehicle)
     render_fuel_gauge(vec2(hud_min:x() + hud_size:x() - 16, hud_pos:y() + 45 - 50), 50, vehicle, col)
     render_damage_gauge(vec2(hud_min:x() + hud_size:x() - 1, hud_pos:y() + 45 - 50), 50, vehicle, col)
     render_control_mode(vec2(hud_min:x() + hud_size:x() - 16, hud_pos:y() + 45 + 5), vehicle, col)
@@ -1795,10 +1811,11 @@ function render_flight_hud(screen_w, screen_h, is_render_center, vehicle)
     local hud_pos = vec2(hud_min:x() + hud_size:x() / 2, hud_min:y() + hud_size:y() / 2)
     local col = color8(0, 255, 0, 255)
     local col_red = color8(255, 0, 0, 255)
-
+    local pos = vehicle:get_position()
     local warning_y = hud_min:y() - 10
     local is_missile_tracking = vehicle:get_is_missile_tracking()
-    local is_stall = vehicle:get_position():y() > 2050
+    local is_stall = pos:y() > 2050
+    local waypoints = vehicle:get_waypoint_path()
 
     if get_is_damage_warning(vehicle) then
         render_warning_text(hud_pos:x(), warning_y, update_get_loc(e_loc.upp_dmg_critical), col_red)
@@ -1833,7 +1850,7 @@ function render_flight_hud(screen_w, screen_h, is_render_center, vehicle)
     end
 
     if g_is_render_compass then
-        render_compass(vec2(hud_pos:x(), hud_min:y() + hud_size:y()), col)
+        render_compass(vec2(hud_pos:x(), hud_min:y() + hud_size:y()), col, vehicle)
     end
 
     if g_is_render_fuel then
@@ -1851,6 +1868,20 @@ function render_flight_hud(screen_w, screen_h, is_render_center, vehicle)
     if vehicle:get_control_mode() == "manual" and vehicle:get_is_controlling_peer() then
         render_mouse_flight_axis(hud_pos)
     end
+
+    -- render the next waypoints in view
+    local wp_col = col
+    local wp_max_range_sq = 10000 * 10000
+    for i=1, #waypoints do
+        if wp_col:a() > 32 then
+            local wp = vec3(waypoints[i]:x(), 0, waypoints[i]:y())
+            local dist_sq = vec3_dist_sq(wp, pos)
+            if dist_sq < wp_max_range_sq then
+                render_ground_marker(wp_col, wp, screen_w, screen_h)
+            end
+        end
+        wp_col = color8(wp_col:r(), wp_col:g(), wp_col:b(), wp_col:a() - 35)
+	end
 end
 
 function render_barge_hud(screen_w, screen_h, vehicle)
@@ -1861,7 +1892,7 @@ function render_barge_hud(screen_w, screen_h, vehicle)
     local col_red = color8(255, 0, 0, 255)
 
     render_airspeed_meter(vec2(hud_min:x(), hud_min:y() + (hud_size:y() - 110) / 2), vehicle, 1, col)
-    render_compass(vec2(hud_pos:x(), hud_min:y() + hud_size:y()), col)
+    render_compass(vec2(hud_pos:x(), hud_min:y() + hud_size:y()), col, vehicle)
     render_fuel_gauge(vec2(hud_min:x() + hud_size:x() - 16, hud_pos:y() + 45 - 50), 50, vehicle, col)
     render_damage_gauge(vec2(hud_min:x() + hud_size:x() - 1, hud_pos:y() + 45 - 50), 50, vehicle, col)
     render_control_mode(vec2(hud_min:x() + hud_size:x() - 16, hud_pos:y() + 45 + 5), vehicle, col)
@@ -1982,7 +2013,7 @@ function render_control_mode(pos, vehicle, col)
     update_ui_rectangle_outline(pos:x() + 24, pos:y(), 9, 11, iff(control_mode == "off", col, col_off))
 end
 
-function render_compass(pos, col)
+function render_compass(pos, col, screen_vehicle)
     local width = 120
     update_ui_push_clip(pos:x() - width / 2, pos:y(), width, 10)
     
@@ -2016,6 +2047,12 @@ function render_compass(pos, col)
 
     local display_heading = math.floor(iff(heading < 0, 360 + heading * 360, heading * 360))
     update_ui_text(pos:x() - 50, pos:y() + 12, string.format("%03.0f", display_heading), 100, 1, col, 0)
+    if screen_vehicle then
+        local waypoints = screen_vehicle:get_waypoint_path()
+        if #waypoints > 0 then
+            render_compass_waypoint(pos:x(), pos:y(), width, vec3(waypoints[1]:x(), 0, waypoints[1]:y()), col, 3)
+        end
+    end
 end
 
 function render_artificial_horizion(screen_w, screen_h, pos, size, vehicle, col)
@@ -3323,6 +3360,52 @@ function get_attachment_display_name(vehicle, attachment)
 
     local attachment_data = get_attachment_data_by_definition_index(definition_index)
     return attachment_data.name
+end
+
+
+function render_ground_marker_triangle(screen_pos, col, w, h)
+    if w == nil then
+        w = 6
+    end
+    if h == nil then
+        h = 7
+    end
+    local d = math.floor(w / 2)
+    local tl = vec2(screen_pos:x() - d, screen_pos:y() - h)
+    local tr = vec2(screen_pos:x() + d, screen_pos:y() - h)
+
+    update_ui_begin_triangles()
+    update_ui_add_triangle(tl, screen_pos, tr, col)
+    update_ui_end_triangles()
+end
+
+function render_ground_marker(col, wp, screen_w, screen_h)
+    local swpp, clamped = world_to_screen_clamped(wp, vec2(0, 0), vec2(screen_w, screen_h))
+    if not clamped then
+        render_ground_marker_triangle(swpp, col)
+    end
+end
+
+
+function render_compass_waypoint(x, y, w, mark, col, size)
+    if size == nil then
+        size = 4
+    end
+    local csc, csc_clamped = world_to_screen_clamped(mark,
+        vec2(x - w/2, 0),
+        vec2(x + w/2, 200)
+    )
+    if not csc_clamped then
+        update_ui_rectangle_outline(csc:x() - 2, y - 2, size, 4, col)
+    else
+        if csc:x() > x then
+            update_ui_line(csc:x() - 3, y - 3, csc:x(), y, col)
+            update_ui_line(csc:x() - 3, y + 3, csc:x(), y, col)
+        else
+            update_ui_line(csc:x(), y, csc:x() + 3, y - 3, col)
+            update_ui_line(csc:x(), y, csc:x() + 3, y + 3, col)
+        end
+    end
 end
 
 --------------------------------------------------------------------------------
