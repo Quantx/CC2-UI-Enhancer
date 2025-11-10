@@ -702,7 +702,7 @@ function update(screen_w, screen_h, ticks)
         local cx = 15
         
         local icon_col = color_grey_mid
-        local text_col = color_grey_dark
+        local text_col = color_grey_mid
 
         if g_is_ruler then
             if is_local and not g_is_ruler_set and (not g_is_mouse_mode or g_is_pointer_hovered) then
@@ -763,21 +763,36 @@ function update(screen_w, screen_h, ticks)
                 update_ui_pop_offset()
             end
 
+            -- Show bearing in lower left corner
             update_ui_image(cx, cy, atlas_icons.column_angle, icon_col, 0)
             update_ui_text(cx + 15, cy, string.format("%.0f deg", bearing_world), 100, 0, text_col, 0)
             cy = cy - 10
 
+            -- Show bearing next to pointer
+            -- X offset makes the text appear next to a hovered island or unit, instead of overlapping.
+            local pointer_disp_x_offset = 10
+            local pointer_disp_x = g_pointer_pos_x + pointer_disp_x_offset
+            local pointer_disp_y = g_pointer_pos_y
+            update_ui_text(pointer_disp_x, pointer_disp_y, string.format("%.0f deg", bearing), 100, 0, text_col, 0)
+            pointer_disp_y = pointer_disp_y - 10
+
             local dist = vec2_dist(vec2(g_ruler_x, g_ruler_y), vec2(world_x, world_y))
+            local dist_string = ""
 
             if dist < 10000 then
-                update_ui_image(cx, cy, atlas_icons.column_distance, icon_col, 0)
-                update_ui_text(cx + 15, cy, string.format("%.0f ", dist) .. update_get_loc(e_loc.acronym_meters), 100, 0, text_col, 0)
+                dist_string = string.format("%.0f ", dist) .. update_get_loc(e_loc.acronym_meters)
             else
-                update_ui_image(cx, cy, atlas_icons.column_distance, icon_col, 0)
-                update_ui_text(cx + 15, cy, string.format("%.2f ", dist / 1000) .. update_get_loc(e_loc.acronym_kilometers), 100, 0, text_col, 0)
+                dist_string = string.format("%.2f ", dist / 1000) .. update_get_loc(e_loc.acronym_kilometers)
             end
 
+            -- Show distance in lower left corner
+            update_ui_image(cx, cy, atlas_icons.column_distance, icon_col, 0)
+            update_ui_text(cx + 15, cy, dist_string, 100, 0, text_col, 0)
             cy = cy - 10
+
+            -- Show distance next to pointer
+            update_ui_text(pointer_disp_x, pointer_disp_y, dist_string, 100, 0, text_col, 0)
+
         else                
             if g_highlighted_vehicle_id > 0 then
                 local highlighted_vehicle = update_get_map_vehicle_by_id(g_highlighted_vehicle_id)
